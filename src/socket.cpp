@@ -74,17 +74,19 @@ class dap::Socket::Shared : public dap::ReaderWriter {
     if (info) {
       auto socket =
           ::socket(info->ai_family, info->ai_socktype, info->ai_protocol);
-      return std::make_shared<Shared>(*info, socket);
+      return std::make_shared<Shared>(info, socket);
     }
 
+    freeaddrinfo(info);
     term();
     return nullptr;
   }
 
-  Shared(SOCKET socket) : info({}), sock(socket) {}
-  Shared(const addrinfo& info, SOCKET socket) : info(info), sock(socket) {}
+  Shared(SOCKET socket) : info(nullptr), sock(socket) {}
+  Shared(addrinfo* info, SOCKET socket) : info(info), sock(socket) {}
 
   ~Shared() {
+    freeaddrinfo(info);
     close();
     term();
   }
@@ -141,7 +143,7 @@ class dap::Socket::Shared : public dap::ReaderWriter {
                   static_cast<int>(bytes), 0) > 0;
   }
 
-  const addrinfo info;
+  addrinfo* const info;
 
  private:
   std::atomic<SOCKET> sock = {InvalidSocket};
@@ -156,7 +158,7 @@ Socket::Socket(const char* address, const char* port)
   }
   auto socket = shared->socket();
 
-  if (bind(socket, shared->info.ai_addr, (int)shared->info.ai_addrlen) != 0) {
+  if (bind(socket, shared->info->ai_addr, (int)shared->info->ai_addrlen) != 0) {
     shared.reset();
     return;
   }
@@ -194,8 +196,8 @@ void Socket::close() const {
 std::shared_ptr<ReaderWriter> Socket::connect(const char* address,
                                               const char* port) {
   auto shared = Shared::create(address, port);
-  if (::connect(shared->socket(), shared->info.ai_addr,
-                (int)shared->info.ai_addrlen) == 0) {
+  if (::connect(shared->socket(), shared->info->ai_addr,
+                (int)shared->info->ai_addrlen) == 0) {
     return shared;
   }
   return {};
