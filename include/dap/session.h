@@ -15,12 +15,12 @@
 #ifndef dap_session_h
 #define dap_session_h
 
+#include "future.h"
 #include "io.h"
 #include "typeinfo.h"
 #include "typeof.h"
 
 #include <functional>
-#include <future>
 
 namespace dap {
 
@@ -158,9 +158,9 @@ class Session {
   inline void registerSentHandler(F&& handler);
 
   // send() sends the request to the connected endpoint and returns a
-  // std::future that is assigned the request response or error.
+  // future that is assigned the request response or error.
   template <typename T, typename = IsRequest<T>>
-  std::future<ResponseOrError<typename T::Response>> send(const T& request);
+  future<ResponseOrError<typename T::Response>> send(const T& request);
 
   // send() sends the event to the connected endpoint.
   template <typename T, typename = IsEvent<T>>
@@ -248,24 +248,23 @@ void Session::registerSentHandler(F&& handler) {
 }
 
 template <typename T, typename>
-std::future<ResponseOrError<typename T::Response>> Session::send(
-    const T& request) {
+future<ResponseOrError<typename T::Response>> Session::send(const T& request) {
   using Response = typename T::Response;
-  auto promise = std::make_shared<std::promise<ResponseOrError<Response>>>();
+  promise<ResponseOrError<Response>> promise;
   const TypeInfo* typeinfo = TypeOf<T>::type();
   auto sent =
       send(typeinfo, &request, [=](const void* result, const Error* error) {
         if (error != nullptr) {
-          promise->set_value(ResponseOrError<Response>(*error));
+          promise.set_value(ResponseOrError<Response>(*error));
         } else {
-          promise->set_value(ResponseOrError<Response>(
+          promise.set_value(ResponseOrError<Response>(
               *reinterpret_cast<const Response*>(result)));
         }
       });
   if (!sent) {
-    promise->set_value(Error("Failed to send request"));
+    promise.set_value(Error("Failed to send request"));
   }
-  return promise->get_future();
+  return promise.get_future();
 }
 
 template <typename T, typename>

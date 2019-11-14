@@ -22,8 +22,10 @@
 #include "gtest/gtest.h"
 
 #include <array>
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 
 namespace dap {
 
