@@ -18,6 +18,7 @@
 #include "typeof.h"
 #include "types.h"
 
+#include <cstddef>  // ptrdiff_t
 #include <type_traits>
 
 namespace dap {

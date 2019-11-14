@@ -18,6 +18,7 @@
 #include <condition_variable>
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>  // strlen
 #include <deque>
 #include <mutex>
 

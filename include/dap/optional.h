@@ -17,6 +17,7 @@
 
 #include <assert.h>
 #include <type_traits>
+#include <utility>  // std::move
 
 namespace dap {
 

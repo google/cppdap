@@ -179,7 +179,7 @@ TEST_F(SessionTest, Request) {
   ASSERT_EQ(received.i, request.i);
   ASSERT_EQ(received.n, request.n);
   ASSERT_EQ(received.a, request.a);
-  ASSERT_EQ(received.o.size(), 3);
+  ASSERT_EQ(received.o.size(), 3U);
   ASSERT_EQ(received.o["a"].get<dap::integer>(),
             request.o["a"].get<dap::integer>());
   ASSERT_EQ(received.o["b"].get<dap::number>(),
@@ -208,7 +208,7 @@ TEST_F(SessionTest, RequestResponseSuccess) {
   ASSERT_EQ(got.response.i, dap::integer(99));
   ASSERT_EQ(got.response.n, dap::number(123.456));
   ASSERT_EQ(got.response.a, dap::array<dap::integer>({5, 4, 3, 2, 1}));
-  ASSERT_EQ(got.response.o.size(), 3);
+  ASSERT_EQ(got.response.o.size(), 3U);
   ASSERT_EQ(got.response.o["one"].get<dap::integer>(), dap::integer(1));
   ASSERT_EQ(got.response.o["two"].get<dap::number>(), dap::number(2));
   ASSERT_EQ(got.response.o["three"].get<dap::string>(), dap::string("3"));
@@ -267,7 +267,7 @@ TEST_F(SessionTest, ResponseSentHandlerSuccess) {
   ASSERT_EQ(got.response.i, dap::integer(99));
   ASSERT_EQ(got.response.n, dap::number(123.456));
   ASSERT_EQ(got.response.a, dap::array<dap::integer>({5, 4, 3, 2, 1}));
-  ASSERT_EQ(got.response.o.size(), 3);
+  ASSERT_EQ(got.response.o.size(), 3U);
   ASSERT_EQ(got.response.o["one"].get<dap::integer>(), dap::integer(1));
   ASSERT_EQ(got.response.o["two"].get<dap::number>(), dap::number(2));
   ASSERT_EQ(got.response.o["three"].get<dap::string>(), dap::string("3"));
@@ -308,7 +308,7 @@ TEST_F(SessionTest, Event) {
   ASSERT_EQ(got.i, event.i);
   ASSERT_EQ(got.n, event.n);
   ASSERT_EQ(got.a, event.a);
-  ASSERT_EQ(got.o.size(), 3);
+  ASSERT_EQ(got.o.size(), 3U);
   ASSERT_EQ(got.o["a"].get<dap::integer>(), event.o["a"].get<dap::integer>());
   ASSERT_EQ(got.o["b"].get<dap::number>(), event.o["b"].get<dap::number>());
   ASSERT_EQ(got.o["c"].get<dap::string>(), event.o["c"].get<dap::string>());

@@ -78,10 +78,10 @@ TEST(Any, Object) {
   ASSERT_TRUE(any.is<dap::object>());
   if (any.is<dap::object>()) {
     auto got = any.get<dap::object>();
-    ASSERT_EQ(got.size(), 3);
-    ASSERT_EQ(got.count("one"), 1);
-    ASSERT_EQ(got.count("two"), 1);
-    ASSERT_EQ(got.count("three"), 1);
+    ASSERT_EQ(got.size(), 3U);
+    ASSERT_EQ(got.count("one"), 1U);
+    ASSERT_EQ(got.count("two"), 1U);
+    ASSERT_EQ(got.count("three"), 1U);
     ASSERT_TRUE(got["one"].is<dap::integer>());
     ASSERT_TRUE(got["two"].is<dap::integer>());
     ASSERT_TRUE(got["three"].is<dap::integer>());
