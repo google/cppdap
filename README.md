@@ -68,6 +68,16 @@ You will also want to add the `cppdap` public headers to your project's include 
 target_include_directories($<target> PRIVATE "${CPPDAP_DIR}/include") # replace <target> with the name of your project's target
 ```
 
+You may also wish to specify your own paths to the third party libraries used by `cppdap`.
+You can do this by setting any of the following variables before the call to `add_subdirectory()`:
+
+```cmake
+set(CPPDAP_THIRD_PARTY_DIR <third-party-root-directory>) # defaults to ${CPPDAP_DIR}/third_party
+set(CPPDAP_JSON_DIR        <path-to-nlohmann-json>)      # defaults to ${CPPDAP_THIRD_PARTY_DIR}/json
+set(CPPDAP_GOOGLETEST_DIR  <path-to-googletest>)         # defaults to ${CPPDAP_THIRD_PARTY_DIR}/googletest
+add_subdirectory(${CPPDAP_DIR})
+```
+
 ---
 
 Note: This is not an officially supported Google product
