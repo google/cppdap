@@ -34,17 +34,23 @@ option(CPPDAP_INSTALL "Create dap install target" OFF)
 ###########################################################
 # Directories
 ###########################################################
+function (set_if_not_defined name value)
+    if(NOT DEFINED ${name})
+        set(${name} ${value} PARENT_SCOPE)
+    endif()
+endfunction()
+
 set(CPPDAP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(CPPDAP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set(CPPDAP_THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
-set(JSON_DIR ${CPPDAP_THIRD_PARTY_DIR}/json)
-set(GOOGLETEST_DIR ${CPPDAP_THIRD_PARTY_DIR}/googletest)
+set_if_not_defined(CPPDAP_THIRD_PARTY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party)
+set_if_not_defined(CPPDAP_JSON_DIR        ${CPPDAP_THIRD_PARTY_DIR}/json)
+set_if_not_defined(CPPDAP_GOOGLETEST_DIR  ${CPPDAP_THIRD_PARTY_DIR}/googletest)
 
 ###########################################################
 # Submodules
 ###########################################################
 if(CPPDAP_BUILD_TESTS)
-    if(NOT EXISTS ${CPPDAP_THIRD_PARTY_DIR}/googletest/.git)
+    if(NOT EXISTS ${CPPDAP_GOOGLETEST_DIR}/.git)
         message(WARNING "third_party/googletest submodule missing.")
         message(WARNING "Run: `git submodule update --init` to build tests.")
         set(CPPDAP_BUILD_TESTS OFF)
@@ -133,7 +139,7 @@ set_target_properties(cppdap PROPERTIES
     POSITION_INDEPENDENT_CODE 1
 )
 
-target_include_directories(cppdap PRIVATE "${JSON_DIR}/include/")
+target_include_directories(cppdap PRIVATE "${CPPDAP_JSON_DIR}/include/")
 
 cppdap_set_target_options(cppdap)
 
@@ -175,14 +181,14 @@ if(CPPDAP_BUILD_TESTS)
         ${CPPDAP_SRC_DIR}/optional_test.cpp
         ${CPPDAP_SRC_DIR}/session_test.cpp
         ${CPPDAP_SRC_DIR}/variant_test.cpp
-        ${GOOGLETEST_DIR}/googletest/src/gtest-all.cc
+        ${CPPDAP_GOOGLETEST_DIR}/googletest/src/gtest-all.cc
     )
 
     set(DAP_TEST_INCLUDE_DIR
-        ${GOOGLETEST_DIR}/googlemock/include/
-        ${GOOGLETEST_DIR}/googletest/
-        ${GOOGLETEST_DIR}/googletest/include/
-        ${JSON_DIR}/include/
+        ${CPPDAP_GOOGLETEST_DIR}/googlemock/include/
+        ${CPPDAP_GOOGLETEST_DIR}/googletest/
+        ${CPPDAP_GOOGLETEST_DIR}/googletest/include/
+        ${CPPDAP_JSON_DIR}/include/
     )
 
     add_executable(cppdap-unittests ${DAP_TEST_LIST})
