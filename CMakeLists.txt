@@ -98,7 +98,12 @@ function(cppdap_set_target_options target)
 
     # Disable specific, pedantic warnings
     if(MSVC)
-        target_compile_options(${target} PRIVATE "-D_CRT_SECURE_NO_WARNINGS")
+        target_compile_options(${target} PRIVATE
+            "-D_CRT_SECURE_NO_WARNINGS"
+
+            # Warnings from nlohmann/json headers.
+            "/wd4267" # 'argument': conversion from 'size_t' to 'int', possible loss of data
+        )
     endif()
 
     # Treat all warnings as errors
