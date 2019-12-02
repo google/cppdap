@@ -22,14 +22,20 @@ project(cppdap C CXX)
 ###########################################################
 # Options
 ###########################################################
-option(CPPDAP_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
-option(CPPDAP_BUILD_EXAMPLES "Build example applications" OFF)
-option(CPPDAP_BUILD_TESTS "Build tests" OFF)
-option(CPPDAP_ASAN "Build dap with address sanitizer" OFF)
-option(CPPDAP_MSAN "Build dap with memory sanitizer" OFF)
-option(CPPDAP_TSAN "Build dap with thread sanitizer" OFF)
-option(CPPDAP_INSTALL_VSCODE_EXAMPLES "Build and install dap examples into vscode extensions directory" OFF)
-option(CPPDAP_INSTALL "Create dap install target" OFF)
+function (option_if_not_defined name description default)
+    if(NOT DEFINED ${name})
+        option(${name} ${description} ${default})
+    endif()
+endfunction()
+
+option_if_not_defined(CPPDAP_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+option_if_not_defined(CPPDAP_BUILD_EXAMPLES "Build example applications" OFF)
+option_if_not_defined(CPPDAP_BUILD_TESTS "Build tests" OFF)
+option_if_not_defined(CPPDAP_ASAN "Build dap with address sanitizer" OFF)
+option_if_not_defined(CPPDAP_MSAN "Build dap with memory sanitizer" OFF)
+option_if_not_defined(CPPDAP_TSAN "Build dap with thread sanitizer" OFF)
+option_if_not_defined(CPPDAP_INSTALL_VSCODE_EXAMPLES "Build and install dap examples into vscode extensions directory" OFF)
+option_if_not_defined(CPPDAP_INSTALL "Create dap install target" OFF)
 
 ###########################################################
 # Directories
