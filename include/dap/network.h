@@ -28,6 +28,9 @@ std::shared_ptr<ReaderWriter> connect(const char* addr, int port);
 
 // Server implements a basic TCP server.
 class Server {
+  // IgnoreErrors matches the OnError signature, and does nothing.
+  static inline void IgnoreErrors(const char*) {}
+
  public:
   using OnError = std::function<void(const char*)>;
   using OnConnect = std::function<void(const std::shared_ptr<ReaderWriter>&)>;
@@ -42,7 +45,7 @@ class Server {
   // onError will be called for any connection errors.
   virtual bool start(int port,
                      const OnConnect& callback,
-                     const OnError& onError = OnError()) = 0;
+                     const OnError& onError = IgnoreErrors) = 0;
 
   // stop() stops listening for connections.
   // stop() is implicitly called on destruction.
