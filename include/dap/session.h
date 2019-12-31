@@ -201,7 +201,8 @@ class Session {
   virtual void registerHandler(const TypeInfo* typeinfo,
                                const GenericResponseSentHandler& handler) = 0;
 
-  virtual bool send(const dap::TypeInfo* typeinfo,
+  virtual bool send(const dap::TypeInfo* requestTypeInfo,
+                    const dap::TypeInfo* responseTypeInfo,
                     const void* request,
                     const GenericResponseHandler& responseHandler) = 0;
 
@@ -251,9 +252,9 @@ template <typename T, typename>
 future<ResponseOrError<typename T::Response>> Session::send(const T& request) {
   using Response = typename T::Response;
   promise<ResponseOrError<Response>> promise;
-  const TypeInfo* typeinfo = TypeOf<T>::type();
-  auto sent =
-      send(typeinfo, &request, [=](const void* result, const Error* error) {
+  auto sent = send(
+      TypeOf<T>::type(), TypeOf<Response>::type(), &request,
+      [=](const void* result, const Error* error) {
         if (error != nullptr) {
           promise.set_value(ResponseOrError<Response>(*error));
         } else {
