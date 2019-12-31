@@ -42,19 +42,19 @@ struct TestResponse : public Response {
 
 DAP_STRUCT_TYPEINFO(TestResponse,
                     "test-response",
-                    DAP_FIELD(b, "b"),
-                    DAP_FIELD(i, "i"),
-                    DAP_FIELD(n, "n"),
-                    DAP_FIELD(a, "a"),
-                    DAP_FIELD(o, "o"),
-                    DAP_FIELD(s, "s"),
-                    DAP_FIELD(o1, "o1"),
-                    DAP_FIELD(o2, "o2"));
+                    DAP_FIELD(b, "res_b"),
+                    DAP_FIELD(i, "res_i"),
+                    DAP_FIELD(n, "res_n"),
+                    DAP_FIELD(a, "res_a"),
+                    DAP_FIELD(o, "res_o"),
+                    DAP_FIELD(s, "res_s"),
+                    DAP_FIELD(o1, "res_o1"),
+                    DAP_FIELD(o2, "res_o2"));
 
 struct TestRequest : public Request {
   using Response = TestResponse;
 
-  boolean req_b;
+  boolean b;
   integer i;
   number n;
   array<integer> a;
@@ -66,14 +66,14 @@ struct TestRequest : public Request {
 
 DAP_STRUCT_TYPEINFO(TestRequest,
                     "test-request",
-                    DAP_FIELD(req_b, "req_b"),
-                    DAP_FIELD(i, "i"),
-                    DAP_FIELD(n, "n"),
-                    DAP_FIELD(a, "a"),
-                    DAP_FIELD(o, "o"),
-                    DAP_FIELD(s, "s"),
-                    DAP_FIELD(o1, "o1"),
-                    DAP_FIELD(o2, "o2"));
+                    DAP_FIELD(b, "req_b"),
+                    DAP_FIELD(i, "req_i"),
+                    DAP_FIELD(n, "req_n"),
+                    DAP_FIELD(a, "req_a"),
+                    DAP_FIELD(o, "req_o"),
+                    DAP_FIELD(s, "req_s"),
+                    DAP_FIELD(o1, "req_o1"),
+                    DAP_FIELD(o2, "req_o2"));
 
 struct TestEvent : public Event {
   boolean b;
@@ -88,14 +88,14 @@ struct TestEvent : public Event {
 
 DAP_STRUCT_TYPEINFO(TestEvent,
                     "test-event",
-                    DAP_FIELD(b, "b"),
-                    DAP_FIELD(i, "i"),
-                    DAP_FIELD(n, "n"),
-                    DAP_FIELD(a, "a"),
-                    DAP_FIELD(o, "o"),
-                    DAP_FIELD(s, "s"),
-                    DAP_FIELD(o1, "o1"),
-                    DAP_FIELD(o2, "o2"));
+                    DAP_FIELD(b, "evt_b"),
+                    DAP_FIELD(i, "evt_i"),
+                    DAP_FIELD(n, "evt_n"),
+                    DAP_FIELD(a, "evt_a"),
+                    DAP_FIELD(o, "evt_o"),
+                    DAP_FIELD(s, "evt_s"),
+                    DAP_FIELD(o1, "evt_o1"),
+                    DAP_FIELD(o2, "evt_o2"));
 
 };  // namespace dap
 
@@ -103,7 +103,7 @@ namespace {
 
 dap::TestRequest createRequest() {
   dap::TestRequest request;
-  request.req_b = false;
+  request.b = false;
   request.i = 72;
   request.n = 9.87;
   request.a = {2, 5, 7, 8};
@@ -177,7 +177,7 @@ TEST_F(SessionTest, Request) {
   client->send(request).get();
 
   // Check request was received correctly.
-  ASSERT_EQ(received.req_b, request.req_b);
+  ASSERT_EQ(received.b, request.b);
   ASSERT_EQ(received.i, request.i);
   ASSERT_EQ(received.n, request.n);
   ASSERT_EQ(received.a, request.a);
@@ -220,29 +220,23 @@ TEST_F(SessionTest, RequestResponseSuccess) {
 }
 
 TEST_F(SessionTest, BreakPointRequestResponseSuccess) {
-  server->registerHandler(
-      [&](const dap::SetBreakpointsRequest&) {
-    dap::SetBreakpointsResponse rsp;
-    dap::array<dap::Breakpoint> breakpoints;
-    dap::Breakpoint bpItem;
-    bpItem.line = 2;
-    breakpoints.emplace_back(std::move(bpItem));
-    rsp.breakpoints.swap(breakpoints);
-    return rsp;
+  server->registerHandler([&](const dap::SetBreakpointsRequest&) {
+    dap::SetBreakpointsResponse response;
+    dap::Breakpoint bp;
+    bp.line = 2;
+    response.breakpoints.emplace_back(std::move(bp));
+    return response;
   });
 
   bind();
 
-  dap::SetBreakpointsRequest request;
-  auto response = client->send(request);
+  auto got = client->send(dap::SetBreakpointsRequest{}).get();
 
-  auto got = response.get();
-  
   // Check response was received correctly.
   ASSERT_EQ(got.error, false);
-  ASSERT_EQ(got.response.breakpoints.size(), 1);
-
+  ASSERT_EQ(got.response.breakpoints.size(), 1U);
 }
+
 TEST_F(SessionTest, RequestResponseOrError) {
   server->registerHandler(
       [&](const dap::TestRequest&) -> dap::ResponseOrError<dap::TestResponse> {
