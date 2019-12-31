@@ -314,39 +314,40 @@ class Impl : public dap::Session {
     }
 
     return [=] {
-      handler(data,
-              [&](const dap::TypeInfo* typeinfo, const void* data) {
-                // onSuccess
-                dap::json::Serializer s;
-                s.field("seq", dap::integer(nextSeq++));
-                s.field("type", "response");
-                s.field("request_seq", sequence);
-                s.field("success", dap::boolean(true));
-                s.field("command", command);
-                s.field("body", [&](dap::Serializer* s) {
-                  return typeinfo->serialize(s, data);
-                });
-                send(s.dump());
+      handler(
+          data,
+          [&](const dap::TypeInfo* typeinfo, const void* data) {
+            // onSuccess
+            dap::json::Serializer s;
+            s.field("seq", dap::integer(nextSeq++));
+            s.field("type", "response");
+            s.field("request_seq", sequence);
+            s.field("success", dap::boolean(true));
+            s.field("command", command);
+            s.field("body", [&](dap::Serializer* s) {
+              return typeinfo->serialize(s, data);
+            });
+            send(s.dump());
 
-                if (auto handler = handlers.responseSent(typeinfo)) {
-                  handler(data, nullptr);
-                }
-              },
-              [&](const dap::TypeInfo* typeinfo, const dap::Error& error) {
-                // onError
-                dap::json::Serializer s;
-                s.field("seq", dap::integer(nextSeq++));
-                s.field("type", "response");
-                s.field("request_seq", sequence);
-                s.field("success", dap::boolean(false));
-                s.field("command", command);
-                s.field("message", error.message);
-                send(s.dump());
+            if (auto handler = handlers.responseSent(typeinfo)) {
+              handler(data, nullptr);
+            }
+          },
+          [&](const dap::TypeInfo* typeinfo, const dap::Error& error) {
+            // onError
+            dap::json::Serializer s;
+            s.field("seq", dap::integer(nextSeq++));
+            s.field("type", "response");
+            s.field("request_seq", sequence);
+            s.field("success", dap::boolean(false));
+            s.field("command", command);
+            s.field("message", error.message);
+            send(s.dump());
 
-                if (auto handler = handlers.responseSent(typeinfo)) {
-                  handler(nullptr, &error);
-                }
-              });
+            if (auto handler = handlers.responseSent(typeinfo)) {
+              handler(nullptr, &error);
+            }
+          });
       typeinfo->destruct(data);
       delete[] data;
     };
@@ -416,7 +417,6 @@ class Impl : public dap::Session {
       d->field("body", [&](const dap::Deserializer* d) {
         return typeinfo->deserialize(d, data.get());
       });
-   
 
       handler(data.get(), nullptr);
       typeinfo->destruct(data.get());
