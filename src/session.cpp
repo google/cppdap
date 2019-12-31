@@ -80,19 +80,20 @@ class Impl : public dap::Session {
     });
   }
 
-  bool send(const dap::TypeInfo* typeinfo,
+  bool send(const dap::TypeInfo* requestTypeInfo,
+            const dap::TypeInfo* responseTypeInfo,
             const void* request,
             const GenericResponseHandler& responseHandler) override {
     int seq = nextSeq++;
 
-    handlers.put(seq, typeinfo, responseHandler);
+    handlers.put(seq, responseTypeInfo, responseHandler);
 
     dap::json::Serializer s;
     s.field("seq", dap::integer(seq));
     s.field("type", "request");
-    s.field("command", typeinfo->name());
+    s.field("command", requestTypeInfo->name());
     s.field("arguments", [&](dap::Serializer* s) {
-      return typeinfo->serialize(s, request);
+      return requestTypeInfo->serialize(s, request);
     });
     return send(s.dump());
   }
@@ -411,12 +412,11 @@ class Impl : public dap::Session {
       auto data = std::unique_ptr<uint8_t[]>(new uint8_t[typeinfo->size()]);
       typeinfo->construct(data.get());
 
-      if (!d->field("body", [&](const dap::Deserializer* d) {
-            return typeinfo->deserialize(d, data.get());
-          })) {
-        handlers.error("Failed to deserialize request");
-        return;
-      }
+      // "body" field in Response is an optional field.
+      d->field("body", [&](const dap::Deserializer* d) {
+        return typeinfo->deserialize(d, data.get());
+      });
+   
 
       handler(data.get(), nullptr);
       typeinfo->destruct(data.get());
