@@ -54,7 +54,7 @@ DAP_STRUCT_TYPEINFO(TestResponse,
 struct TestRequest : public Request {
   using Response = TestResponse;
 
-  boolean b;
+  boolean req_b;
   integer i;
   number n;
   array<integer> a;
@@ -66,7 +66,7 @@ struct TestRequest : public Request {
 
 DAP_STRUCT_TYPEINFO(TestRequest,
                     "test-request",
-                    DAP_FIELD(b, "b"),
+                    DAP_FIELD(req_b, "req_b"),
                     DAP_FIELD(i, "i"),
                     DAP_FIELD(n, "n"),
                     DAP_FIELD(a, "a"),
@@ -103,7 +103,7 @@ namespace {
 
 dap::TestRequest createRequest() {
   dap::TestRequest request;
-  request.b = false;
+  request.req_b = false;
   request.i = 72;
   request.n = 9.87;
   request.a = {2, 5, 7, 8};
@@ -177,7 +177,7 @@ TEST_F(SessionTest, Request) {
   client->send(request).get();
 
   // Check request was received correctly.
-  ASSERT_EQ(received.b, request.b);
+  ASSERT_EQ(received.req_b, request.req_b);
   ASSERT_EQ(received.i, request.i);
   ASSERT_EQ(received.n, request.n);
   ASSERT_EQ(received.a, request.a);
@@ -219,6 +219,30 @@ TEST_F(SessionTest, RequestResponseSuccess) {
   ASSERT_FALSE(got.response.o2.has_value());
 }
 
+TEST_F(SessionTest, BreakPointRequestResponseSuccess) {
+  server->registerHandler(
+      [&](const dap::SetBreakpointsRequest&) {
+    dap::SetBreakpointsResponse rsp;
+    dap::array<dap::Breakpoint> breakpoints;
+    dap::Breakpoint bpItem;
+    bpItem.line = 2;
+    breakpoints.emplace_back(std::move(bpItem));
+    rsp.breakpoints.swap(breakpoints);
+    return rsp;
+  });
+
+  bind();
+
+  dap::SetBreakpointsRequest request;
+  auto response = client->send(request);
+
+  auto got = response.get();
+  
+  // Check response was received correctly.
+  ASSERT_EQ(got.error, false);
+  ASSERT_EQ(got.response.breakpoints.size(), 1);
+
+}
 TEST_F(SessionTest, RequestResponseOrError) {
   server->registerHandler(
       [&](const dap::TestRequest&) -> dap::ResponseOrError<dap::TestResponse> {
