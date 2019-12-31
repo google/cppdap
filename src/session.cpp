@@ -411,11 +411,12 @@ class Impl : public dap::Session {
       auto data = std::unique_ptr<uint8_t[]>(new uint8_t[typeinfo->size()]);
       typeinfo->construct(data.get());
 
+     //"body " field in  Response is an option field. 
       if (!d->field("body", [&](const dap::Deserializer* d) {
             return typeinfo->deserialize(d, data.get());
           })) {
-        handlers.error("Failed to deserialize request");
-        return;
+        //handlers.error("Failed to deserialize request");
+        //return;
       }
 
       handler(data.get(), nullptr);
