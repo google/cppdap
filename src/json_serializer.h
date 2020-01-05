@@ -98,6 +98,8 @@ struct Serializer : public dap::Serializer {
   bool serialize(const any& v) override;
   bool array(size_t count,
              const std::function<bool(dap::Serializer*)>&) override;
+  bool fields(const void* object,
+              const std::initializer_list<Field>& fields) override;
   bool field(const std::string& name, const FieldSerializer&) override;
   void remove() override;
 
@@ -128,10 +130,6 @@ struct Serializer : public dap::Serializer {
   template <typename T0, typename... Types>
   inline bool serialize(const dap::variant<T0, Types...>& v) {
     return dap::Serializer::serialize(v);
-  }
-
-  inline bool serialize(const void* o, const std::initializer_list<Field>& f) {
-    return dap::Serializer::serialize(o, f);
   }
 
   inline bool serialize(const char* v) { return dap::Serializer::serialize(v); }

@@ -164,7 +164,7 @@ M member_type(M T::*);
         return d->deserialize(ptr, {__VA_ARGS__});                        \
       }                                                                   \
       bool serialize(Serializer* s, const void* ptr) const override {     \
-        return s->serialize(ptr, {__VA_ARGS__});                          \
+        return s->fields(ptr, {__VA_ARGS__});                             \
       }                                                                   \
     };                                                                    \
     static TI typeinfo;                                                   \
