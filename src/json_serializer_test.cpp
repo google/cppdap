@@ -56,7 +56,9 @@ DAP_STRUCT_TYPEINFO(JSONTestObject,
                     DAP_FIELD(o2, "o2"),
                     DAP_FIELD(inner, "inner"));
 
-TEST(JSONSerializer, Decode) {}
+struct JSONObjectNoFields {};
+
+DAP_STRUCT_TYPEINFO(JSONObjectNoFields, "json-object-no-fields");
 
 }  // namespace dap
 
@@ -90,4 +92,11 @@ TEST(JSONSerializer, SerializeDeserialize) {
   ASSERT_EQ(encoded.s, decoded.s);
   ASSERT_EQ(encoded.o2, decoded.o2);
   ASSERT_EQ(encoded.inner.i, decoded.inner.i);
+}
+
+TEST(JSONSerializer, SerializeObjectNoFields) {
+  dap::JSONObjectNoFields obj;
+  dap::json::Serializer s;
+  ASSERT_TRUE(s.serialize(obj));
+  ASSERT_EQ(s.dump(), "{}");
 }

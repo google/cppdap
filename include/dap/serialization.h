@@ -166,6 +166,10 @@ class Serializer {
   // Serializer that should be used to encode the n'th array element's data.
   virtual bool array(size_t count, const std::function<bool(Serializer*)>&) = 0;
 
+  // fields() encodes all the provided fields of the given object.
+  virtual bool fields(const void* object,
+                      const std::initializer_list<Field>&) = 0;
+
   // field() encodes a field to the struct object referenced by this Serializer.
   // The FieldSerializer will be called with a Serializer used to encode the
   // field's data.
@@ -191,10 +195,6 @@ class Serializer {
   // serialize() encodes the given variant.
   template <typename T0, typename... Types>
   inline bool serialize(const dap::variant<T0, Types...>&);
-
-  // serialize() encodes all the provided fields of the given object.
-  inline bool serialize(const void* object,
-                        const std::initializer_list<Field>&);
 
   // deserialize() encodes the given string.
   inline bool serialize(const char* v);
@@ -229,18 +229,6 @@ bool Serializer::serialize(const dap::optional<T>& opt) {
 template <typename T0, typename... Types>
 bool Serializer::serialize(const dap::variant<T0, Types...>& var) {
   return serialize(var.value);
-}
-
-bool Serializer::serialize(const void* object,
-                           const std::initializer_list<Field>& fields) {
-  for (auto const& f : fields) {
-    if (!field(f.name, [&](Serializer* d) {
-          auto ptr = reinterpret_cast<const uint8_t*>(object) + f.offset;
-          return f.type->serialize(d, ptr);
-        }))
-      return false;
-  }
-  return true;
 }
 
 bool Serializer::serialize(const char* v) {
