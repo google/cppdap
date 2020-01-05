@@ -13,14 +13,15 @@
             "type": "lldb",
             "request": "launch",
             "name": "unittests (lldb)",
-            "program": "${workspaceFolder}/build/dap-unittests",
+            "program": "${workspaceFolder}/build/cppdap-unittests",
             "cwd": "${workspaceRoot}",
+            "args": []
         },
         {
             "name": "unittests (gdb)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/dap-unittests",
+            "program": "${workspaceFolder}/build/cppdap-unittests",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
