@@ -47,15 +47,14 @@ TEST(Network, ClientServer) {
   const int port = 19021;
   dap::Chan<bool> done;
   auto server = dap::net::Server::create();
-  if (!server->start(port,
-                     [&](const std::shared_ptr<dap::ReaderWriter>& rw) {
-                       ASSERT_EQ(read(rw), "client to server");
-                       ASSERT_TRUE(write(rw, "server to client"));
-                       done.put(true);
-                     },
-                     [&](const char* err) {
-                       FAIL() << "Server error: " << err;
-                     })) {
+  if (!server->start(
+          port,
+          [&](const std::shared_ptr<dap::ReaderWriter>& rw) {
+            ASSERT_EQ(read(rw), "client to server");
+            ASSERT_TRUE(write(rw, "server to client"));
+            done.put(true);
+          },
+          [&](const char* err) { FAIL() << "Server error: " << err; })) {
     FAIL() << "Couldn't start server";
     return;
   }
