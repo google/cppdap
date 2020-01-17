@@ -130,7 +130,6 @@ class File : public dap::ReaderWriter {
       out[i] = char(c);
     }
     return n;
-    // return fread(buffer, 1, n, f);
   }
   bool write(const void* buffer, size_t n) override {
     std::unique_lock<std::mutex> lock(writeMutex);
@@ -143,10 +142,10 @@ class File : public dap::ReaderWriter {
 
  private:
   FILE* const f;
+  const bool closable;
   std::mutex readMutex;
   std::mutex writeMutex;
-  std::atomic<bool> closed;
-  const bool closable;
+  std::atomic<bool> closed = { false };
 };
 
 class ReaderSpy : public dap::Reader {
