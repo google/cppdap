@@ -24,10 +24,19 @@
 #include <mutex>
 #include <unordered_set>
 
+#ifdef _MSC_VER
+#define OS_WINDOWS 1
+#endif
+
 // Uncomment the line below and change <path-to-log-file> to a file path to
 // write all DAP communications to the given path.
 //
 // #define LOG_TO_FILE "<path-to-log-file>"
+
+#ifdef OS_WINDOWS
+#include <fcntl.h>  // _O_BINARY
+#include <io.h>     // _setmode
+#endif              // OS_WINDOWS
 
 namespace {
 
@@ -147,7 +156,14 @@ void Event::fire() {
 }  // anonymous namespace
 
 // main() entry point to the DAP server.
-int main(int, char*[]) {
+int main(int, char* []) {
+#ifdef OS_WINDOWS
+  // Change stdin & stdout from text mode to binary mode.
+  // This ensures sequences of \r\n are not changed to \n.
+  _setmode(_fileno(stdin), _O_BINARY);
+  _setmode(_fileno(stdout), _O_BINARY);
+#endif  // OS_WINDOWS
+
   std::shared_ptr<dap::Writer> log;
 #ifdef LOG_TO_FILE
   log = dap::file(LOG_TO_FILE);
