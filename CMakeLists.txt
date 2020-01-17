@@ -85,10 +85,13 @@ set(CPPDAP_LIST
 ###########################################################
 if(CMAKE_SYSTEM_NAME MATCHES "Windows")
     set(CPPDAP_OS_LIBS WS2_32)
+    set(CPPDAP_OS_EXE_EXT ".exe")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
     set(CPPDAP_OS_LIBS pthread)
+    set(CPPDAP_OS_EXE_EXT "")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set(CPPDAP_OS_LIBS)
+    set(CPPDAP_OS_EXE_EXT "")
 endif()
 
 ###########################################################
@@ -230,7 +233,11 @@ if(CPPDAP_BUILD_EXAMPLES)
         target_link_libraries(${target} cppdap "${CPPDAP_OS_LIBS}")
 
         if(CPPDAP_INSTALL_VSCODE_EXAMPLES)
-            set(extroot "$ENV{HOME}/.vscode/extensions")
+            if(CMAKE_SYSTEM_NAME MATCHES "Windows")
+                set(extroot "$ENV{USERPROFILE}\\.vscode\\extensions")
+            else()
+                set(extroot "$ENV{HOME}/.vscode/extensions")
+            endif()
             if(EXISTS ${extroot})
                 set(extdir "${extroot}/google.cppdap-example-${target}-1.0.0")
                 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/examples/vscode/package.json ${extdir}/package.json)
