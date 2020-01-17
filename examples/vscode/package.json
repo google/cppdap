@@ -19,7 +19,7 @@
         "debuggers": [
             {
                 "type": "@target@",
-                "program": "@target@",
+                "program": "@target@@CPPDAP_OS_EXE_EXT@",
                 "label": "cppdap example: @target@",
                 "configurationAttributes": {}
             }
