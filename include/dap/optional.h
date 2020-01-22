@@ -50,7 +50,6 @@ class optional {
 
   // value() returns the contained value, or defaultValue if the optional does
   // not contain a value.
-  inline T& value(const T& defaultValue);
   inline const T& value(const T& defaultValue) const;
 
   // operator bool() returns true if the optional contains a value.
@@ -116,14 +115,6 @@ T& optional<T>::value() {
 template <typename T>
 const T& optional<T>::value() const {
   assert(set);
-  return val;
-}
-
-template <typename T>
-T& optional<T>::value(const T& defaultValue) {
-  if (!has_value()) {
-    return defaultValue;
-  }
   return val;
 }
 
