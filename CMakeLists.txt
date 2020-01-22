@@ -140,7 +140,7 @@ function(cppdap_set_target_options target)
     #     target_compile_options(${target} PRIVATE "-Wl,--no-undefined")
     # endif()
 
-    target_include_directories(${target} PRIVATE ${CPPDAP_INCLUDE_DIR})
+    target_include_directories(${target} PUBLIC ${CPPDAP_INCLUDE_DIR})
 endfunction(cppdap_set_target_options)
 
 ###########################################################
