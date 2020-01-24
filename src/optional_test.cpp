@@ -17,23 +17,27 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#include <string>
+
 TEST(Optional, EmptyConstruct) {
-  dap::optional<int> opt;
+  dap::optional<std::string> opt;
   ASSERT_FALSE(opt);
   ASSERT_FALSE(opt.has_value());
 }
 
 TEST(Optional, ValueConstruct) {
-  dap::optional<int> opt(0);
+  dap::optional<int> opt(10);
   ASSERT_TRUE(opt);
   ASSERT_TRUE(opt.has_value());
+  ASSERT_EQ(opt.value(), 10);
 }
 
 TEST(Optional, CopyConstruct) {
-  dap::optional<int> a(10);
-  dap::optional<int> b(a);
+  dap::optional<std::string> a("meow");
+  dap::optional<std::string> b(a);
   ASSERT_EQ(a, b);
-  ASSERT_EQ(b.value(), 10);
+  ASSERT_EQ(a.value(), "meow");
+  ASSERT_EQ(b.value(), "meow");
 }
 
 TEST(Optional, CopyCastConstruct) {
@@ -44,9 +48,9 @@ TEST(Optional, CopyCastConstruct) {
 }
 
 TEST(Optional, MoveConstruct) {
-  dap::optional<int> a(10);
-  dap::optional<int> b(std::move(a));
-  ASSERT_EQ(b.value(), 10);
+  dap::optional<std::string> a("meow");
+  dap::optional<std::string> b(std::move(a));
+  ASSERT_EQ(b.value(), "meow");
 }
 
 TEST(Optional, MoveCastConstruct) {
@@ -56,33 +60,36 @@ TEST(Optional, MoveCastConstruct) {
 }
 
 TEST(Optional, AssignValue) {
-  dap::optional<int> a;
-  a = 10;
-  ASSERT_EQ(a.value(), 10);
+  dap::optional<std::string> a;
+  std::string b = "meow";
+  a = b;
+  ASSERT_EQ(a.value(), "meow");
+  ASSERT_EQ(b, "meow");
 }
 
 TEST(Optional, AssignOptional) {
-  dap::optional<int> a;
-  dap::optional<int> b(10);
+  dap::optional<std::string> a;
+  dap::optional<std::string> b("meow");
   a = b;
-  ASSERT_EQ(a.value(), 10);
+  ASSERT_EQ(a.value(), "meow");
+  ASSERT_EQ(b.value(), "meow");
 }
 
 TEST(Optional, MoveAssignOptional) {
-  dap::optional<int> a;
-  dap::optional<int> b(10);
+  dap::optional<std::string> a;
+  dap::optional<std::string> b("meow");
   a = std::move(b);
-  ASSERT_EQ(a.value(), 10);
+  ASSERT_EQ(a.value(), "meow");
 }
 
 TEST(Optional, StarDeref) {
-  dap::optional<int> a(10);
-  ASSERT_EQ(*a, 10);
+  dap::optional<std::string> a("meow");
+  ASSERT_EQ(*a, "meow");
 }
 
 TEST(Optional, StarDerefConst) {
-  const dap::optional<int> a(10);
-  ASSERT_EQ(*a, 10);
+  const dap::optional<std::string> a("meow");
+  ASSERT_EQ(*a, "meow");
 }
 
 TEST(Optional, ArrowDeref) {
@@ -102,15 +109,15 @@ TEST(Optional, ArrowDerefConst) {
 }
 
 TEST(Optional, Value) {
-  const dap::optional<int> a(10);
-  ASSERT_EQ(a.value(), 10);
+  const dap::optional<std::string> a("meow");
+  ASSERT_EQ(a.value(), "meow");
 }
 
 TEST(Optional, ValueDefault) {
-  const dap::optional<int> a;
-  const dap::optional<int> b(20);
-  ASSERT_EQ(a.value(10), 10);
-  ASSERT_EQ(b.value(10), 20);
+  const dap::optional<std::string> a;
+  const dap::optional<std::string> b("woof");
+  ASSERT_EQ(a.value("meow"), "meow");
+  ASSERT_EQ(b.value("meow"), "woof");
 }
 
 TEST(Optional, CompareLT) {
