@@ -17,7 +17,7 @@
 
 #include <assert.h>
 #include <type_traits>
-#include <utility>  // std::move
+#include <utility>  // std::move, std::forward
 
 namespace dap {
 
@@ -104,7 +104,7 @@ optional<T>::optional(optional<U>&& other) : set(other.has_value()) {
 
 template <typename T>
 template <typename U /*= T*/, typename>
-optional<T>::optional(U&& value) : val(std::move(value)), set(true) {}
+optional<T>::optional(U&& value) : val(std::forward<U>(value)), set(true) {}
 
 template <typename T>
 T& optional<T>::value() {
@@ -153,7 +153,7 @@ optional<T>& optional<T>::operator=(optional&& other) noexcept {
 template <typename T>
 template <typename U /* = T */, typename>
 optional<T>& optional<T>::operator=(U&& value) {
-  val = std::move(value);
+  val = std::forward<U>(value);
   set = true;
   return *this;
 }
