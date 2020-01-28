@@ -74,6 +74,21 @@ class dap::Socket::Shared : public dap::ReaderWriter {
     if (info) {
       auto socket =
           ::socket(info->ai_family, info->ai_socktype, info->ai_protocol);
+
+#if !defined(_WIN32)
+      // Prevent sockets lingering after process termination, causing
+      // reconnection issues on the same port.
+
+      int enable = 1;
+      setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
+
+      struct {
+        int l_onoff;  /* linger active */
+        int l_linger; /* how many seconds to linger for */
+      } linger = {false, 0};
+      setsockopt(socket, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger));
+#endif  // !defined(_WIN32)
+
       return std::make_shared<Shared>(info, socket);
     }
 
