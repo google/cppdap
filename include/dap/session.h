@@ -84,8 +84,14 @@ struct ResponseOrError {
 
   inline ResponseOrError() = default;
   inline ResponseOrError(const T& response);
+  inline ResponseOrError(T&& response);
   inline ResponseOrError(const Error& error);
+  inline ResponseOrError(Error&& error);
   inline ResponseOrError(const ResponseOrError& other);
+  inline ResponseOrError(ResponseOrError&& other);
+
+  inline ResponseOrError& operator=(const ResponseOrError& other);
+  inline ResponseOrError& operator=(ResponseOrError&& other);
 
   T response;
   Error error;  // empty represents success.
@@ -94,10 +100,31 @@ struct ResponseOrError {
 template <typename T>
 ResponseOrError<T>::ResponseOrError(const T& response) : response(response) {}
 template <typename T>
+ResponseOrError<T>::ResponseOrError(T&& response)
+    : response(std::move(response)) {}
+template <typename T>
 ResponseOrError<T>::ResponseOrError(const Error& error) : error(error) {}
+template <typename T>
+ResponseOrError<T>::ResponseOrError(Error&& error) : error(std::move(error)) {}
 template <typename T>
 ResponseOrError<T>::ResponseOrError(const ResponseOrError& other)
     : response(other.response), error(other.error) {}
+template <typename T>
+ResponseOrError<T>::ResponseOrError(ResponseOrError&& other)
+    : response(std::move(other.response)), error(std::move(other.error)) {}
+template <typename T>
+ResponseOrError<T>& ResponseOrError<T>::operator=(
+    const ResponseOrError& other) {
+  response = other.response;
+  error = other.error;
+  return *this;
+}
+template <typename T>
+ResponseOrError<T>& ResponseOrError<T>::operator=(ResponseOrError&& other) {
+  response = std::move(other.response);
+  error = std::move(other.error);
+  return *this;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // Session
@@ -252,16 +279,15 @@ template <typename T, typename>
 future<ResponseOrError<typename T::Response>> Session::send(const T& request) {
   using Response = typename T::Response;
   promise<ResponseOrError<Response>> promise;
-  auto sent = send(
-      TypeOf<T>::type(), TypeOf<Response>::type(), &request,
-      [=](const void* result, const Error* error) {
-        if (error != nullptr) {
-          promise.set_value(ResponseOrError<Response>(*error));
-        } else {
-          promise.set_value(ResponseOrError<Response>(
-              *reinterpret_cast<const Response*>(result)));
-        }
-      });
+  auto sent = send(TypeOf<T>::type(), TypeOf<Response>::type(), &request,
+                   [=](const void* result, const Error* error) {
+                     if (error != nullptr) {
+                       promise.set_value(ResponseOrError<Response>(*error));
+                     } else {
+                       promise.set_value(ResponseOrError<Response>(
+                           *reinterpret_cast<const Response*>(result)));
+                     }
+                   });
   if (!sent) {
     promise.set_value(Error("Failed to send request"));
   }
