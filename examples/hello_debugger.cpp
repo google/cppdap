@@ -19,9 +19,11 @@
 #include "dap/protocol.h"
 #include "dap/session.h"
 
+#include <atomic>
 #include <condition_variable>
 #include <cstdio>
 #include <mutex>
+#include <thread>
 #include <unordered_set>
 
 #ifdef _MSC_VER
@@ -39,6 +41,33 @@
 #endif              // OS_WINDOWS
 
 namespace {
+
+// Event provides a basic wait and signal synchronization primitive.
+class Event {
+ public:
+  // wait() blocks until the event is fired.
+  void wait();
+
+  // fire() sets signals the event, and unblocks any calls to wait().
+  void fire();
+
+ private:
+  std::mutex mutex;
+  std::condition_variable cv;
+  bool fired = false;
+};
+
+void Event::wait() {
+  std::unique_lock<std::mutex> lock(mutex);
+  fired = false;
+  cv.wait(lock, [&] { return fired; });
+}
+
+void Event::fire() {
+  std::unique_lock<std::mutex> lock(mutex);
+  fired = true;
+  cv.notify_all();
+}
 
 // sourceContent holds the synthetic file source.
 constexpr char sourceContent[] = R"(// Hello Debugger!
@@ -61,8 +90,14 @@ class Debugger {
 
   Debugger(const EventHandler&);
 
-  // run() instructs the debugger to continue execution.
+  // runs the debugger's main loop
   void run();
+
+  // stop the debugger and terminate
+  void stop();
+
+  // resume() instructs the debugger to continue execution.
+  void resume();
 
   // pause() instructs the debugger to pause execution.
   void pause();
@@ -84,24 +119,45 @@ class Debugger {
   std::mutex mutex;
   int line = 1;
   std::unordered_set<int> breakpoints;
+  std::atomic<bool> terminate{false};
+  std::atomic<bool> running{true};
+  ::Event canRun;
 };
 
 Debugger::Debugger(const EventHandler& onEvent) : onEvent(onEvent) {}
 
 void Debugger::run() {
-  std::unique_lock<std::mutex> lock(mutex);
-  for (int i = 0; i < numSourceLines; i++) {
-    auto l = ((line + i) % numSourceLines) + 1;
-    if (breakpoints.count(l)) {
-      line = l;
+  while (!terminate) {
+    // If not running, wait
+    if (!running) {
+      canRun.wait();
+    }
+
+    // Go to next line
+    line = (line % numSourceLines) + 1;
+
+    // Check for breakpoints
+    std::unique_lock<std::mutex> lock(mutex);
+    if (breakpoints.count(line)) {
       lock.unlock();
+      running = false;
       onEvent(Event::BreakpointHit);
-      return;
     }
   }
 }
 
+void Debugger::stop() {
+  terminate = true;
+  resume();
+}
+
+void Debugger::resume() {
+  running = true;
+  canRun.fire();
+}
+
 void Debugger::pause() {
+  running = false;
   onEvent(Event::Paused);
 }
 
@@ -125,32 +181,6 @@ void Debugger::clearBreakpoints() {
 void Debugger::addBreakpoint(int l) {
   std::unique_lock<std::mutex> lock(mutex);
   this->breakpoints.emplace(l);
-}
-
-// Event provides a basic wait and signal synchronization primitive.
-class Event {
- public:
-  // wait() blocks until the event is fired.
-  void wait();
-
-  // fire() sets signals the event, and unblocks any calls to wait().
-  void fire();
-
- private:
-  std::mutex mutex;
-  std::condition_variable cv;
-  bool fired = false;
-};
-
-void Event::wait() {
-  std::unique_lock<std::mutex> lock(mutex);
-  cv.wait(lock, [&] { return fired; });
-}
-
-void Event::fire() {
-  std::unique_lock<std::mutex> lock(mutex);
-  fired = true;
-  cv.notify_all();
 }
 
 }  // anonymous namespace
@@ -183,7 +213,6 @@ int main(int, char* []) {
 
   // Signal events
   Event configured;
-  Event terminate;
 
   // Event handlers from the Debugger.
   auto onDebuggerEvent = [&](Debugger::Event onEvent) {
@@ -225,7 +254,7 @@ int main(int, char* []) {
       dap::writef(log, "dap::Session error: %s\n", msg);
       log->close();
     }
-    terminate.fire();
+    debugger.stop();
   });
 
   // The Initialize request is the first message sent from the client and
@@ -339,7 +368,7 @@ int main(int, char* []) {
   // all threads.
   // https://microsoft.github.io/debug-adapter-protocol/specification#Requests_Continue
   session->registerHandler([&](const dap::ContinueRequest&) {
-    debugger.run();
+    debugger.resume();
     return dap::ContinueResponse();
   });
 
@@ -380,7 +409,8 @@ int main(int, char* []) {
       response.breakpoints.resize(breakpoints.size());
       for (size_t i = 0; i < breakpoints.size(); i++) {
         debugger.addBreakpoint(breakpoints[i].line);
-        response.breakpoints[i].verified = breakpoints[i].line < numSourceLines;
+        response.breakpoints[i].verified =
+            breakpoints[i].line >= 1 && breakpoints[i].line <= numSourceLines;
       }
     } else {
       response.breakpoints.resize(breakpoints.size());
@@ -422,7 +452,7 @@ int main(int, char* []) {
   // Handler for disconnect requests
   session->registerHandler([&](const dap::DisconnectRequest& request) {
     if (request.terminateDebuggee.value(false)) {
-      terminate.fire();
+      debugger.stop();
     }
     return dap::DisconnectResponse();
   });
@@ -461,9 +491,7 @@ int main(int, char* []) {
   // This sends a stopped event to the client.
   debugger.pause();
 
-  // Block until we receive a 'terminateDebuggee' request or encounter a session
-  // error.
-  terminate.wait();
+  debugger.run();
 
   return 0;
 }
