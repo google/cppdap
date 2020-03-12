@@ -20,6 +20,7 @@
 #else
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -74,22 +75,9 @@ class dap::Socket::Shared : public dap::ReaderWriter {
     if (info) {
       auto socket =
           ::socket(info->ai_family, info->ai_socktype, info->ai_protocol);
-
-#if !defined(_WIN32)
-      // Prevent sockets lingering after process termination, causing
-      // reconnection issues on the same port.
-
-      int enable = 1;
-      setsockopt(socket, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int));
-
-      struct {
-        int l_onoff;  /* linger active */
-        int l_linger; /* how many seconds to linger for */
-      } linger = {false, 0};
-      setsockopt(socket, SOL_SOCKET, SO_LINGER, &linger, sizeof(linger));
-#endif  // !defined(_WIN32)
-
-      return std::make_shared<Shared>(info, socket);
+      auto out = std::make_shared<Shared>(info, socket);
+      out->setOptions();
+      return out;
     }
 
     freeaddrinfo(info);
@@ -107,6 +95,33 @@ class dap::Socket::Shared : public dap::ReaderWriter {
   }
 
   SOCKET socket() { return sock.load(); }
+
+  void setOptions() {
+    SOCKET s = socket();
+    if (s == InvalidSocket) {
+      return;
+    }
+
+    int enable = 1;
+
+#if !defined(_WIN32)
+    // Prevent sockets lingering after process termination, causing
+    // reconnection issues on the same port.
+    setsockopt(s, SOL_SOCKET, SO_REUSEADDR, (char*)&enable, sizeof(enable));
+
+    struct {
+      int l_onoff;  /* linger active */
+      int l_linger; /* how many seconds to linger for */
+    } linger = {false, 0};
+    setsockopt(s, SOL_SOCKET, SO_LINGER, (char*)&linger, sizeof(linger));
+#endif  // !defined(_WIN32)
+
+    // Enable TCP_NODELAY.
+    // DAP usually consists of small packet requests, with small packet
+    // responses. When there are many frequent, blocking requests made,
+    // Nagle's algorithm can dramatically limit the request->response rates.
+    setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char*)&enable, sizeof(enable));
+  }
 
   // dap::ReaderWriter compliance
   bool isOpen() {
@@ -188,7 +203,9 @@ std::shared_ptr<ReaderWriter> Socket::accept() const {
   if (shared) {
     SOCKET socket = shared->socket();
     if (socket != InvalidSocket) {
-      return std::make_shared<Shared>(::accept(socket, 0, 0));
+      auto out = std::make_shared<Shared>(::accept(socket, 0, 0));
+      out->setOptions();
+      return out;
     }
   }
 
