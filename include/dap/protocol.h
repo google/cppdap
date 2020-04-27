@@ -81,9 +81,9 @@ struct Checksum {
 
 DAP_DECLARE_STRUCT_TYPEINFO(Checksum);
 
-// A Source is a descriptor for source code. It is returned from the debug
-// adapter as part of a StackFrame and it is used by clients when specifying
-// breakpoints.
+// A Source is a descriptor for source code.
+// It is returned from the debug adapter as part of a StackFrame and it is used
+// by clients when specifying breakpoints.
 struct Source {
   Source();
   ~Source();
@@ -102,13 +102,13 @@ struct Source {
   // The (optional) origin of this source: possible values 'internal module',
   // 'inlined content from source map', etc.
   optional<string> origin;
-  // The path of the source to be shown in the UI. It is only used to locate and
-  // load the content of the source if no sourceReference is specified (or its
-  // value is 0).
+  // The path of the source to be shown in the UI.
+  // It is only used to locate and load the content of the source if no
+  // sourceReference is specified (or its value is 0).
   optional<string> path;
-  // An optional hint for how to present the source in the UI. A value of
-  // 'deemphasize' can be used to indicate that the source is not available or
-  // that it is skipped on stepping.
+  // An optional hint for how to present the source in the UI.
+  // A value of 'deemphasize' can be used to indicate that the source is not
+  // available or that it is skipped on stepping.
   //
   // Must be one of the following enumeration values:
   // 'normal', 'emphasize', 'deemphasize'
@@ -133,8 +133,9 @@ struct Breakpoint {
 
   // An optional start column of the actual range covered by the breakpoint.
   optional<integer> column;
-  // An optional end column of the actual range covered by the breakpoint. If no
-  // end line is given, then the end column is assumed to be in the start line.
+  // An optional end column of the actual range covered by the breakpoint.
+  // If no end line is given, then the end column is assumed to be in the start
+  // line.
   optional<integer> endColumn;
   // An optional end line of the actual range covered by the breakpoint.
   optional<integer> endLine;
@@ -143,8 +144,9 @@ struct Breakpoint {
   optional<integer> id;
   // The start line of the actual range covered by the breakpoint.
   optional<integer> line;
-  // An optional message about the state of the breakpoint. This is shown to the
-  // user and can be used to explain why a breakpoint could not be verified.
+  // An optional message about the state of the breakpoint.
+  // This is shown to the user and can be used to explain why a breakpoint could
+  // not be verified.
   optional<string> message;
   // The source where the breakpoint is located.
   optional<Source> source;
@@ -203,7 +205,8 @@ struct BreakpointLocationsResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(BreakpointLocationsResponse);
 
 // The 'breakpointLocations' request returns all possible locations for source
-// breakpoints in a given range.
+// breakpoints in a given range. Clients should only call this request if the
+// capability 'supportsBreakpointLocationsRequest' is true.
 struct BreakpointLocationsRequest : public Request {
   using Response = BreakpointLocationsResponse;
 
@@ -239,26 +242,38 @@ struct CancelResponse : public Response {
 
 DAP_DECLARE_STRUCT_TYPEINFO(CancelResponse);
 
-// The 'cancel' request is used by the frontend to indicate that it is no longer
-// interested in the result produced by a specific request issued earlier. This
-// request has a hint characteristic: a debug adapter can only be expected to
-// make a 'best effort' in honouring this request but there are no guarantees.
-// The 'cancel' request may return an error if it could not cancel an operation
-// but a frontend should refrain from presenting this error to end users. A
-// frontend client should only call this request if the capability
-// 'supportsCancelRequest' is true. The request that got canceled still needs to
-// send a response back. This can either be a normal result ('success' attribute
-// true) or an error response ('success' attribute false and the 'message' set
-// to 'cancelled'). Returning partial results from a cancelled request is
-// possible but please note that a frontend client has no generic way for
-// detecting that a response is partial or not.
+// The 'cancel' request is used by the frontend in two situations:
+// - to indicate that it is no longer interested in the result produced by a
+// specific request issued earlier
+// - to cancel a progress sequence. Clients should only call this request if the
+// capability 'supportsCancelRequest' is true. This request has a hint
+// characteristic: a debug adapter can only be expected to make a 'best effort'
+// in honouring this request but there are no guarantees. The 'cancel' request
+// may return an error if it could not cancel an operation but a frontend should
+// refrain from presenting this error to end users. A frontend client should
+// only call this request if the capability 'supportsCancelRequest' is true. The
+// request that got canceled still needs to send a response back. This can
+// either be a normal result ('success' attribute true) or an error response
+// ('success' attribute false and the 'message' set to 'cancelled'). Returning
+// partial results from a cancelled request is possible but please note that a
+// frontend client has no generic way for detecting that a response is partial
+// or not.
+//  The progress that got cancelled still needs to send a 'progressEnd' event
+//  back. A client should not assume that progress just got cancelled after
+//  sending the 'cancel' request.
 struct CancelRequest : public Request {
   using Response = CancelResponse;
 
   CancelRequest();
   ~CancelRequest();
 
-  // The ID (attribute 'seq') of the request to cancel.
+  // The ID (attribute 'progressId') of the progress to cancel. If missing no
+  // progress is cancelled. Both a 'requestId' and a 'progressId' can be
+  // specified in one request.
+  optional<string> progressId;
+  // The ID (attribute 'seq') of the request to cancel. If missing no request is
+  // cancelled. Both a 'requestId' and a 'progressId' can be specified in one
+  // request.
   optional<integer> requestId;
 };
 
@@ -327,6 +342,9 @@ struct Capabilities {
   optional<boolean> supportsBreakpointLocationsRequest;
   // The debug adapter supports the 'cancel' request.
   optional<boolean> supportsCancelRequest;
+  // The debug adapter supports the 'clipboard' context value in the 'evaluate'
+  // request.
+  optional<boolean> supportsClipboardContext;
   // The debug adapter supports the 'completions' request.
   optional<boolean> supportsCompletionsRequest;
   // The debug adapter supports conditional breakpoints.
@@ -429,6 +447,15 @@ struct CompletionItem {
   // text. If missing the value 0 is assumed which results in the completion
   // text being inserted.
   optional<integer> length;
+  // Determines the length of the new selection after the text has been inserted
+  // (or replaced). The selection can not extend beyond the bounds of the
+  // completion text. If omitted the length is assumed to be 0.
+  optional<integer> selectionLength;
+  // Determines the start of the new selection after the text has been inserted
+  // (or replaced). The start position must in the range 0 and length of the
+  // completion text. If omitted the selection starts at the end of the
+  // completion text.
+  optional<integer> selectionStart;
   // A string that should be used when comparing this item with other items.
   // When `falsy` the label is used.
   optional<string> sortText;
@@ -457,8 +484,8 @@ struct CompletionsResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(CompletionsResponse);
 
 // Returns a list of possible completions for a given caret position and text.
-// The CompletionsRequest may only be called if the 'supportsCompletionsRequest'
-// capability exists and is true.
+// Clients should only call this request if the capability
+// 'supportsCompletionsRequest' is true.
 struct CompletionsRequest : public Request {
   using Response = CompletionsResponse;
 
@@ -489,9 +516,11 @@ struct ConfigurationDoneResponse : public Response {
 
 DAP_DECLARE_STRUCT_TYPEINFO(ConfigurationDoneResponse);
 
-// The client of the debug protocol must send this request at the end of the
-// sequence of configuration requests (which was started by the 'initialized'
-// event).
+// This optional request indicates that the client has finished initialization
+// of the debug adapter. So it is the last request in the sequence of
+// configuration requests (which was started by the 'initialized' event).
+// Clients should only call this request if the capability
+// 'supportsConfigurationDoneRequest' is true.
 struct ConfigurationDoneRequest : public Request {
   using Response = ConfigurationDoneResponse;
 
@@ -521,9 +550,10 @@ struct ContinueRequest : public Request {
   ContinueRequest();
   ~ContinueRequest();
 
-  // Continue execution for the specified thread (if possible). If the backend
-  // cannot continue on a single thread but will continue on all threads, it
-  // should set the 'allThreadsContinued' attribute in the response to true.
+  // Continue execution for the specified thread (if possible).
+  // If the backend cannot continue on a single thread but will continue on all
+  // threads, it should set the 'allThreadsContinued' attribute in the response
+  // to true.
   integer threadId;
 };
 
@@ -578,7 +608,8 @@ struct DataBreakpointInfoResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpointInfoResponse);
 
 // Obtains information on a possible data breakpoint that could be set on an
-// expression or variable.
+// expression or variable. Clients should only call this request if the
+// capability 'supportsDataBreakpoints' is true.
 struct DataBreakpointInfoRequest : public Request {
   using Response = DataBreakpointInfoResponse;
 
@@ -618,10 +649,10 @@ struct DisassembledInstruction {
   // The line within the source location that corresponds to this instruction,
   // if any.
   optional<integer> line;
-  // Source location that corresponds to this instruction, if any. Should always
-  // be set (if available) on the first instruction returned, but can be omitted
-  // afterwards if this instruction maps to the same source file as the previous
-  // instruction.
+  // Source location that corresponds to this instruction, if any.
+  // Should always be set (if available) on the first instruction returned,
+  // but can be omitted afterwards if this instruction maps to the same source
+  // file as the previous instruction.
   optional<Source> location;
   // Name of the symbol that corresponds with the location of this instruction,
   // if any.
@@ -642,6 +673,8 @@ struct DisassembleResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(DisassembleResponse);
 
 // Disassembles code stored at the provided location.
+// Clients should only call this request if the capability
+// 'supportsDisassembleRequest' is true.
 struct DisassembleRequest : public Request {
   using Response = DisassembleResponse;
 
@@ -696,9 +729,8 @@ struct DisconnectRequest : public Request {
   optional<boolean> restart;
   // Indicates whether the debuggee should be terminated when the debugger is
   // disconnected. If unspecified, the debug adapter is free to do whatever it
-  // thinks is best. A client can only rely on this attribute being properly
-  // honored if a debug adapter returns true for the 'supportTerminateDebuggee'
-  // capability.
+  // thinks is best. The attribute is only honored by a debug adapter if the
+  // capability 'supportTerminateDebuggee' is true.
   optional<boolean> terminateDebuggee;
 };
 
@@ -779,9 +811,11 @@ struct EvaluateResponse : public Response {
   // paged UI and fetch them in chunks. The value should be less than or equal
   // to 2147483647 (2^31 - 1).
   optional<integer> indexedVariables;
-  // Memory reference to a location appropriate for this result. For pointer
-  // type eval results, this is generally a reference to the memory address
-  // contained in the pointer.
+  // Optional memory reference to a location appropriate for this result.
+  // For pointer type eval results, this is generally a reference to the memory
+  // address contained in the pointer. This attribute should be returned by a
+  // debug adapter if the client has passed the value true for the
+  // 'supportsMemoryReferences' capability of the 'initialize' request.
   optional<string> memoryReference;
   // The number of named child variables.
   // The client can use this optional information to present the variables in a
@@ -794,6 +828,9 @@ struct EvaluateResponse : public Response {
   // The result of the evaluate request.
   string result;
   // The optional type of the evaluate result.
+  // This attribute should only be returned by a debug adapter if the client has
+  // passed the value true for the 'supportsVariableType' capability of the
+  // 'initialize' request.
   optional<string> type;
   // If variablesReference is > 0, the evaluate result is structured and its
   // children can be retrieved by passing variablesReference to the
@@ -826,11 +863,13 @@ struct EvaluateRequest : public Request {
   // The context in which the evaluate request is run.
   //
   // May be one of the following enumeration values:
-  // 'watch', 'repl', 'hover'
+  // 'watch', 'repl', 'hover', 'clipboard'
   optional<string> context;
   // The expression to evaluate.
   string expression;
   // Specifies details on how to format the Evaluate result.
+  // The attribute is only honored by a debug adapter if the capability
+  // 'supportsValueFormattingOptions' is true.
   optional<ValueFormat> format;
   // Evaluate the expression in the scope of this stack frame. If not specified,
   // the expression is evaluated in the global scope.
@@ -890,6 +929,8 @@ struct ExceptionInfoResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionInfoResponse);
 
 // Retrieves the details of the exception that caused this event to be raised.
+// Clients should only call this request if the capability
+// 'supportsExceptionInfoRequest' is true.
 struct ExceptionInfoRequest : public Request {
   using Response = ExceptionInfoResponse;
 
@@ -926,7 +967,9 @@ DAP_DECLARE_STRUCT_TYPEINFO(GotoResponse);
 // This makes it possible to skip the execution of code or to executed code
 // again. The code between the current location and the goto target is not
 // executed but skipped. The debug adapter first sends the response and then a
-// 'stopped' event with reason 'goto'.
+// 'stopped' event with reason 'goto'. Clients should only call this request if
+// the capability 'supportsGotoTargetsRequest' is true (because only then goto
+// targets exist that can be passed as arguments).
 struct GotoRequest : public Request {
   using Response = GotoResponse;
 
@@ -979,9 +1022,9 @@ struct GotoTargetsResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(GotoTargetsResponse);
 
 // This request retrieves the possible goto targets for the specified source
-// location. These targets can be used in the 'goto' request. The GotoTargets
-// request may only be called if the 'supportsGotoTargetsRequest' capability
-// exists and is true.
+// location. These targets can be used in the 'goto' request. Clients should
+// only call this request if the capability 'supportsGotoTargetsRequest' is
+// true.
 struct GotoTargetsRequest : public Request {
   using Response = GotoTargetsResponse;
 
@@ -1019,6 +1062,9 @@ struct InitializeResponse : public Response {
   optional<boolean> supportsBreakpointLocationsRequest;
   // The debug adapter supports the 'cancel' request.
   optional<boolean> supportsCancelRequest;
+  // The debug adapter supports the 'clipboard' context value in the 'evaluate'
+  // request.
+  optional<boolean> supportsClipboardContext;
   // The debug adapter supports the 'completions' request.
   optional<boolean> supportsCompletionsRequest;
   // The debug adapter supports conditional breakpoints.
@@ -1118,6 +1164,8 @@ struct InitializeRequest : public Request {
   optional<string> pathFormat;
   // Client supports memory references.
   optional<boolean> supportsMemoryReferences;
+  // Client supports progress reporting.
+  optional<boolean> supportsProgressReporting;
   // Client supports the runInTerminal request.
   optional<boolean> supportsRunInTerminalRequest;
   // Client supports the paging of variables.
@@ -1136,7 +1184,8 @@ DAP_DECLARE_STRUCT_TYPEINFO(InitializeRequest);
 // - adapters sends 'initialized' event (after the 'initialize' request has
 // returned)
 // - frontend sends zero or more 'setBreakpoints' requests
-// - frontend sends one 'setFunctionBreakpoints' request
+// - frontend sends one 'setFunctionBreakpoints' request (if capability
+// 'supportsFunctionBreakpoints' is true)
 // - frontend sends a 'setExceptionBreakpoints' request if one or more
 // 'exceptionBreakpointFilters' have been defined (or if
 // 'supportsConfigurationDoneRequest' is not defined or false)
@@ -1159,7 +1208,7 @@ struct LaunchResponse : public Response {
 
 DAP_DECLARE_STRUCT_TYPEINFO(LaunchResponse);
 
-// The launch request is sent from the client to the debug adapter to start the
+// This launch request is sent from the client to the debug adapter to start the
 // debuggee with or without debugging (if 'noDebug' is true). Since launching is
 // debugger/runtime specific, the arguments for this request are not part of
 // this specification.
@@ -1210,6 +1259,8 @@ struct LoadedSourcesResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(LoadedSourcesResponse);
 
 // Retrieves the set of all sources currently loaded by the debugged process.
+// Clients should only call this request if the capability
+// 'supportsLoadedSourcesRequest' is true.
 struct LoadedSourcesRequest : public Request {
   using Response = LoadedSourcesResponse;
 
@@ -1297,8 +1348,10 @@ struct ModulesResponse : public Response {
 
 DAP_DECLARE_STRUCT_TYPEINFO(ModulesResponse);
 
-// Modules can be retrieved from the debug adapter with the ModulesRequest which
-// can either return all modules or a range of modules to support paging.
+// Modules can be retrieved from the debug adapter with this request which can
+// either return all modules or a range of modules to support paging. Clients
+// should only call this request if the capability 'supportsModulesRequest' is
+// true.
 struct ModulesRequest : public Request {
   using Response = ModulesResponse;
 
@@ -1354,6 +1407,11 @@ struct OutputEvent : public Event {
   // to telemetry, for the other categories the data is shown in JSON format.
   optional<variant<array<any>, boolean, integer, null, number, object, string>>
       data;
+  // Support for keeping an output log organized by grouping related messages.
+  //
+  // Must be one of the following enumeration values:
+  // 'start', 'startCollapsed', 'end'
+  optional<string> group;
   // An optional source location line where the output was produced.
   optional<integer> line;
   // The output to report.
@@ -1419,13 +1477,90 @@ struct ProcessEvent : public Event {
 
 DAP_DECLARE_STRUCT_TYPEINFO(ProcessEvent);
 
+// The event signals the end of the progress reporting with an optional final
+// message. This event should only be sent if the client has passed the value
+// true for the 'supportsProgressReporting' capability of the 'initialize'
+// request.
+struct ProgressEndEvent : public Event {
+  ProgressEndEvent();
+  ~ProgressEndEvent();
+
+  // Optional, more detailed progress message. If omitted, the previous message
+  // (if any) is used.
+  optional<string> message;
+  // The ID that was introduced in the initial 'ProgressStartEvent'.
+  string progressId;
+};
+
+DAP_DECLARE_STRUCT_TYPEINFO(ProgressEndEvent);
+
+// The event signals that a long running operation is about to start and
+// provides additional information for the client to set up a corresponding
+// progress and cancellation UI. The client is free to delay the showing of the
+// UI in order to reduce flicker. This event should only be sent if the client
+// has passed the value true for the 'supportsProgressReporting' capability of
+// the 'initialize' request.
+struct ProgressStartEvent : public Event {
+  ProgressStartEvent();
+  ~ProgressStartEvent();
+
+  // If true, the request that reports progress may be canceled with a 'cancel'
+  // request. So this property basically controls whether the client should use
+  // UX that supports cancellation. Clients that don't support cancellation are
+  // allowed to ignore the setting.
+  optional<boolean> cancellable;
+  // Optional, more detailed progress message.
+  optional<string> message;
+  // Optional progress percentage to display (value range: 0 to 100). If omitted
+  // no percentage will be shown.
+  optional<number> percentage;
+  // An ID that must be used in subsequent 'progressUpdate' and 'progressEnd'
+  // events to make them refer to the same progress reporting. IDs must be
+  // unique within a debug session.
+  string progressId;
+  // The request ID that this progress report is related to. If specified a
+  // debug adapter is expected to emit progress events for the long running
+  // request until the request has been either completed or cancelled. If the
+  // request ID is omitted, the progress report is assumed to be related to some
+  // general activity of the debug adapter.
+  optional<number> requestId;
+  // Mandatory (short) title of the progress reporting. Shown in the UI to
+  // describe the long running operation.
+  string title;
+};
+
+DAP_DECLARE_STRUCT_TYPEINFO(ProgressStartEvent);
+
+// The event signals that the progress reporting needs to updated with a new
+// message and/or percentage. The client does not have to update the UI
+// immediately, but the clients needs to keep track of the message and/or
+// percentage values. This event should only be sent if the client has passed
+// the value true for the 'supportsProgressReporting' capability of the
+// 'initialize' request.
+struct ProgressUpdateEvent : public Event {
+  ProgressUpdateEvent();
+  ~ProgressUpdateEvent();
+
+  // Optional, more detailed progress message. If omitted, the previous message
+  // (if any) is used.
+  optional<string> message;
+  // Optional progress percentage to display (value range: 0 to 100). If omitted
+  // no percentage will be shown.
+  optional<number> percentage;
+  // The ID that was introduced in the initial 'progressStart' event.
+  string progressId;
+};
+
+DAP_DECLARE_STRUCT_TYPEINFO(ProgressUpdateEvent);
+
 // Response to 'readMemory' request.
 struct ReadMemoryResponse : public Response {
   ReadMemoryResponse();
   ~ReadMemoryResponse();
 
-  // The address of the first byte of data returned. Treated as a hex value if
-  // prefixed with '0x', or as a decimal value otherwise.
+  // The address of the first byte of data returned.
+  // Treated as a hex value if prefixed with '0x', or as a decimal value
+  // otherwise.
   string address;
   // The bytes read from memory, encoded using base64.
   optional<string> data;
@@ -1438,6 +1573,8 @@ struct ReadMemoryResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(ReadMemoryResponse);
 
 // Reads bytes from memory at the provided location.
+// Clients should only call this request if the capability
+// 'supportsReadMemoryRequest' is true.
 struct ReadMemoryRequest : public Request {
   using Response = ReadMemoryResponse;
 
@@ -1466,7 +1603,8 @@ DAP_DECLARE_STRUCT_TYPEINFO(RestartFrameResponse);
 
 // The request restarts execution of the specified stackframe.
 // The debug adapter first sends the response and then a 'stopped' event (with
-// reason 'restart') after the restart has completed.
+// reason 'restart') after the restart has completed. Clients should only call
+// this request if the capability 'supportsRestartFrame' is true.
 struct RestartFrameRequest : public Request {
   using Response = RestartFrameResponse;
 
@@ -1488,11 +1626,10 @@ struct RestartResponse : public Response {
 
 DAP_DECLARE_STRUCT_TYPEINFO(RestartResponse);
 
-// Restarts a debug session. If the capability 'supportsRestartRequest' is
-// missing or has the value false, the client will implement 'restart' by
-// terminating the debug adapter first and then launching it anew. A debug
-// adapter can override this default behaviour by implementing a restart request
-// and setting the capability 'supportsRestartRequest' to true.
+// Restarts a debug session. Clients should only call this request if the
+// capability 'supportsRestartRequest' is true. If the capability is missing or
+// has the value false, a typical client will emulate 'restart' by terminating
+// the debug adapter first and then launching it anew.
 struct RestartRequest : public Request {
   using Response = RestartResponse;
 
@@ -1511,8 +1648,9 @@ struct ReverseContinueResponse : public Response {
 
 DAP_DECLARE_STRUCT_TYPEINFO(ReverseContinueResponse);
 
-// The request starts the debuggee to run backward. Clients should only call
-// this request if the capability 'supportsStepBack' is true.
+// The request starts the debuggee to run backward.
+// Clients should only call this request if the capability 'supportsStepBack' is
+// true.
 struct ReverseContinueRequest : public Request {
   using Response = ReverseContinueResponse;
 
@@ -1540,9 +1678,11 @@ struct RunInTerminalResponse : public Response {
 
 DAP_DECLARE_STRUCT_TYPEINFO(RunInTerminalResponse);
 
-// This request is sent from the debug adapter to the client to run a command in
-// a terminal. This is typically used to launch the debuggee in a terminal
-// provided by the client.
+// This optional request is sent from the debug adapter to the client to run a
+// command in a terminal. This is typically used to launch the debuggee in a
+// terminal provided by the client. This request should only be called if the
+// client has passed the value true for the 'supportsRunInTerminalRequest'
+// capability of the 'initialize' request.
 struct RunInTerminalRequest : public Request {
   using Response = RunInTerminalResponse;
 
@@ -1644,9 +1784,9 @@ struct SetBreakpointsResponse : public Response {
   SetBreakpointsResponse();
   ~SetBreakpointsResponse();
 
-  // Information about the breakpoints. The array elements are in the same order
-  // as the elements of the 'breakpoints' (or the deprecated 'lines') array in
-  // the arguments.
+  // Information about the breakpoints.
+  // The array elements are in the same order as the elements of the
+  // 'breakpoints' (or the deprecated 'lines') array in the arguments.
   array<Breakpoint> breakpoints;
 };
 
@@ -1660,14 +1800,20 @@ struct SourceBreakpoint {
   // An optional source column of the breakpoint.
   optional<integer> column;
   // An optional expression for conditional breakpoints.
+  // It is only honored by a debug adapter if the capability
+  // 'supportsConditionalBreakpoints' is true.
   optional<string> condition;
   // An optional expression that controls how many hits of the breakpoint are
-  // ignored. The backend is expected to interpret the expression as needed.
+  // ignored. The backend is expected to interpret the expression as needed. The
+  // attribute is only honored by a debug adapter if the capability
+  // 'supportsHitConditionalBreakpoints' is true.
   optional<string> hitCondition;
   // The source line of the breakpoint or logpoint.
   integer line;
   // If this attribute exists and is non-empty, the backend must not 'break'
   // (stop) but log the message instead. Expressions within {} are interpolated.
+  // The attribute is only honored by a debug adapter if the capability
+  // 'supportsLogPoints' is true.
   optional<string> logMessage;
 };
 
@@ -1732,7 +1878,8 @@ DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpoint);
 // Replaces all existing data breakpoints with new data breakpoints.
 // To clear all data breakpoints, specify an empty array.
 // When a data breakpoint is hit, a 'stopped' event (with reason 'data
-// breakpoint') is generated.
+// breakpoint') is generated. Clients should only call this request if the
+// capability 'supportsDataBreakpoints' is true.
 struct SetDataBreakpointsRequest : public Request {
   using Response = SetDataBreakpointsResponse;
 
@@ -1788,9 +1935,10 @@ struct ExceptionOptions {
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionOptions);
 
-// The request configures the debuggers response to thrown exceptions. If an
-// exception is configured to break, a 'stopped' event is fired (with reason
-// 'exception').
+// The request configures the debuggers response to thrown exceptions.
+// If an exception is configured to break, a 'stopped' event is fired (with
+// reason 'exception'). Clients should only call this request if the capability
+// 'exceptionBreakpointFilters' returns one or more filters.
 struct SetExceptionBreakpointsRequest : public Request {
   using Response = SetExceptionBreakpointsResponse;
 
@@ -1798,6 +1946,8 @@ struct SetExceptionBreakpointsRequest : public Request {
   ~SetExceptionBreakpointsRequest();
 
   // Configuration options for selected exceptions.
+  // The attribute is only honored by a debug adapter if the capability
+  // 'supportsExceptionOptions' is true.
   optional<array<ExceptionOptions>> exceptionOptions;
   // IDs of checked exception options. The set of IDs is returned via the
   // 'exceptionBreakpointFilters' capability.
@@ -1825,6 +1975,9 @@ struct SetExpressionResponse : public Response {
   // result in the UI.
   optional<VariablePresentationHint> presentationHint;
   // The optional type of the value.
+  // This attribute should only be returned by a debug adapter if the client has
+  // passed the value true for the 'supportsVariableType' capability of the
+  // 'initialize' request.
   optional<string> type;
   // The new value of the expression.
   string value;
@@ -1838,7 +1991,9 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetExpressionResponse);
 
 // Evaluates the given 'value' expression and assigns it to the 'expression'
 // which must be a modifiable l-value. The expressions have access to any
-// variables and arguments that are in scope of the specified frame.
+// variables and arguments that are in scope of the specified frame. Clients
+// should only call this request if the capability 'supportsSetExpression' is
+// true.
 struct SetExpressionRequest : public Request {
   using Response = SetExpressionResponse;
 
@@ -1877,9 +2032,13 @@ struct FunctionBreakpoint {
   ~FunctionBreakpoint();
 
   // An optional expression for conditional breakpoints.
+  // It is only honored by a debug adapter if the capability
+  // 'supportsConditionalBreakpoints' is true.
   optional<string> condition;
   // An optional expression that controls how many hits of the breakpoint are
-  // ignored. The backend is expected to interpret the expression as needed.
+  // ignored. The backend is expected to interpret the expression as needed. The
+  // attribute is only honored by a debug adapter if the capability
+  // 'supportsHitConditionalBreakpoints' is true.
   optional<string> hitCondition;
   // The name of the function.
   string name;
@@ -1890,7 +2049,8 @@ DAP_DECLARE_STRUCT_TYPEINFO(FunctionBreakpoint);
 // Replaces all existing function breakpoints with new function breakpoints.
 // To clear all function breakpoints, specify an empty array.
 // When a function breakpoint is hit, a 'stopped' event (with reason 'function
-// breakpoint') is generated.
+// breakpoint') is generated. Clients should only call this request if the
+// capability 'supportsFunctionBreakpoints' is true.
 struct SetFunctionBreakpointsRequest : public Request {
   using Response = SetFunctionBreakpointsResponse;
 
@@ -1932,7 +2092,8 @@ struct SetVariableResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(SetVariableResponse);
 
 // Set the variable with the given name in the variable container to a new
-// value.
+// value. Clients should only call this request if the capability
+// 'supportsSetVariable' is true.
 struct SetVariableRequest : public Request {
   using Response = SetVariableResponse;
 
@@ -2008,10 +2169,10 @@ struct StackFrame {
   optional<variant<integer, string>> moduleId;
   // The name of the stack frame, typically a method name.
   string name;
-  // An optional hint for how to present this frame in the UI. A value of
-  // 'label' can be used to indicate that the frame is an artificial frame that
-  // is used as a visual label or separator. A value of 'subtle' can be used to
-  // change the appearance of a frame in a 'subtle' way.
+  // An optional hint for how to present this frame in the UI.
+  // A value of 'label' can be used to indicate that the frame is an artificial
+  // frame that is used as a visual label or separator. A value of 'subtle' can
+  // be used to change the appearance of a frame in a 'subtle' way.
   //
   // Must be one of the following enumeration values:
   // 'normal', 'label', 'subtle'
@@ -2069,6 +2230,8 @@ struct StackTraceRequest : public Request {
   ~StackTraceRequest();
 
   // Specifies details on how to format the stack frames.
+  // The attribute is only honored by a debug adapter if the capability
+  // 'supportsValueFormattingOptions' is true.
   optional<StackFrameFormat> format;
   // The maximum number of frames to return. If levels is not specified or 0,
   // all frames are returned.
@@ -2165,7 +2328,8 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepInTargetsResponse);
 // This request retrieves the possible stepIn targets for the specified stack
 // frame. These targets can be used in the 'stepIn' request. The StepInTargets
 // may only be called if the 'supportsStepInTargetsRequest' capability exists
-// and is true.
+// and is true. Clients should only call this request if the capability
+// 'supportsStepInTargetsRequest' is true.
 struct StepInTargetsRequest : public Request {
   using Response = StepInTargetsResponse;
 
@@ -2249,7 +2413,8 @@ struct TerminateResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(TerminateResponse);
 
 // The 'terminate' request is sent from the client to the debug adapter in order
-// to give the debuggee a chance for terminating itself.
+// to give the debuggee a chance for terminating itself. Clients should only
+// call this request if the capability 'supportsTerminateRequest' is true.
 struct TerminateRequest : public Request {
   using Response = TerminateResponse;
 
@@ -2273,6 +2438,8 @@ struct TerminateThreadsResponse : public Response {
 DAP_DECLARE_STRUCT_TYPEINFO(TerminateThreadsResponse);
 
 // The request terminates the threads with the given ids.
+// Clients should only call this request if the capability
+// 'supportsTerminateThreadsRequest' is true.
 struct TerminateThreadsRequest : public Request {
   using Response = TerminateThreadsResponse;
 
@@ -2373,7 +2540,9 @@ struct Variable {
   // paged UI and fetch them in chunks.
   optional<integer> indexedVariables;
   // Optional memory reference for the variable if the variable represents
-  // executable code, such as a function pointer.
+  // executable code, such as a function pointer. This attribute is only
+  // required if the client has passed the value true for the
+  // 'supportsMemoryReferences' capability of the 'initialize' request.
   optional<string> memoryReference;
   // The variable's name.
   string name;
@@ -2385,7 +2554,9 @@ struct Variable {
   // variable in the UI.
   optional<VariablePresentationHint> presentationHint;
   // The type of the variable's value. Typically shown in the UI when hovering
-  // over the value.
+  // over the value. This attribute should only be returned by a debug adapter
+  // if the client has passed the value true for the 'supportsVariableType'
+  // capability of the 'initialize' request.
   optional<string> type;
   // The variable's value. This can be a multi-line text, e.g. for a function
   // the body of a function.
@@ -2427,6 +2598,8 @@ struct VariablesRequest : public Request {
   // 'indexed', 'named'
   optional<string> filter;
   // Specifies details on how to format the Variable values.
+  // The attribute is only honored by a debug adapter if the capability
+  // 'supportsValueFormattingOptions' is true.
   optional<ValueFormat> format;
   // The index of the first variable to return; if omitted children start at 0.
   optional<integer> start;

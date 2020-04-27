@@ -71,6 +71,7 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(OutputEvent,
                               DAP_FIELD(category, "category"),
                               DAP_FIELD(column, "column"),
                               DAP_FIELD(data, "data"),
+                              DAP_FIELD(group, "group"),
                               DAP_FIELD(line, "line"),
                               DAP_FIELD(output, "output"),
                               DAP_FIELD(source, "source"),
@@ -86,6 +87,32 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(ProcessEvent,
                               DAP_FIELD(pointerSize, "pointerSize"),
                               DAP_FIELD(startMethod, "startMethod"),
                               DAP_FIELD(systemProcessId, "systemProcessId"));
+
+ProgressEndEvent::ProgressEndEvent() = default;
+ProgressEndEvent::~ProgressEndEvent() = default;
+DAP_IMPLEMENT_STRUCT_TYPEINFO(ProgressEndEvent,
+                              "progressEnd",
+                              DAP_FIELD(message, "message"),
+                              DAP_FIELD(progressId, "progressId"));
+
+ProgressStartEvent::ProgressStartEvent() = default;
+ProgressStartEvent::~ProgressStartEvent() = default;
+DAP_IMPLEMENT_STRUCT_TYPEINFO(ProgressStartEvent,
+                              "progressStart",
+                              DAP_FIELD(cancellable, "cancellable"),
+                              DAP_FIELD(message, "message"),
+                              DAP_FIELD(percentage, "percentage"),
+                              DAP_FIELD(progressId, "progressId"),
+                              DAP_FIELD(requestId, "requestId"),
+                              DAP_FIELD(title, "title"));
+
+ProgressUpdateEvent::ProgressUpdateEvent() = default;
+ProgressUpdateEvent::~ProgressUpdateEvent() = default;
+DAP_IMPLEMENT_STRUCT_TYPEINFO(ProgressUpdateEvent,
+                              "progressUpdate",
+                              DAP_FIELD(message, "message"),
+                              DAP_FIELD(percentage, "percentage"),
+                              DAP_FIELD(progressId, "progressId"));
 
 StoppedEvent::StoppedEvent() = default;
 StoppedEvent::~StoppedEvent() = default;

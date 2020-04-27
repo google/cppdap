@@ -118,6 +118,7 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(
     DAP_FIELD(supportsBreakpointLocationsRequest,
               "supportsBreakpointLocationsRequest"),
     DAP_FIELD(supportsCancelRequest, "supportsCancelRequest"),
+    DAP_FIELD(supportsClipboardContext, "supportsClipboardContext"),
     DAP_FIELD(supportsCompletionsRequest, "supportsCompletionsRequest"),
     DAP_FIELD(supportsConditionalBreakpoints, "supportsConditionalBreakpoints"),
     DAP_FIELD(supportsConfigurationDoneRequest,
