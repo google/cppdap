@@ -39,6 +39,7 @@ CancelRequest::CancelRequest() = default;
 CancelRequest::~CancelRequest() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(CancelRequest,
                               "cancel",
+                              DAP_FIELD(progressId, "progressId"),
                               DAP_FIELD(requestId, "requestId"));
 
 CompletionsRequest::CompletionsRequest() = default;
@@ -129,6 +130,7 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(
     DAP_FIELD(locale, "locale"),
     DAP_FIELD(pathFormat, "pathFormat"),
     DAP_FIELD(supportsMemoryReferences, "supportsMemoryReferences"),
+    DAP_FIELD(supportsProgressReporting, "supportsProgressReporting"),
     DAP_FIELD(supportsRunInTerminalRequest, "supportsRunInTerminalRequest"),
     DAP_FIELD(supportsVariablePaging, "supportsVariablePaging"),
     DAP_FIELD(supportsVariableType, "supportsVariableType"));
