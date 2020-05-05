@@ -1,35 +1,16 @@
 #!/bin/bash
 
 set -e # Fail on any error.
-set -x # Display commands being run.
 
-BUILD_ROOT=$PWD
+ROOT_DIR=`pwd`
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd )"
 
-cd github/cppdap
-
-git submodule update --init
-
-if [ "$BUILD_SYSTEM" == "cmake" ]; then
-    mkdir build
-    cd build
-
-    build_and_run() {
-        cmake .. -DCPPDAP_BUILD_EXAMPLES=1 -DCPPDAP_BUILD_TESTS=1 -DCPPDAP_WARNINGS_AS_ERRORS=1 $1
-        make --jobs=$(nproc)
-
-        ./cppdap-unittests
-    }
-
-    if [ "$BUILD_SANITIZER" == "asan" ]; then
-        build_and_run "-DCPPDAP_ASAN=1"
-    elif [ "$BUILD_SANITIZER" == "msan" ]; then
-        build_and_run "-DCPPDAP_MSAN=1"
-    elif [ "$BUILD_SANITIZER" == "tsan" ]; then
-        build_and_run "-DCPPDAP_TSAN=1"
-    else
-        build_and_run
-    fi
-else
-    echo "Unknown build system: $BUILD_SYSTEM"
-    exit 1
-fi
+docker run --rm -i \
+  --volume "${ROOT_DIR}:${ROOT_DIR}" \
+  --volume "${KOKORO_ARTIFACTS_DIR}:/mnt/artifacts" \
+  --workdir "${ROOT_DIR}" \
+  --env BUILD_SYSTEM=$BUILD_SYSTEM \
+  --env BUILD_TARGET_ARCH=$BUILD_TARGET_ARCH \
+  --env BUILD_SANITIZER=$BUILD_SANITIZER \
+  --entrypoint "${SCRIPT_DIR}/presubmit-docker.sh" \
+  "gcr.io/shaderc-build/radial-build:latest"
