@@ -158,7 +158,11 @@ class dap::Socket::Shared : public dap::ReaderWriter {
     if (s == InvalidSocket) {
       return 0;
     }
-    return recv(s, reinterpret_cast<char*>(buffer), static_cast<int>(bytes), 0);
+    const int len = recv(s, reinterpret_cast<char*>(buffer), static_cast<int>(bytes), 0);
+    if (len < 0) {
+      return 0;
+    }
+    return len;
   }
 
   bool write(const void* buffer, size_t bytes) {

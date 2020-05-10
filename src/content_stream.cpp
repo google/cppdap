@@ -52,31 +52,40 @@ std::string ContentReader::read() {
   while (matchAny(" \t")) {
   }
   // Parse length
-  size_t len = 0;
+  int len = 0;
   while (true) {
     auto c = matchAny("0123456789");
     if (c == 0) {
       break;
     }
     len *= 10;
-    len += size_t(c) - size_t('0');
+    len += static_cast<int>(c) - static_cast<int>('0');
   }
-  if (len == 0) {
+  if (len <= 0) {
     return "";
   }
   // Expect \r\n\r\n
   if (!match("\r\n\r\n")) {
     return "";
   }
+
   // Read message
-  if (!buffer(len)) {
-    return "";
-  }
-  std::string out;
-  out.reserve(len);
-  for (size_t i = 0; i < len; i++) {
-    out.push_back(static_cast<char>(buf.front()));
+  std::string out(len, 0);
+  char* d_ptr = const_cast<char*>(out.data());
+  const size_t size = buf.size();
+  for (size_t i = 0; i < size; i++) {
+    d_ptr[i] = (static_cast<char>(buf.front()));
     buf.pop_front();
+  }
+  d_ptr += size;
+  len -= size;
+  while (len > 0) {
+    const auto bytes = reader->read(d_ptr, len);
+    if (bytes == 0) {
+      return "";
+    }
+    d_ptr += bytes;
+    len -= bytes;
   }
   return out;
 }
@@ -130,20 +139,22 @@ char ContentReader::matchAny(const char* chars) {
 }
 
 bool ContentReader::buffer(size_t bytes) {
-  if (bytes < buf.size()) {
+  if (bytes <= buf.size()) {
     return true;
   }
-  bytes -= buf.size();
-  while (bytes > 0) {
+  int num = bytes;
+  num -= buf.size();
+  while (num > 0) {
     uint8_t chunk[256];
-    auto c = std::min(sizeof(chunk), bytes);
-    if (reader->read(chunk, c) <= 0) {
+    const size_t c = std::min(sizeof(chunk), size_t(num));
+    const size_t len = reader->read(chunk, c);
+    if (len == 0 || len > c) {
       return false;
     }
-    for (size_t i = 0; i < c; i++) {
+    for (size_t i = 0; i < len; i++) {
       buf.push_back(chunk[i]);
     }
-    bytes -= c;
+    num -= len;
   }
   return true;
 }

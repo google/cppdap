@@ -129,7 +129,12 @@ class Impl : public dap::Session {
       std::unique_lock<std::mutex> lock(errorMutex);
       errorHandler = handler;
     }
-
+    void error(const std::string& info) {
+      std::unique_lock<std::mutex> lock(errorMutex);
+      if (errorHandler) {
+        errorHandler(info.c_str());
+      }
+    }
     void error(const char* format, ...) {
       va_list vararg;
       va_start(vararg, format);
@@ -225,12 +230,20 @@ class Impl : public dap::Session {
       errorLocked(format, vararg);
       va_end(vararg);
     }
-
+    int _vscprintf(const char* format, va_list pargs) {
+      int retval;
+      va_list argcopy;
+      va_copy(argcopy, pargs);
+      retval = vsnprintf(NULL, 0, format, argcopy);
+      va_end(argcopy);
+      return retval;
+    }
     void errorLocked(const char* format, va_list args) {
-      char buf[2048];
-      vsnprintf(buf, sizeof(buf), format, args);
+      int len = _vscprintf(format, args);
+      std::vector<char> buf(len + 1, 0);
+      vsnprintf(buf.data(), len + 1, format, args);
       if (errorHandler) {
-        errorHandler(buf);
+        errorHandler(buf.data());
       }
     }
 
@@ -258,6 +271,8 @@ class Impl : public dap::Session {
   };  // EventHandlers
 
   Payload processMessage(const std::string& str) {
+    try {
+      
     auto d = dap::json::Deserializer(str);
     dap::string type;
     if (!d.field("type", &type)) {
@@ -281,7 +296,12 @@ class Impl : public dap::Session {
     } else {
       handlers.error("Unknown message type '%s'", type.c_str());
     }
-
+    } catch (std::exception& e) {
+      std::string temp = "Exception:";
+      temp += e.what();
+      temp += "\n\nWhen process message:" + str;
+      handlers.error(temp);
+    }
     return {};
   }
 
