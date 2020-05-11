@@ -173,8 +173,17 @@ class dap::Socket::Shared : public dap::ReaderWriter {
     if (bytes == 0) {
       return true;
     }
-    return ::send(s, reinterpret_cast<const char*>(buffer),
-                  static_cast<int>(bytes), 0) > 0;
+    const char* p = static_cast<const char*>(buffer);
+    while (bytes != 0 ) {
+      const size_t c = 1024 < bytes ? 1024 : bytes;
+      const int n = ::send(s, p, c, 0);
+      if (n <= 0 || n > c) 
+          return false;
+      p += n;
+
+      bytes -= n;
+    }
+    return true;
   }
 
   addrinfo* const info;
