@@ -14,6 +14,9 @@
 
 #include "json_serializer.h"
 
+// Disable JSON exceptions. We should be guarding against any exceptions being
+// fired in this file.
+#define JSON_NOEXCEPTION 1
 #include <nlohmann/json.hpp>
 
 namespace {
@@ -45,7 +48,8 @@ namespace dap {
 namespace json {
 
 Deserializer::Deserializer(const std::string& str)
-    : json(new nlohmann::json(nlohmann::json::parse(str))), ownsJson(true) {}
+    : json(new nlohmann::json(nlohmann::json::parse(str, nullptr, false))),
+      ownsJson(true) {}
 
 Deserializer::Deserializer(const nlohmann::json* json)
     : json(json), ownsJson(false) {}
