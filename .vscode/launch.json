@@ -18,6 +18,14 @@
             "args": []
         },
         {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "fuzzer (lldb)",
+            "program": "${workspaceFolder}/fuzz/build/cppdap-fuzzer",
+            "cwd": "${workspaceRoot}",
+            "args": []
+        },
+        {
             "name": "unittests (gdb)",
             "type": "cppdbg",
             "request": "launch",
