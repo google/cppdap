@@ -31,6 +31,7 @@ endfunction()
 option_if_not_defined(CPPDAP_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
 option_if_not_defined(CPPDAP_BUILD_EXAMPLES "Build example applications" OFF)
 option_if_not_defined(CPPDAP_BUILD_TESTS "Build tests" OFF)
+option_if_not_defined(CPPDAP_BUILD_FUZZER "Build fuzzer" OFF)
 option_if_not_defined(CPPDAP_ASAN "Build dap with address sanitizer" OFF)
 option_if_not_defined(CPPDAP_MSAN "Build dap with memory sanitizer" OFF)
 option_if_not_defined(CPPDAP_TSAN "Build dap with thread sanitizer" OFF)
@@ -222,6 +223,26 @@ if(CPPDAP_BUILD_TESTS)
 
     target_link_libraries(cppdap-unittests cppdap "${CPPDAP_OS_LIBS}")
 endif(CPPDAP_BUILD_TESTS)
+
+# fuzzer
+if(CPPDAP_BUILD_FUZZER)
+    if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        message(FATAL_ERROR "CPPDAP_BUILD_FUZZER can currently only be used with the clang toolchain")
+    endif()
+    set(DAP_FUZZER_LIST
+        ${CPPDAP_LIST}
+        ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/fuzz.cpp
+    )
+    add_executable(cppdap-fuzzer ${DAP_FUZZER_LIST})
+    target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,address")
+    target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer,address")
+    target_include_directories(cppdap-fuzzer PUBLIC
+        ${CPPDAP_INCLUDE_DIR}
+        ${CPPDAP_SRC_DIR}
+        ${CPPDAP_JSON_DIR}/include/
+    )
+    target_link_libraries(cppdap-fuzzer cppdap "${CPPDAP_OS_LIBS}")
+endif(CPPDAP_BUILD_FUZZER)
 
 # examples
 if(CPPDAP_BUILD_EXAMPLES)

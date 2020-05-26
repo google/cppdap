@@ -52,6 +52,7 @@ class Writer : virtual public Closable {
 
 // ReaderWriter is an interface that combines the Reader and Writer interfaces.
 class ReaderWriter : public Reader, public Writer {
+ public:
   // create() returns a ReaderWriter that delegates the interface methods on to
   // the provided Reader and Writer.
   // isOpen() returns true if the Reader and Writer both return true for
