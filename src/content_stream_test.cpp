@@ -19,6 +19,27 @@
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
+#include <memory>
+
+namespace {
+
+// SingleByteReader wraps a dap::Reader to only provide a single byte for each
+// read() call, regardless of the number of bytes actually requested.
+class SingleByteReader : public virtual dap::Reader {
+ public:
+  SingleByteReader(std::unique_ptr<dap::Reader>&& inner)
+      : inner(std::move(inner)) {}
+
+  bool isOpen() override { return inner->isOpen(); }
+  void close() override { return inner->close(); }
+  size_t read(void* buffer, size_t) override { return inner->read(buffer, 1); };
+
+ private:
+  std::unique_ptr<dap::Reader> inner;
+};
+
+}  // namespace
+
 TEST(ContentStreamTest, Write) {
   auto sb = dap::StringBuffer::create();
   auto ptr = sb.get();
@@ -40,6 +61,21 @@ TEST(ContentStreamTest, Read) {
   sb->write("some more unrecognised garbage");
   sb->write("Content-Length: 28\r\n\r\nContent payload number three");
   dap::ContentReader cs(std::move(sb));
+  ASSERT_EQ(cs.read(), "Content payload number one");
+  ASSERT_EQ(cs.read(), "Content payload number two");
+  ASSERT_EQ(cs.read(), "Content payload number three");
+  ASSERT_EQ(cs.read(), "");
+}
+
+TEST(ContentStreamTest, ShortRead) {
+  auto sb = dap::StringBuffer::create();
+  sb->write("Content-Length: 26\r\n\r\nContent payload number one");
+  sb->write("some unrecognised garbage");
+  sb->write("Content-Length: 26\r\n\r\nContent payload number two");
+  sb->write("some more unrecognised garbage");
+  sb->write("Content-Length: 28\r\n\r\nContent payload number three");
+  dap::ContentReader cs(
+      std::unique_ptr<SingleByteReader>(new SingleByteReader(std::move(sb))));
   ASSERT_EQ(cs.read(), "Content payload number one");
   ASSERT_EQ(cs.read(), "Content payload number two");
   ASSERT_EQ(cs.read(), "Content payload number three");

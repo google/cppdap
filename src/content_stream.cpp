@@ -136,14 +136,15 @@ bool ContentReader::buffer(size_t bytes) {
   bytes -= buf.size();
   while (bytes > 0) {
     uint8_t chunk[256];
-    auto c = std::min(sizeof(chunk), bytes);
-    if (reader->read(chunk, c) <= 0) {
+    auto numWant = std::min(sizeof(chunk), bytes);
+    auto numGot = reader->read(chunk, numWant);
+    if (numGot == 0) {
       return false;
     }
-    for (size_t i = 0; i < c; i++) {
+    for (size_t i = 0; i < numGot; i++) {
       buf.push_back(chunk[i]);
     }
-    bytes -= c;
+    bytes -= numGot;
   }
   return true;
 }
