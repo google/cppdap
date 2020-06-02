@@ -136,46 +136,127 @@ M member_type(M T::*);
 // NAME is the serialized name of the field, as described by the DAP
 // specification.
 #define DAP_FIELD(FIELD, NAME)                       \
-  dap::Field {                                       \
+  ::dap::Field {                                     \
     NAME, DAP_OFFSETOF(StructTy, FIELD),             \
         TypeOf<DAP_TYPEOF(StructTy, FIELD)>::type(), \
   }
 
 // DAP_DECLARE_STRUCT_TYPEINFO() declares a TypeOf<> specialization for STRUCT.
-#define DAP_DECLARE_STRUCT_TYPEINFO(STRUCT)                \
-  template <>                                              \
-  struct TypeOf<STRUCT> {                                  \
-    static constexpr bool has_custom_serialization = true; \
-    static const TypeInfo* type();                         \
+// Must be used within the 'dap' namespace.
+#define DAP_DECLARE_STRUCT_TYPEINFO(STRUCT)                         \
+  template <>                                                       \
+  struct TypeOf<STRUCT> {                                           \
+    static constexpr bool has_custom_serialization = true;          \
+    static const TypeInfo* type();                                  \
+    static bool deserializeFields(const Deserializer*, void* obj);  \
+    static bool serializeFields(FieldSerializer*, const void* obj); \
   }
 
-// DAP_DECLARE_STRUCT_TYPEINFO() implements the type() member function for the
+// DAP_IMPLEMENT_STRUCT_FIELD_SERIALIZATION() implements the deserializeFields()
+// and serializeFields() static methods of a TypeOf<> specialization. Used
+// internally by DAP_IMPLEMENT_STRUCT_TYPEINFO() and
+// DAP_IMPLEMENT_STRUCT_TYPEINFO_EXT().
+// You probably do not want to use this directly.
+#define DAP_IMPLEMENT_STRUCT_FIELD_SERIALIZATION(STRUCT, NAME, ...)           \
+  bool TypeOf<STRUCT>::deserializeFields(const Deserializer* d, void* obj) {  \
+    using StructTy = STRUCT;                                                  \
+    (void)sizeof(StructTy); /* avoid unused 'using' warning */                \
+    for (auto field : std::initializer_list<Field>{__VA_ARGS__}) {            \
+      if (!d->field(field.name, [&](Deserializer* d) {                        \
+            auto ptr = reinterpret_cast<uint8_t*>(obj) + field.offset;        \
+            return field.type->deserialize(d, ptr);                           \
+          })) {                                                               \
+        return false;                                                         \
+      }                                                                       \
+    }                                                                         \
+    return true;                                                              \
+  }                                                                           \
+  bool TypeOf<STRUCT>::serializeFields(FieldSerializer* s, const void* obj) { \
+    using StructTy = STRUCT;                                                  \
+    (void)sizeof(StructTy); /* avoid unused 'using' warning */                \
+    for (auto field : std::initializer_list<Field>{__VA_ARGS__}) {            \
+      if (!s->field(field.name, [&](Serializer* s) {                          \
+            auto ptr = reinterpret_cast<const uint8_t*>(obj) + field.offset;  \
+            return field.type->serialize(s, ptr);                             \
+          })) {                                                               \
+        return false;                                                         \
+      }                                                                       \
+    }                                                                         \
+    return true;                                                              \
+  }
+
+// DAP_IMPLEMENT_STRUCT_TYPEINFO() implements the type() member function for the
 // TypeOf<> specialization for STRUCT.
 // STRUCT is the structure typename.
 // NAME is the serialized name of the structure, as described by the DAP
 // specification. The variadic (...) parameters should be a repeated list of
 // DAP_FIELD()s, one for each field of the struct.
-#define DAP_IMPLEMENT_STRUCT_TYPEINFO(STRUCT, NAME, ...)                  \
-  const TypeInfo* TypeOf<STRUCT>::type() {                                \
-    using StructTy = STRUCT;                                              \
-    struct TI : BasicTypeInfo<StructTy> {                                 \
-      TI() : BasicTypeInfo<StructTy>(NAME) {}                             \
-      bool deserialize(const Deserializer* d, void* ptr) const override { \
-        return d->deserialize(ptr, {__VA_ARGS__});                        \
+// Must be used within the 'dap' namespace.
+#define DAP_IMPLEMENT_STRUCT_TYPEINFO(STRUCT, NAME, ...)                    \
+  DAP_IMPLEMENT_STRUCT_FIELD_SERIALIZATION(STRUCT, NAME, __VA_ARGS__)       \
+  const ::dap::TypeInfo* TypeOf<STRUCT>::type() {                           \
+    struct TI : BasicTypeInfo<STRUCT> {                                     \
+      TI() : BasicTypeInfo<STRUCT>(NAME) {}                                 \
+      bool deserialize(const Deserializer* d, void* obj) const override {   \
+        return deserializeFields(d, obj);                                   \
+      }                                                                     \
+      bool serialize(Serializer* s, const void* obj) const override {       \
+        return s->object(                                                   \
+            [&](FieldSerializer* fs) { return serializeFields(fs, obj); }); \
+      }                                                                     \
+    };                                                                      \
+    static TI typeinfo;                                                     \
+    return &typeinfo;                                                       \
+  }
+
+// DAP_STRUCT_TYPEINFO() is a helper for declaring and implementing a TypeOf<>
+// specialization for STRUCT in a single statement.
+// Must be used within the 'dap' namespace.
+#define DAP_STRUCT_TYPEINFO(STRUCT, NAME, ...) \
+  DAP_DECLARE_STRUCT_TYPEINFO(STRUCT);         \
+  DAP_IMPLEMENT_STRUCT_TYPEINFO(STRUCT, NAME, __VA_ARGS__)
+
+// DAP_IMPLEMENT_STRUCT_TYPEINFO_EXT() implements the type() member function for
+// the TypeOf<> specialization for STRUCT that derives from BASE.
+// STRUCT is the structure typename.
+// BASE is the base structure typename.
+// NAME is the serialized name of the structure, as described by the DAP
+// specification. The variadic (...) parameters should be a repeated list of
+// DAP_FIELD()s, one for each field of the struct.
+// Must be used within the 'dap' namespace.
+#define DAP_IMPLEMENT_STRUCT_TYPEINFO_EXT(STRUCT, BASE, NAME, ...)        \
+  static_assert(std::is_base_of<BASE, STRUCT>::value,                     \
+                #STRUCT " does not derive from " #BASE);                  \
+  DAP_IMPLEMENT_STRUCT_FIELD_SERIALIZATION(STRUCT, NAME, __VA_ARGS__)     \
+  const ::dap::TypeInfo* TypeOf<STRUCT>::type() {                         \
+    struct TI : BasicTypeInfo<STRUCT> {                                   \
+      TI() : BasicTypeInfo<STRUCT>(NAME) {}                               \
+      bool deserialize(const Deserializer* d, void* obj) const override { \
+        auto derived = static_cast<STRUCT*>(obj);                         \
+        auto base = static_cast<BASE*>(obj);                              \
+        return TypeOf<BASE>::deserializeFields(d, base) &&                \
+               deserializeFields(d, derived);                             \
       }                                                                   \
-      bool serialize(Serializer* s, const void* ptr) const override {     \
-        return s->fields(ptr, {__VA_ARGS__});                             \
+      bool serialize(Serializer* s, const void* obj) const override {     \
+        return s->object([&](FieldSerializer* fs) {                       \
+          auto derived = static_cast<const STRUCT*>(obj);                 \
+          auto base = static_cast<const BASE*>(obj);                      \
+          return TypeOf<BASE>::serializeFields(fs, base) &&               \
+                 serializeFields(fs, derived);                            \
+        });                                                               \
       }                                                                   \
     };                                                                    \
     static TI typeinfo;                                                   \
     return &typeinfo;                                                     \
   }
 
-// DAP_STRUCT_TYPEINFO() is a helper for declaring and implementing a TypeOf<>
-// specialization for STRUCT in a single statement.
-#define DAP_STRUCT_TYPEINFO(STRUCT, NAME, ...) \
-  DAP_DECLARE_STRUCT_TYPEINFO(STRUCT);         \
-  DAP_IMPLEMENT_STRUCT_TYPEINFO(STRUCT, NAME, __VA_ARGS__)
+// DAP_STRUCT_TYPEINFO_EXT() is a helper for declaring and implementing a
+// TypeOf<> specialization for STRUCT that derives from BASE in a single
+// statement.
+// Must be used within the 'dap' namespace.
+#define DAP_STRUCT_TYPEINFO_EXT(STRUCT, BASE, NAME, ...) \
+  DAP_DECLARE_STRUCT_TYPEINFO(STRUCT);                   \
+  DAP_IMPLEMENT_STRUCT_TYPEINFO_EXT(STRUCT, BASE, NAME, __VA_ARGS__)
 
 }  // namespace dap
 

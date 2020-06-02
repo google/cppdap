@@ -67,11 +67,6 @@ struct Deserializer : public dap::Deserializer {
     return dap::Deserializer::deserialize(v);
   }
 
-  inline bool deserialize(void* o,
-                          const std::initializer_list<Field>& f) const {
-    return dap::Deserializer::deserialize(o, f);
-  }
-
   template <typename T>
   inline bool field(const std::string& name, T* v) const {
     return dap::Deserializer::deserialize(name, v);
@@ -94,23 +89,14 @@ struct Serializer : public dap::Serializer {
   bool serialize(integer v) override;
   bool serialize(number v) override;
   bool serialize(const string& v) override;
-  bool serialize(const object& v) override;
+  bool serialize(const dap::object& v) override;
   bool serialize(const any& v) override;
   bool array(size_t count,
              const std::function<bool(dap::Serializer*)>&) override;
-  bool fields(const void* object,
-              const std::initializer_list<Field>& fields) override;
-  bool field(const std::string& name, const FieldSerializer&) override;
+  bool object(const std::function<bool(dap::FieldSerializer*)>&) override;
   void remove() override;
 
   // Unhide base overloads
-  template <
-      typename T,
-      typename = typename std::enable_if<!IsFieldSerializer<T>::value>::type>
-  inline bool field(const std::string& name, const T& v) {
-    return dap::Serializer::field(name, v);
-  }
-
   template <typename T,
             typename = std::enable_if<TypeOf<T>::has_custom_serialization>>
   inline bool serialize(const T& v) {
