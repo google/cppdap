@@ -194,6 +194,7 @@ if(CPPDAP_BUILD_TESTS)
         ${CPPDAP_SRC_DIR}/network_test.cpp
         ${CPPDAP_SRC_DIR}/optional_test.cpp
         ${CPPDAP_SRC_DIR}/session_test.cpp
+        ${CPPDAP_SRC_DIR}/typeinfo_test.cpp
         ${CPPDAP_SRC_DIR}/variant_test.cpp
         ${CPPDAP_GOOGLETEST_DIR}/googletest/src/gtest-all.cc
     )

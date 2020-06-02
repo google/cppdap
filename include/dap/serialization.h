@@ -78,10 +78,6 @@ class Deserializer {
   template <typename T0, typename... Types>
   inline bool deserialize(dap::variant<T0, Types...>*) const;
 
-  // deserialize() decodes a list of fields and stores them into the object.
-  inline bool deserialize(void* object,
-                          const std::initializer_list<Field>&) const;
-
   // deserialize() decodes the struct field f with the given name.
   template <typename T>
   inline bool field(const std::string& name, T* f) const;
@@ -117,20 +113,6 @@ bool Deserializer::deserialize(dap::variant<T0, Types...>* var) const {
   return deserialize(&var->value);
 }
 
-bool Deserializer::deserialize(
-    void* object,
-    const std::initializer_list<Field>& fields) const {
-  for (auto const& f : fields) {
-    if (!field(f.name, [&](Deserializer* d) {
-          auto ptr = reinterpret_cast<uint8_t*>(object) + f.offset;
-          return f.type->deserialize(d, ptr);
-        })) {
-      return false;
-    }
-  }
-  return true;
-}
-
 template <typename T>
 bool Deserializer::field(const std::string& name, T* v) const {
   return this->field(name,
@@ -140,6 +122,7 @@ bool Deserializer::field(const std::string& name, T* v) const {
 ////////////////////////////////////////////////////////////////////////////////
 // Serializer
 ////////////////////////////////////////////////////////////////////////////////
+class FieldSerializer;
 
 // Serializer is the interface used to encode data to structured storage.
 // A Serializer is associated with a single storage object, whos type and value
@@ -149,16 +132,12 @@ bool Deserializer::field(const std::string& name, T* v) const {
 // Methods that return a bool use this to indicate success.
 class Serializer {
  public:
-  using FieldSerializer = std::function<bool(Serializer*)>;
-  template <typename T>
-  using IsFieldSerializer = std::is_convertible<T, FieldSerializer>;
-
   // serialization methods for simple data types.
   virtual bool serialize(boolean) = 0;
   virtual bool serialize(integer) = 0;
   virtual bool serialize(number) = 0;
   virtual bool serialize(const string&) = 0;
-  virtual bool serialize(const object&) = 0;
+  virtual bool serialize(const dap::object&) = 0;
   virtual bool serialize(const any&) = 0;
 
   // array() encodes count array elements to the array object referenced by this
@@ -166,14 +145,10 @@ class Serializer {
   // Serializer that should be used to encode the n'th array element's data.
   virtual bool array(size_t count, const std::function<bool(Serializer*)>&) = 0;
 
-  // fields() encodes all the provided fields of the given object.
-  virtual bool fields(const void* object,
-                      const std::initializer_list<Field>&) = 0;
-
-  // field() encodes a field to the struct object referenced by this Serializer.
-  // The FieldSerializer will be called with a Serializer used to encode the
-  // field's data.
-  virtual bool field(const std::string& name, const FieldSerializer&) = 0;
+  // object() begins encoding the object referenced by this Serializer.
+  // The std::function will be called with a FieldSerializer to serialize the
+  // object's fields.
+  virtual bool object(const std::function<bool(dap::FieldSerializer*)>&) = 0;
 
   // remove() deletes the object referenced by this Serializer.
   // remove() can be used to serialize optionals with no value assigned.
@@ -198,12 +173,6 @@ class Serializer {
 
   // deserialize() encodes the given string.
   inline bool serialize(const char* v);
-
-  // field() encodes the field with the given name and value.
-  template <
-      typename T,
-      typename = typename std::enable_if<!IsFieldSerializer<T>::value>::type>
-  inline bool field(const std::string& name, const T& v);
 };
 
 template <typename T, typename>
@@ -235,8 +204,31 @@ bool Serializer::serialize(const char* v) {
   return serialize(std::string(v));
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// FieldSerializer
+////////////////////////////////////////////////////////////////////////////////
+
+// FieldSerializer is the interface used to serialize fields of an object.
+class FieldSerializer {
+ public:
+  using SerializeFunc = std::function<bool(Serializer*)>;
+  template <typename T>
+  using IsSerializeFunc = std::is_convertible<T, SerializeFunc>;
+
+  // field() encodes a field to the struct object referenced by this Serializer.
+  // The SerializeFunc will be called with a Serializer used to encode the
+  // field's data.
+  virtual bool field(const std::string& name, const SerializeFunc&) = 0;
+
+  // field() encodes the field with the given name and value.
+  template <
+      typename T,
+      typename = typename std::enable_if<!IsSerializeFunc<T>::value>::type>
+  inline bool field(const std::string& name, const T& v);
+};
+
 template <typename T, typename>
-bool Serializer::field(const std::string& name, const T& v) {
+bool FieldSerializer::field(const std::string& name, const T& v) {
   return this->field(name, [&](Serializer* s) { return s->serialize(v); });
 }
 

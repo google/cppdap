@@ -224,27 +224,24 @@ bool Serializer::array(size_t count,
   return true;
 }
 
-bool Serializer::fields(const void* object,
-                        const std::initializer_list<Field>& fields) {
-  *json = nlohmann::json({}, false, nlohmann::json::value_t::object);
-  for (auto const& f : fields) {
-    if (!field(f.name, [&](dap::Serializer* d) {
-          auto ptr = reinterpret_cast<const uint8_t*>(object) + f.offset;
-          return f.type->serialize(d, ptr);
-        }))
-      return false;
-  }
-  return true;
-}
+bool Serializer::object(const std::function<bool(dap::FieldSerializer*)>& cb) {
+  struct FS : public FieldSerializer {
+    nlohmann::json* const json;
 
-bool Serializer::field(const std::string& name,
-                       const std::function<bool(dap::Serializer*)>& cb) {
-  Serializer s(&(*json)[name]);
-  auto res = cb(&s);
-  if (s.removed) {
-    json->erase(name);
-  }
-  return res;
+    FS(nlohmann::json* json) : json(json) {}
+    bool field(const std::string& name, const SerializeFunc& cb) override {
+      Serializer s(&(*json)[name]);
+      auto res = cb(&s);
+      if (s.removed) {
+        json->erase(name);
+      }
+      return res;
+    }
+  };
+
+  *json = nlohmann::json({}, false, nlohmann::json::value_t::object);
+  FS fs{json};
+  return cb(&fs);
 }
 
 void Serializer::remove() {
