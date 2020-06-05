@@ -24,12 +24,16 @@ class ReaderWriter;
 namespace net {
 
 // connect() connects to the given TCP address and port.
-std::shared_ptr<ReaderWriter> connect(const char* addr, int port);
+// If timeoutMillis is non-zero and no connection was made before timeoutMillis
+// milliseconds, then nullptr is returned.
+std::shared_ptr<ReaderWriter> connect(const char* addr,
+                                      int port,
+                                      uint32_t timeoutMillis = 0);
 
 // Server implements a basic TCP server.
 class Server {
-  // IgnoreErrors matches the OnError signature, and does nothing.
-  static inline void IgnoreErrors(const char*) {}
+  // ignoreErrors() matches the OnError signature, and does nothing.
+  static inline void ignoreErrors(const char*) {}
 
  public:
   using OnError = std::function<void(const char*)>;
@@ -45,7 +49,7 @@ class Server {
   // onError will be called for any connection errors.
   virtual bool start(int port,
                      const OnConnect& callback,
-                     const OnError& onError = IgnoreErrors) = 0;
+                     const OnError& onError = ignoreErrors) = 0;
 
   // stop() stops listening for connections.
   // stop() is implicitly called on destruction.

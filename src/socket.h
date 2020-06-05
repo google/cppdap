@@ -26,8 +26,12 @@ class Socket {
  public:
   class Shared;
 
+  // connect() connects to the given TCP address and port.
+  // If timeoutMillis is non-zero and no connection was made before
+  // timeoutMillis milliseconds, then nullptr is returned.
   static std::shared_ptr<ReaderWriter> connect(const char* address,
-                                               const char* port);
+                                               const char* port,
+                                               uint32_t timeoutMillis);
 
   Socket(const char* address, const char* port);
   bool isOpen() const;

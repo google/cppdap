@@ -32,6 +32,8 @@ namespace {
 std::atomic<int> wsaInitCount = {0};
 }  // anonymous namespace
 #else
+#include <fcntl.h>
+#include <unistd.h>
 namespace {
 using SOCKET = int;
 }  // anonymous namespace
@@ -39,27 +41,27 @@ using SOCKET = int;
 
 namespace {
 constexpr SOCKET InvalidSocket = static_cast<SOCKET>(-1);
+static void init() {
+#if defined(_WIN32)
+  if (wsaInitCount++ == 0) {
+    WSADATA winsockData;
+    (void)WSAStartup(MAKEWORD(2, 2), &winsockData);
+  }
+#endif
+}
+
+static void term() {
+#if defined(_WIN32)
+  if (--wsaInitCount == 0) {
+    WSACleanup();
+  }
+#endif
+}
+
 }  // anonymous namespace
 
 class dap::Socket::Shared : public dap::ReaderWriter {
  public:
-  static void init() {
-#if defined(_WIN32)
-    if (wsaInitCount++ == 0) {
-      WSADATA winsockData;
-      (void)WSAStartup(MAKEWORD(2, 2), &winsockData);
-    }
-#endif
-  }
-
-  static void term() {
-#if defined(_WIN32)
-    if (--wsaInitCount == 0) {
-      WSACleanup();
-    }
-#endif
-  }
-
   static std::shared_ptr<Shared> create(const char* address, const char* port) {
     init();
 
@@ -123,11 +125,29 @@ class dap::Socket::Shared : public dap::ReaderWriter {
     setsockopt(s, IPPROTO_TCP, TCP_NODELAY, (char*)&enable, sizeof(enable));
   }
 
-  // dap::ReaderWriter compliance
-  bool isOpen() {
+  bool setBlocking(bool blocking) {
     SOCKET s = socket();
     if (s == InvalidSocket) {
       return false;
+    }
+
+#if defined(_WIN32)
+    u_long mode = blocking ? 0 : 1;
+    return ioctlsocket(s, FIONBIO, &mode) == NO_ERROR;
+#else
+    auto arg = fcntl(s, F_GETFL, nullptr);
+    if (arg < 0) {
+      return false;
+    }
+    arg = blocking ? (arg & ~O_NONBLOCK) : (arg | O_NONBLOCK);
+    return fcntl(s, F_SETFL, arg) >= 0;
+#endif
+  }
+
+  bool errored() {
+    SOCKET s = socket();
+    if (s == InvalidSocket) {
+      return true;
     }
 
     char error = 0;
@@ -135,11 +155,14 @@ class dap::Socket::Shared : public dap::ReaderWriter {
     getsockopt(s, SOL_SOCKET, SO_ERROR, &error, &len);
     if (error != 0) {
       sock.compare_exchange_weak(s, InvalidSocket);
-      return false;
+      return true;
     }
 
-    return true;
+    return false;
   }
+
+  // dap::ReaderWriter compliance
+  bool isOpen() { return !errored(); }
 
   void close() {
     SOCKET s = sock.exchange(InvalidSocket);
@@ -195,7 +218,7 @@ Socket::Socket(const char* address, const char* port)
     return;
   }
 
-  if (listen(socket, 1) != 0) {
+  if (listen(socket, 0) != 0) {
     shared.reset();
     return;
   }
@@ -205,6 +228,7 @@ std::shared_ptr<ReaderWriter> Socket::accept() const {
   if (shared) {
     SOCKET socket = shared->socket();
     if (socket != InvalidSocket) {
+      init();
       auto out = std::make_shared<Shared>(::accept(socket, 0, 0));
       out->setOptions();
       return out;
@@ -228,13 +252,54 @@ void Socket::close() const {
 }
 
 std::shared_ptr<ReaderWriter> Socket::connect(const char* address,
-                                              const char* port) {
+                                              const char* port,
+                                              uint32_t timeoutMillis) {
   auto shared = Shared::create(address, port);
-  if (::connect(shared->socket(), shared->info->ai_addr,
-                (int)shared->info->ai_addrlen) == 0) {
-    return shared;
+  if (!shared) {
+    return nullptr;
   }
-  return {};
+
+  if (timeoutMillis == 0) {
+    if (::connect(shared->socket(), shared->info->ai_addr,
+                  (int)shared->info->ai_addrlen) == 0) {
+      return shared;
+    }
+    return nullptr;
+  }
+
+  auto s = shared->socket();
+  if (s == InvalidSocket) {
+    return nullptr;
+  }
+
+  if (!shared->setBlocking(false)) {
+    return nullptr;
+  }
+
+  auto res = ::connect(s, shared->info->ai_addr, (int)shared->info->ai_addrlen);
+  if (res == 0) {
+    return shared->setBlocking(true) ? shared : nullptr;
+  }
+
+  const auto microseconds = timeoutMillis * 1000;
+
+  fd_set fdset;
+  FD_ZERO(&fdset);
+  FD_SET(s, &fdset);
+
+  timeval tv;
+  tv.tv_sec = microseconds / 1000000;
+  tv.tv_usec = microseconds - (tv.tv_sec * 1000000);
+  res = select(static_cast<int>(s + 1), nullptr, &fdset, nullptr, &tv);
+  if (res <= 0) {
+    return nullptr;
+  }
+
+  if (shared->errored()) {
+    return nullptr;
+  }
+
+  return shared->setBlocking(true) ? shared : nullptr;
 }
 
 }  // namespace dap
