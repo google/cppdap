@@ -25,7 +25,7 @@ namespace {
 
 // SingleByteReader wraps a dap::Reader to only provide a single byte for each
 // read() call, regardless of the number of bytes actually requested.
-class SingleByteReader : public virtual dap::Reader {
+class SingleByteReader : public dap::Reader {
  public:
   SingleByteReader(std::unique_ptr<dap::Reader>&& inner)
       : inner(std::move(inner)) {}
