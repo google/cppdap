@@ -92,8 +92,10 @@ std::unique_ptr<Server> Server::create() {
   return std::unique_ptr<Server>(new Impl());
 }
 
-std::shared_ptr<ReaderWriter> connect(const char* addr, int port) {
-  return Socket::connect(addr, std::to_string(port).c_str());
+std::shared_ptr<ReaderWriter> connect(const char* addr,
+                                      int port,
+                                      uint32_t timeoutMillis) {
+  return Socket::connect(addr, std::to_string(port).c_str(), timeoutMillis);
 }
 
 }  // namespace net
