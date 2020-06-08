@@ -194,6 +194,7 @@ if(CPPDAP_BUILD_TESTS)
         ${CPPDAP_SRC_DIR}/json_serializer_test.cpp
         ${CPPDAP_SRC_DIR}/network_test.cpp
         ${CPPDAP_SRC_DIR}/optional_test.cpp
+        ${CPPDAP_SRC_DIR}/rwmutex_test.cpp
         ${CPPDAP_SRC_DIR}/session_test.cpp
         ${CPPDAP_SRC_DIR}/socket_test.cpp
         ${CPPDAP_SRC_DIR}/typeinfo_test.cpp
