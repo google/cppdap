@@ -235,8 +235,19 @@ if(CPPDAP_BUILD_FUZZER)
         ${CMAKE_CURRENT_SOURCE_DIR}/fuzz/fuzz.cpp
     )
     add_executable(cppdap-fuzzer ${DAP_FUZZER_LIST})
-    target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,address")
-    target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer,address")
+    if(CPPDAP_ASAN)
+        target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,address")
+        target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer,address")
+    elseif(CPPDAP_MSAN)
+        target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,memory")
+        target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer,memory")
+    elseif(CPPDAP_TSAN)
+        target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,thread")
+        target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer,thread")
+    else()
+        target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer")
+        target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer")
+    endif()
     target_include_directories(cppdap-fuzzer PUBLIC
         ${CPPDAP_INCLUDE_DIR}
         ${CPPDAP_SRC_DIR}
