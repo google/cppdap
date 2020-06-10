@@ -26,7 +26,7 @@ namespace dap {
 // template type T.
 template <typename T>
 struct BasicTypeInfo : public TypeInfo {
-  BasicTypeInfo(const std::string& name) : name_(name) {}
+  constexpr BasicTypeInfo(std::string&& name) : name_(std::move(name)) {}
 
   // TypeInfo compliance
   inline std::string name() const { return name_; }
@@ -88,6 +88,15 @@ struct TypeOf<null> {
   static const TypeInfo* type();
 };
 
+// TypeOf for template types requires dynamic generation of type information,
+// triggering the clang -Wexit-time-destructors warning.
+// TODO(bclayton): See if there's a way to avoid this, without requiring manual
+// instantiation of each type.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wexit-time-destructors"
+#endif  // __clang__
+
 template <typename T>
 struct TypeOf<array<T>> {
   static inline const TypeInfo* type() {
@@ -113,6 +122,10 @@ struct TypeOf<optional<T>> {
     return &typeinfo;
   }
 };
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif  // __clang__
 
 // DAP_OFFSETOF() macro is a generalization of the offsetof() macro defined in
 // <cstddef>. It evaluates to the offset of the given field, with fewer

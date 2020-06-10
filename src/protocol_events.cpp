@@ -21,53 +21,37 @@
 
 namespace dap {
 
-BreakpointEvent::BreakpointEvent() = default;
-BreakpointEvent::~BreakpointEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(BreakpointEvent,
                               "breakpoint",
                               DAP_FIELD(breakpoint, "breakpoint"),
                               DAP_FIELD(reason, "reason"));
 
-CapabilitiesEvent::CapabilitiesEvent() = default;
-CapabilitiesEvent::~CapabilitiesEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(CapabilitiesEvent,
                               "capabilities",
                               DAP_FIELD(capabilities, "capabilities"));
 
-ContinuedEvent::ContinuedEvent() = default;
-ContinuedEvent::~ContinuedEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ContinuedEvent,
                               "continued",
                               DAP_FIELD(allThreadsContinued,
                                         "allThreadsContinued"),
                               DAP_FIELD(threadId, "threadId"));
 
-ExitedEvent::ExitedEvent() = default;
-ExitedEvent::~ExitedEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ExitedEvent,
                               "exited",
                               DAP_FIELD(exitCode, "exitCode"));
 
-InitializedEvent::InitializedEvent() = default;
-InitializedEvent::~InitializedEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(InitializedEvent, "initialized");
 
-LoadedSourceEvent::LoadedSourceEvent() = default;
-LoadedSourceEvent::~LoadedSourceEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(LoadedSourceEvent,
                               "loadedSource",
                               DAP_FIELD(reason, "reason"),
                               DAP_FIELD(source, "source"));
 
-ModuleEvent::ModuleEvent() = default;
-ModuleEvent::~ModuleEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ModuleEvent,
                               "module",
                               DAP_FIELD(module, "module"),
                               DAP_FIELD(reason, "reason"));
 
-OutputEvent::OutputEvent() = default;
-OutputEvent::~OutputEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(OutputEvent,
                               "output",
                               DAP_FIELD(category, "category"),
@@ -80,8 +64,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(OutputEvent,
                               DAP_FIELD(variablesReference,
                                         "variablesReference"));
 
-ProcessEvent::ProcessEvent() = default;
-ProcessEvent::~ProcessEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ProcessEvent,
                               "process",
                               DAP_FIELD(isLocalProcess, "isLocalProcess"),
@@ -90,15 +72,11 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(ProcessEvent,
                               DAP_FIELD(startMethod, "startMethod"),
                               DAP_FIELD(systemProcessId, "systemProcessId"));
 
-ProgressEndEvent::ProgressEndEvent() = default;
-ProgressEndEvent::~ProgressEndEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ProgressEndEvent,
                               "progressEnd",
                               DAP_FIELD(message, "message"),
                               DAP_FIELD(progressId, "progressId"));
 
-ProgressStartEvent::ProgressStartEvent() = default;
-ProgressStartEvent::~ProgressStartEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ProgressStartEvent,
                               "progressStart",
                               DAP_FIELD(cancellable, "cancellable"),
@@ -108,16 +86,12 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(ProgressStartEvent,
                               DAP_FIELD(requestId, "requestId"),
                               DAP_FIELD(title, "title"));
 
-ProgressUpdateEvent::ProgressUpdateEvent() = default;
-ProgressUpdateEvent::~ProgressUpdateEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ProgressUpdateEvent,
                               "progressUpdate",
                               DAP_FIELD(message, "message"),
                               DAP_FIELD(percentage, "percentage"),
                               DAP_FIELD(progressId, "progressId"));
 
-StoppedEvent::StoppedEvent() = default;
-StoppedEvent::~StoppedEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StoppedEvent,
                               "stopped",
                               DAP_FIELD(allThreadsStopped, "allThreadsStopped"),
@@ -127,14 +101,10 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(StoppedEvent,
                               DAP_FIELD(text, "text"),
                               DAP_FIELD(threadId, "threadId"));
 
-TerminatedEvent::TerminatedEvent() = default;
-TerminatedEvent::~TerminatedEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(TerminatedEvent,
                               "terminated",
                               DAP_FIELD(restart, "restart"));
 
-ThreadEvent::ThreadEvent() = default;
-ThreadEvent::~ThreadEvent() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ThreadEvent,
                               "thread",
                               DAP_FIELD(reason, "reason"),

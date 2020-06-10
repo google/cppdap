@@ -38,6 +38,8 @@ struct Field {
 // Methods that return a bool use this to indicate success.
 class Deserializer {
  public:
+  virtual ~Deserializer() = default;
+
   // deserialization methods for simple data types.
   // If the stored object is not of the correct type, then these function will
   // return false.
@@ -104,7 +106,7 @@ bool Deserializer::deserialize(dap::optional<T>* opt) const {
   T v;
   if (deserialize(&v)) {
     *opt = v;
-  };
+  }
   return true;
 }
 
@@ -132,6 +134,8 @@ class FieldSerializer;
 // Methods that return a bool use this to indicate success.
 class Serializer {
  public:
+  virtual ~Serializer() = default;
+
   // serialization methods for simple data types.
   virtual bool serialize(boolean) = 0;
   virtual bool serialize(integer) = 0;
@@ -214,6 +218,8 @@ class FieldSerializer {
   using SerializeFunc = std::function<bool(Serializer*)>;
   template <typename T>
   using IsSerializeFunc = std::is_convertible<T, SerializeFunc>;
+
+  virtual ~FieldSerializer() = default;
 
   // field() encodes a field to the struct object referenced by this Serializer.
   // The SerializeFunc will be called with a Serializer used to encode the

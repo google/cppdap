@@ -98,14 +98,13 @@ struct ResponseOrError {
 };
 
 template <typename T>
-ResponseOrError<T>::ResponseOrError(const T& response) : response(response) {}
+ResponseOrError<T>::ResponseOrError(const T& resp) : response(resp) {}
 template <typename T>
-ResponseOrError<T>::ResponseOrError(T&& response)
-    : response(std::move(response)) {}
+ResponseOrError<T>::ResponseOrError(T&& resp) : response(std::move(resp)) {}
 template <typename T>
-ResponseOrError<T>::ResponseOrError(const Error& error) : error(error) {}
+ResponseOrError<T>::ResponseOrError(const Error& err) : error(err) {}
 template <typename T>
-ResponseOrError<T>::ResponseOrError(Error&& error) : error(std::move(error)) {}
+ResponseOrError<T>::ResponseOrError(Error&& err) : error(std::move(err)) {}
 template <typename T>
 ResponseOrError<T>::ResponseOrError(const ResponseOrError& other)
     : response(other.response), error(other.error) {}
@@ -148,7 +147,7 @@ class Session {
   using ArgTy = typename detail::ArgTy<F>::type;
 
  public:
-  virtual ~Session() = default;
+  virtual ~Session();
 
   // ErrorHandler is the type of callback function used for reporting protocol
   // errors.

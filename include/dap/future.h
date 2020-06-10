@@ -89,7 +89,7 @@ class future {
 };
 
 template <typename T>
-future<T>::future(const std::shared_ptr<State>& state) : state(state) {}
+future<T>::future(const std::shared_ptr<State>& s) : state(s) {}
 
 template <typename T>
 bool future<T>::valid() const {

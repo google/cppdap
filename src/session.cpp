@@ -481,6 +481,8 @@ Error::Error(const char* msg, ...) {
   message = buf;
 }
 
+Session::~Session() = default;
+
 std::unique_ptr<Session> Session::create() {
   return std::unique_ptr<Session>(new Impl());
 }
