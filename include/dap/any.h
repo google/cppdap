@@ -85,7 +85,13 @@ any::any(const any& other) noexcept : type(other.type) {
   }
 }
 
-any::any(any&& other) noexcept : value(other.value), type(other.type) {
+any::any(any&& other) noexcept : type(other.type) {
+  if (other.isInBuffer(other.value)) {
+    alloc(type->size(), type->alignment());
+    type->copyConstruct(value, other.value);
+  } else {
+    value = other.value;
+  }
   other.value = nullptr;
   other.type = nullptr;
 }
@@ -110,8 +116,14 @@ any& any::operator=(const any& rhs) {
 }
 
 any& any::operator=(any&& rhs) noexcept {
-  value = rhs.value;
+  reset();
   type = rhs.type;
+  if (rhs.isInBuffer(rhs.value)) {
+    alloc(type->size(), type->alignment());
+    type->copyConstruct(value, rhs.value);
+  } else {
+    value = rhs.value;
+  }
   rhs.value = nullptr;
   rhs.type = nullptr;
   return *this;

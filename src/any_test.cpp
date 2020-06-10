@@ -40,6 +40,7 @@ TEST(Any, EmptyConstruct) {
   ASSERT_FALSE(any.is<dap::integer>());
   ASSERT_FALSE(any.is<dap::number>());
   ASSERT_FALSE(any.is<dap::object>());
+  ASSERT_FALSE(any.is<dap::string>());
   ASSERT_FALSE(any.is<dap::array<dap::integer>>());
   ASSERT_FALSE(any.is<dap::AnyTestObject>());
 }
@@ -60,6 +61,12 @@ TEST(Any, Number) {
   dap::any any(dap::number(123.0f));
   ASSERT_TRUE(any.is<dap::number>());
   ASSERT_EQ(any.get<dap::number>(), dap::number(123.0f));
+}
+
+TEST(Any, String) {
+  dap::any any(dap::string("hello world"));
+  ASSERT_TRUE(any.is<dap::string>());
+  ASSERT_EQ(any.get<dap::string>(), dap::string("hello world"));
 }
 
 TEST(Any, Array) {
@@ -116,6 +123,12 @@ TEST(Any, Assign) {
   ASSERT_TRUE(any.is<dap::AnyTestObject>());
   ASSERT_EQ(any.get<dap::AnyTestObject>().i, 5);
   ASSERT_EQ(any.get<dap::AnyTestObject>().n, 3.0);
+  any = dap::string("hello world");
+  ASSERT_FALSE(any.is<dap::integer>());
+  ASSERT_FALSE(any.is<dap::boolean>());
+  ASSERT_FALSE(any.is<dap::AnyTestObject>());
+  ASSERT_TRUE(any.is<dap::string>());
+  ASSERT_EQ(any.get<dap::string>(), dap::string("hello world"));
 }
 
 TEST(Any, Reset) {
