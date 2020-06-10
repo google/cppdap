@@ -169,20 +169,20 @@ class dap::Socket::Shared : public dap::ReaderWriter {
   }
 
   void close() {
-#if !defined(_WIN32)
     {
       RLock l(mutex);
       if (s != InvalidSocket) {
+#if defined(_WIN32)
+        closesocket(s);
+#else
         ::shutdown(s, SHUT_RDWR);
+#endif
       }
     }
-#endif
 
     WLock l(mutex);
     if (s != InvalidSocket) {
-#if defined(_WIN32)
-      closesocket(s);
-#else
+#if !defined(_WIN32)
       ::close(s);
 #endif
       s = InvalidSocket;

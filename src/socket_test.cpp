@@ -18,7 +18,60 @@
 #include "gtest/gtest.h"
 
 #include <chrono>
+#include <thread>
 #include <vector>
+
+// Basic socket send & receive test
+TEST(Socket, SendRecv) {
+  const char* port = "19021";
+
+  auto server = dap::Socket("localhost", port);
+
+  auto client = dap::Socket::connect("localhost", port, 0);
+  ASSERT_TRUE(client != nullptr);
+
+  const std::string expect = "Hello World!";
+  std::string read;
+
+  auto thread = std::thread([&] {
+    auto conn = server.accept();
+    ASSERT_TRUE(conn != nullptr);
+    char c;
+    while (conn->read(&c, 1) != 0) {
+      read += c;
+    }
+  });
+
+  ASSERT_TRUE(client->write(expect.data(), expect.size()));
+
+  client->close();
+  thread.join();
+
+  ASSERT_EQ(read, expect);
+}
+
+// See https://github.com/google/cppdap/issues/37
+TEST(Socket, CloseOnDifferentThread) {
+  const char* port = "19021";
+
+  auto server = dap::Socket("localhost", port);
+
+  auto client = dap::Socket::connect("localhost", port, 0);
+  ASSERT_TRUE(client != nullptr);
+
+  auto conn = server.accept();
+
+  auto thread = std::thread([&] {
+    // Closing client on different thread should unblock client->read().
+    client->close();
+  });
+
+  char c;
+  while (client->read(&c, 1) != 0) {
+  }
+
+  thread.join();
+}
 
 TEST(Socket, ConnectTimeout) {
   const char* port = "19021";
