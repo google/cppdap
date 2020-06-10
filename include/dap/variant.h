@@ -72,7 +72,7 @@ variant<T0, Types...>::variant() : value(T0()) {}
 
 template <typename T0, typename... Types>
 template <typename T>
-variant<T0, Types...>::variant(const T& value) : value(value) {
+variant<T0, Types...>::variant(const T& v) : value(v) {
   static_assert(accepts<T>(), "variant does not accept template type T");
 }
 

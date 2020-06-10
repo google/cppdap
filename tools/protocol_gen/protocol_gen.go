@@ -313,16 +313,6 @@ func (s *cppStruct) writeHeader(w io.Writer) {
 		io.WriteString(w, ";")
 	}
 
-	// constructor
-	io.WriteString(w, "\n\n  ")
-	io.WriteString(w, s.name)
-	io.WriteString(w, "();")
-
-	// destructor
-	io.WriteString(w, "\n  ~")
-	io.WriteString(w, s.name)
-	io.WriteString(w, "();\n")
-
 	for _, f := range s.fields {
 		if f.desc != "" {
 			io.WriteString(w, "\n  // ")
@@ -353,18 +343,6 @@ func (s *cppStruct) writeHeader(w io.Writer) {
 }
 
 func (s *cppStruct) writeCPP(w io.Writer) {
-	// constructor
-	io.WriteString(w, s.name)
-	io.WriteString(w, "::")
-	io.WriteString(w, s.name)
-	io.WriteString(w, "() = default;\n")
-
-	// destructor
-	io.WriteString(w, s.name)
-	io.WriteString(w, "::~")
-	io.WriteString(w, s.name)
-	io.WriteString(w, "() = default;\n")
-
 	// typeinfo
 	io.WriteString(w, "DAP_IMPLEMENT_STRUCT_TYPEINFO(")
 	io.WriteString(w, s.name)

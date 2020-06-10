@@ -37,10 +37,7 @@ struct Event {};
 
 // Response to 'attach' request. This is just an acknowledgement, so no body
 // field is required.
-struct AttachResponse : public Response {
-  AttachResponse();
-  ~AttachResponse();
-};
+struct AttachResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(AttachResponse);
 
@@ -49,10 +46,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(AttachResponse);
 // specific, the arguments for this request are not part of this specification.
 struct AttachRequest : public Request {
   using Response = AttachResponse;
-
-  AttachRequest();
-  ~AttachRequest();
-
   // Optional data from the previous, restarted session.
   // The data is sent as the 'restart' attribute of the 'terminated' event.
   // The client should leave the data intact.
@@ -63,18 +56,12 @@ struct AttachRequest : public Request {
 DAP_DECLARE_STRUCT_TYPEINFO(AttachRequest);
 
 // Names of checksum algorithms that may be supported by a debug adapter.
-struct ChecksumAlgorithm {
-  ChecksumAlgorithm();
-  ~ChecksumAlgorithm();
-};
+struct ChecksumAlgorithm {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(ChecksumAlgorithm);
 
 // The checksum of an item calculated by the specified algorithm.
 struct Checksum {
-  Checksum();
-  ~Checksum();
-
   // The algorithm used to calculate this checksum.
   ChecksumAlgorithm algorithm;
   // Value of the checksum.
@@ -87,9 +74,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Checksum);
 // It is returned from the debug adapter as part of a StackFrame and it is used
 // by clients when specifying breakpoints.
 struct Source {
-  Source();
-  ~Source();
-
   // Optional data that a debug adapter might want to loop through the client.
   // The client should leave the data intact and persist it across sessions. The
   // client should not interpret the data.
@@ -130,9 +114,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Source);
 // Information about a Breakpoint created in setBreakpoints,
 // setFunctionBreakpoints, setInstructionBreakpoints, or setDataBreakpoints.
 struct Breakpoint {
-  Breakpoint();
-  ~Breakpoint();
-
   // An optional start column of the actual range covered by the breakpoint.
   optional<integer> column;
   // An optional end column of the actual range covered by the breakpoint.
@@ -166,9 +147,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Breakpoint);
 
 // The event indicates that some information about a breakpoint has changed.
 struct BreakpointEvent : public Event {
-  BreakpointEvent();
-  ~BreakpointEvent();
-
   // The 'id' attribute is used to find the target breakpoint and the other
   // attributes are used as the new values.
   Breakpoint breakpoint;
@@ -184,9 +162,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(BreakpointEvent);
 // Properties of a breakpoint location returned from the 'breakpointLocations'
 // request.
 struct BreakpointLocation {
-  BreakpointLocation();
-  ~BreakpointLocation();
-
   // Optional start column of breakpoint location.
   optional<integer> column;
   // Optional end column of breakpoint location if the location covers a range.
@@ -202,9 +177,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(BreakpointLocation);
 // Response to 'breakpointLocations' request.
 // Contains possible locations for source breakpoints.
 struct BreakpointLocationsResponse : public Response {
-  BreakpointLocationsResponse();
-  ~BreakpointLocationsResponse();
-
   // Sorted set of possible breakpoint locations.
   array<BreakpointLocation> breakpoints;
 };
@@ -216,10 +188,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(BreakpointLocationsResponse);
 // capability 'supportsBreakpointLocationsRequest' is true.
 struct BreakpointLocationsRequest : public Request {
   using Response = BreakpointLocationsResponse;
-
-  BreakpointLocationsRequest();
-  ~BreakpointLocationsRequest();
-
   // Optional start column of range to search possible breakpoint locations in.
   // If no start column is given, the first column in the start line is assumed.
   optional<integer> column;
@@ -242,10 +210,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(BreakpointLocationsRequest);
 
 // Response to 'cancel' request. This is just an acknowledgement, so no body
 // field is required.
-struct CancelResponse : public Response {
-  CancelResponse();
-  ~CancelResponse();
-};
+struct CancelResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(CancelResponse);
 
@@ -270,10 +235,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(CancelResponse);
 //  sending the 'cancel' request.
 struct CancelRequest : public Request {
   using Response = CancelResponse;
-
-  CancelRequest();
-  ~CancelRequest();
-
   // The ID (attribute 'progressId') of the progress to cancel. If missing no
   // progress is cancelled. Both a 'requestId' and a 'progressId' can be
   // specified in one request.
@@ -290,9 +251,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(CancelRequest);
 // ModulesView, how to format it, and what the column's label should be. It is
 // only used if the underlying UI actually supports this level of customization.
 struct ColumnDescriptor {
-  ColumnDescriptor();
-  ~ColumnDescriptor();
-
   // Name of the attribute rendered in this column.
   string attributeName;
   // Format to use for the rendered values in this column. TBD how the format
@@ -314,9 +272,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ColumnDescriptor);
 // An ExceptionBreakpointsFilter is shown in the UI as an option for configuring
 // how exceptions are dealt with.
 struct ExceptionBreakpointsFilter {
-  ExceptionBreakpointsFilter();
-  ~ExceptionBreakpointsFilter();
-
   // Initial value of the filter. If not specified a value 'false' is assumed.
   optional<boolean> def;
   // The internal ID of the filter. This value is passed to the
@@ -330,9 +285,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ExceptionBreakpointsFilter);
 
 // Information about the capabilities of a debug adapter.
 struct Capabilities {
-  Capabilities();
-  ~Capabilities();
-
   // The set of additional module information exposed by the debug adapter.
   optional<array<ColumnDescriptor>> additionalModuleColumns;
   // The set of characters that should trigger completion in a REPL. If not
@@ -430,9 +382,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Capabilities);
 // guarantees. Only changed capabilities need to be included, all other
 // capabilities keep their values.
 struct CapabilitiesEvent : public Event {
-  CapabilitiesEvent();
-  ~CapabilitiesEvent();
-
   // The set of updated capabilities.
   Capabilities capabilities;
 };
@@ -441,18 +390,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(CapabilitiesEvent);
 
 // Some predefined types for the CompletionItem. Please note that not all
 // clients have specific icons for all of them.
-struct CompletionItemType {
-  CompletionItemType();
-  ~CompletionItemType();
-};
+struct CompletionItemType {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(CompletionItemType);
 
 // CompletionItems are the suggestions returned from the CompletionsRequest.
 struct CompletionItem {
-  CompletionItem();
-  ~CompletionItem();
-
   // The label of this completion item. By default this is also the text that is
   // inserted when selecting this completion.
   string label;
@@ -487,9 +430,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(CompletionItem);
 
 // Response to 'completions' request.
 struct CompletionsResponse : public Response {
-  CompletionsResponse();
-  ~CompletionsResponse();
-
   // The possible completions for .
   array<CompletionItem> targets;
 };
@@ -501,10 +441,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(CompletionsResponse);
 // 'supportsCompletionsRequest' is true.
 struct CompletionsRequest : public Request {
   using Response = CompletionsResponse;
-
-  CompletionsRequest();
-  ~CompletionsRequest();
-
   // The character position for which to determine the completion proposals.
   integer column;
   // Returns completions in the scope of this stack frame. If not specified, the
@@ -522,10 +458,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(CompletionsRequest);
 
 // Response to 'configurationDone' request. This is just an acknowledgement, so
 // no body field is required.
-struct ConfigurationDoneResponse : public Response {
-  ConfigurationDoneResponse();
-  ~ConfigurationDoneResponse();
-};
+struct ConfigurationDoneResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(ConfigurationDoneResponse);
 
@@ -536,18 +469,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(ConfigurationDoneResponse);
 // 'supportsConfigurationDoneRequest' is true.
 struct ConfigurationDoneRequest : public Request {
   using Response = ConfigurationDoneResponse;
-
-  ConfigurationDoneRequest();
-  ~ConfigurationDoneRequest();
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ConfigurationDoneRequest);
 
 // Response to 'continue' request.
 struct ContinueResponse : public Response {
-  ContinueResponse();
-  ~ContinueResponse();
-
   // If true, the 'continue' request has ignored the specified thread and
   // continued all threads instead. If this attribute is missing a value of
   // 'true' is assumed for backward compatibility.
@@ -559,10 +486,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ContinueResponse);
 // The request starts the debuggee to run again.
 struct ContinueRequest : public Request {
   using Response = ContinueResponse;
-
-  ContinueRequest();
-  ~ContinueRequest();
-
   // Continue execution for the specified thread (if possible).
   // If the backend cannot continue on a single thread but will continue on all
   // threads, it should set the 'allThreadsContinued' attribute in the response
@@ -578,9 +501,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ContinueRequest);
 // 'continue'. It is only necessary to send a 'continued' event if there was no
 // previous request that implied this.
 struct ContinuedEvent : public Event {
-  ContinuedEvent();
-  ~ContinuedEvent();
-
   // If 'allThreadsContinued' is true, a debug adapter can announce that all
   // threads have continued.
   optional<boolean> allThreadsContinued;
@@ -591,18 +511,12 @@ struct ContinuedEvent : public Event {
 DAP_DECLARE_STRUCT_TYPEINFO(ContinuedEvent);
 
 // This enumeration defines all possible access types for data breakpoints.
-struct DataBreakpointAccessType {
-  DataBreakpointAccessType();
-  ~DataBreakpointAccessType();
-};
+struct DataBreakpointAccessType {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpointAccessType);
 
 // Response to 'dataBreakpointInfo' request.
 struct DataBreakpointInfoResponse : public Response {
-  DataBreakpointInfoResponse();
-  ~DataBreakpointInfoResponse();
-
   // Optional attribute listing the available access types for a potential data
   // breakpoint. A UI frontend could surface this information.
   optional<array<DataBreakpointAccessType>> accessTypes;
@@ -625,10 +539,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpointInfoResponse);
 // capability 'supportsDataBreakpoints' is true.
 struct DataBreakpointInfoRequest : public Request {
   using Response = DataBreakpointInfoResponse;
-
-  DataBreakpointInfoRequest();
-  ~DataBreakpointInfoRequest();
-
   // The name of the Variable's child to obtain data breakpoint information for.
   // If variableReference isn’t provided, this can be an expression.
   string name;
@@ -641,9 +551,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpointInfoRequest);
 
 // Represents a single disassembled instruction.
 struct DisassembledInstruction {
-  DisassembledInstruction();
-  ~DisassembledInstruction();
-
   // The address of the instruction. Treated as a hex value if prefixed with
   // '0x', or as a decimal value otherwise.
   string address;
@@ -676,9 +583,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(DisassembledInstruction);
 
 // Response to 'disassemble' request.
 struct DisassembleResponse : public Response {
-  DisassembleResponse();
-  ~DisassembleResponse();
-
   // The list of disassembled instructions.
   array<DisassembledInstruction> instructions;
 };
@@ -690,10 +594,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(DisassembleResponse);
 // 'supportsDisassembleRequest' is true.
 struct DisassembleRequest : public Request {
   using Response = DisassembleResponse;
-
-  DisassembleRequest();
-  ~DisassembleRequest();
-
   // Number of instructions to disassemble starting at the specified location
   // and offset. An adapter must return exactly this number of instructions -
   // any unavailable instructions should be replaced with an
@@ -717,10 +617,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(DisassembleRequest);
 
 // Response to 'disconnect' request. This is just an acknowledgement, so no body
 // field is required.
-struct DisconnectResponse : public Response {
-  DisconnectResponse();
-  ~DisconnectResponse();
-};
+struct DisconnectResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(DisconnectResponse);
 
@@ -733,10 +630,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(DisconnectResponse);
 // 'terminateDebuggee' argument (if supported by the debug adapter).
 struct DisconnectRequest : public Request {
   using Response = DisconnectResponse;
-
-  DisconnectRequest();
-  ~DisconnectRequest();
-
   // A value of true indicates that this 'disconnect' request is part of a
   // restart sequence.
   optional<boolean> restart;
@@ -751,9 +644,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(DisconnectRequest);
 
 // A structured message object. Used to return errors from requests.
 struct Message {
-  Message();
-  ~Message();
-
   // A format string for the message. Embedded variables have the form '{name}'.
   // If variable name starts with an underscore character, the variable does not
   // contain user data (PII) and can be safely used for telemetry purposes.
@@ -779,9 +669,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Message);
 
 // On error (whenever 'success' is false), the body can provide more details.
 struct ErrorResponse : public Response {
-  ErrorResponse();
-  ~ErrorResponse();
-
   // An optional, structured error message.
   optional<Message> error;
 };
@@ -791,9 +678,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ErrorResponse);
 // Optional properties of a variable that can be used to determine how to render
 // the variable in the UI.
 struct VariablePresentationHint {
-  VariablePresentationHint();
-  ~VariablePresentationHint();
-
   // Set of attributes represented as an array of strings. Before introducing
   // additional values, try to use the listed values.
   optional<array<string>> attributes;
@@ -816,9 +700,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(VariablePresentationHint);
 
 // Response to 'evaluate' request.
 struct EvaluateResponse : public Response {
-  EvaluateResponse();
-  ~EvaluateResponse();
-
   // The number of indexed child variables.
   // The client can use this optional information to present the variables in a
   // paged UI and fetch them in chunks. The value should be less than or equal
@@ -856,9 +737,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(EvaluateResponse);
 
 // Provides formatting information for a value.
 struct ValueFormat {
-  ValueFormat();
-  ~ValueFormat();
-
   // Display the value in hex.
   optional<boolean> hex;
 };
@@ -869,10 +747,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ValueFormat);
 // The expression has access to any variables and arguments that are in scope.
 struct EvaluateRequest : public Request {
   using Response = EvaluateResponse;
-
-  EvaluateRequest();
-  ~EvaluateRequest();
-
   // The context in which the evaluate request is run.
   //
   // May be one of the following enumeration values:
@@ -895,18 +769,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(EvaluateRequest);
 // should result in a break. never: never breaks, always: always breaks,
 // unhandled: breaks when exception unhandled,
 // userUnhandled: breaks if the exception is not handled by user code.
-struct ExceptionBreakMode {
-  ExceptionBreakMode();
-  ~ExceptionBreakMode();
-};
+struct ExceptionBreakMode {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionBreakMode);
 
 // Detailed information about an exception that has occurred.
 struct ExceptionDetails {
-  ExceptionDetails();
-  ~ExceptionDetails();
-
   // Optional expression that can be evaluated in the current scope to obtain
   // the exception object.
   optional<string> evaluateName;
@@ -926,9 +794,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ExceptionDetails);
 
 // Response to 'exceptionInfo' request.
 struct ExceptionInfoResponse : public Response {
-  ExceptionInfoResponse();
-  ~ExceptionInfoResponse();
-
   // Mode that caused the exception notification to be raised.
   ExceptionBreakMode breakMode;
   // Descriptive text for the exception provided by the debug adapter.
@@ -946,10 +811,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ExceptionInfoResponse);
 // 'supportsExceptionInfoRequest' is true.
 struct ExceptionInfoRequest : public Request {
   using Response = ExceptionInfoResponse;
-
-  ExceptionInfoRequest();
-  ~ExceptionInfoRequest();
-
   // Thread for which exception information should be retrieved.
   integer threadId;
 };
@@ -958,9 +819,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ExceptionInfoRequest);
 
 // The event indicates that the debuggee has exited and returns its exit code.
 struct ExitedEvent : public Event {
-  ExitedEvent();
-  ~ExitedEvent();
-
   // The exit code returned from the debuggee.
   integer exitCode;
 };
@@ -969,10 +827,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(ExitedEvent);
 
 // Response to 'goto' request. This is just an acknowledgement, so no body field
 // is required.
-struct GotoResponse : public Response {
-  GotoResponse();
-  ~GotoResponse();
-};
+struct GotoResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(GotoResponse);
 
@@ -985,10 +840,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(GotoResponse);
 // targets exist that can be passed as arguments).
 struct GotoRequest : public Request {
   using Response = GotoResponse;
-
-  GotoRequest();
-  ~GotoRequest();
-
   // The location where the debuggee will continue to run.
   integer targetId;
   // Set the goto target for this thread.
@@ -1001,9 +852,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(GotoRequest);
 // 'goto' request. The possible goto targets can be determined via the
 // 'gotoTargets' request.
 struct GotoTarget {
-  GotoTarget();
-  ~GotoTarget();
-
   // An optional column of the goto target.
   optional<integer> column;
   // An optional end column of the range covered by the goto target.
@@ -1025,9 +873,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(GotoTarget);
 
 // Response to 'gotoTargets' request.
 struct GotoTargetsResponse : public Response {
-  GotoTargetsResponse();
-  ~GotoTargetsResponse();
-
   // The possible goto targets of the specified location.
   array<GotoTarget> targets;
 };
@@ -1040,10 +885,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(GotoTargetsResponse);
 // true.
 struct GotoTargetsRequest : public Request {
   using Response = GotoTargetsResponse;
-
-  GotoTargetsRequest();
-  ~GotoTargetsRequest();
-
   // An optional column location for which the goto targets are determined.
   optional<integer> column;
   // The line location for which the goto targets are determined.
@@ -1056,9 +897,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(GotoTargetsRequest);
 
 // Response to 'initialize' request.
 struct InitializeResponse : public Response {
-  InitializeResponse();
-  ~InitializeResponse();
-
   // The set of additional module information exposed by the debug adapter.
   optional<array<ColumnDescriptor>> additionalModuleColumns;
   // The set of characters that should trigger completion in a REPL. If not
@@ -1158,10 +996,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(InitializeResponse);
 // only be sent once.
 struct InitializeRequest : public Request {
   using Response = InitializeResponse;
-
-  InitializeRequest();
-  ~InitializeRequest();
-
   // The ID of the debug adapter.
   string adapterID;
   // The ID of the (frontend) client using this adapter.
@@ -1211,19 +1045,13 @@ DAP_DECLARE_STRUCT_TYPEINFO(InitializeRequest);
 // - frontend sends other future configuration requests
 // - frontend sends one 'configurationDone' request to indicate the end of the
 // configuration.
-struct InitializedEvent : public Event {
-  InitializedEvent();
-  ~InitializedEvent();
-};
+struct InitializedEvent : public Event {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(InitializedEvent);
 
 // Response to 'launch' request. This is just an acknowledgement, so no body
 // field is required.
-struct LaunchResponse : public Response {
-  LaunchResponse();
-  ~LaunchResponse();
-};
+struct LaunchResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(LaunchResponse);
 
@@ -1233,10 +1061,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(LaunchResponse);
 // this specification.
 struct LaunchRequest : public Request {
   using Response = LaunchResponse;
-
-  LaunchRequest();
-  ~LaunchRequest();
-
   // Optional data from the previous, restarted session.
   // The data is sent as the 'restart' attribute of the 'terminated' event.
   // The client should leave the data intact.
@@ -1252,9 +1076,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(LaunchRequest);
 // The event indicates that some source has been added, changed, or removed from
 // the set of all loaded sources.
 struct LoadedSourceEvent : public Event {
-  LoadedSourceEvent();
-  ~LoadedSourceEvent();
-
   // The reason for the event.
   //
   // Must be one of the following enumeration values:
@@ -1268,9 +1089,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(LoadedSourceEvent);
 
 // Response to 'loadedSources' request.
 struct LoadedSourcesResponse : public Response {
-  LoadedSourcesResponse();
-  ~LoadedSourcesResponse();
-
   // Set of loaded sources.
   array<Source> sources;
 };
@@ -1282,9 +1100,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(LoadedSourcesResponse);
 // 'supportsLoadedSourcesRequest' is true.
 struct LoadedSourcesRequest : public Request {
   using Response = LoadedSourcesResponse;
-
-  LoadedSourcesRequest();
-  ~LoadedSourcesRequest();
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(LoadedSourcesRequest);
@@ -1302,9 +1117,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(LoadedSourcesRequest);
 // 'recommended' list below first, and only introduce new attributes if nothing
 // appropriate could be found.
 struct Module {
-  Module();
-  ~Module();
-
   // Address range covered by this module.
   optional<string> addressRange;
   // Module created or modified.
@@ -1339,9 +1151,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Module);
 
 // The event indicates that some information about a module has changed.
 struct ModuleEvent : public Event {
-  ModuleEvent();
-  ~ModuleEvent();
-
   // The new, changed, or removed module. In case of 'removed' only the module
   // id is used.
   Module module;
@@ -1356,9 +1165,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ModuleEvent);
 
 // Response to 'modules' request.
 struct ModulesResponse : public Response {
-  ModulesResponse();
-  ~ModulesResponse();
-
   // All modules or range of modules.
   array<Module> modules;
   // The total number of modules available.
@@ -1373,10 +1179,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ModulesResponse);
 // true.
 struct ModulesRequest : public Request {
   using Response = ModulesResponse;
-
-  ModulesRequest();
-  ~ModulesRequest();
-
   // The number of modules to return. If moduleCount is not specified or 0, all
   // modules are returned.
   optional<integer> moduleCount;
@@ -1388,19 +1190,13 @@ DAP_DECLARE_STRUCT_TYPEINFO(ModulesRequest);
 
 // Response to 'next' request. This is just an acknowledgement, so no body field
 // is required.
-struct NextResponse : public Response {
-  NextResponse();
-  ~NextResponse();
-};
+struct NextResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(NextResponse);
 
 // The granularity of one 'step' in the stepping requests 'next', 'stepIn',
 // 'stepOut', and 'stepBack'.
-struct SteppingGranularity {
-  SteppingGranularity();
-  ~SteppingGranularity();
-};
+struct SteppingGranularity {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(SteppingGranularity);
 
@@ -1409,10 +1205,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SteppingGranularity);
 // reason 'step') after the step has completed.
 struct NextRequest : public Request {
   using Response = NextResponse;
-
-  NextRequest();
-  ~NextRequest();
-
   // Optional granularity to step. If no granularity is specified, a granularity
   // of 'statement' is assumed.
   optional<SteppingGranularity> granularity;
@@ -1424,9 +1216,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(NextRequest);
 
 // The event indicates that the target has produced some output.
 struct OutputEvent : public Event {
-  OutputEvent();
-  ~OutputEvent();
-
   // The output category. If not specified, 'console' is assumed.
   //
   // May be one of the following enumeration values:
@@ -1460,10 +1249,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(OutputEvent);
 
 // Response to 'pause' request. This is just an acknowledgement, so no body
 // field is required.
-struct PauseResponse : public Response {
-  PauseResponse();
-  ~PauseResponse();
-};
+struct PauseResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(PauseResponse);
 
@@ -1472,10 +1258,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(PauseResponse);
 // reason 'pause') after the thread has been paused successfully.
 struct PauseRequest : public Request {
   using Response = PauseResponse;
-
-  PauseRequest();
-  ~PauseRequest();
-
   // Pause execution for this thread.
   integer threadId;
 };
@@ -1485,9 +1267,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(PauseRequest);
 // The event indicates that the debugger has begun debugging a new process.
 // Either one that it has launched, or one that it has attached to.
 struct ProcessEvent : public Event {
-  ProcessEvent();
-  ~ProcessEvent();
-
   // If true, the process is running on the same computer as the debug adapter.
   optional<boolean> isLocalProcess;
   // The logical name of the process. This is usually the full path to process's
@@ -1513,9 +1292,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ProcessEvent);
 // true for the 'supportsProgressReporting' capability of the 'initialize'
 // request.
 struct ProgressEndEvent : public Event {
-  ProgressEndEvent();
-  ~ProgressEndEvent();
-
   // Optional, more detailed progress message. If omitted, the previous message
   // (if any) is used.
   optional<string> message;
@@ -1532,9 +1308,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ProgressEndEvent);
 // has passed the value true for the 'supportsProgressReporting' capability of
 // the 'initialize' request.
 struct ProgressStartEvent : public Event {
-  ProgressStartEvent();
-  ~ProgressStartEvent();
-
   // If true, the request that reports progress may be canceled with a 'cancel'
   // request. So this property basically controls whether the client should use
   // UX that supports cancellation. Clients that don't support cancellation are
@@ -1569,9 +1342,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ProgressStartEvent);
 // the value true for the 'supportsProgressReporting' capability of the
 // 'initialize' request.
 struct ProgressUpdateEvent : public Event {
-  ProgressUpdateEvent();
-  ~ProgressUpdateEvent();
-
   // Optional, more detailed progress message. If omitted, the previous message
   // (if any) is used.
   optional<string> message;
@@ -1586,9 +1356,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ProgressUpdateEvent);
 
 // Response to 'readMemory' request.
 struct ReadMemoryResponse : public Response {
-  ReadMemoryResponse();
-  ~ReadMemoryResponse();
-
   // The address of the first byte of data returned.
   // Treated as a hex value if prefixed with '0x', or as a decimal value
   // otherwise.
@@ -1608,10 +1375,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ReadMemoryResponse);
 // 'supportsReadMemoryRequest' is true.
 struct ReadMemoryRequest : public Request {
   using Response = ReadMemoryResponse;
-
-  ReadMemoryRequest();
-  ~ReadMemoryRequest();
-
   // Number of bytes to read at the specified location and offset.
   integer count;
   // Memory reference to the base location from which data should be read.
@@ -1625,10 +1388,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(ReadMemoryRequest);
 
 // Response to 'restartFrame' request. This is just an acknowledgement, so no
 // body field is required.
-struct RestartFrameResponse : public Response {
-  RestartFrameResponse();
-  ~RestartFrameResponse();
-};
+struct RestartFrameResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(RestartFrameResponse);
 
@@ -1638,10 +1398,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(RestartFrameResponse);
 // this request if the capability 'supportsRestartFrame' is true.
 struct RestartFrameRequest : public Request {
   using Response = RestartFrameResponse;
-
-  RestartFrameRequest();
-  ~RestartFrameRequest();
-
   // Restart this stackframe.
   integer frameId;
 };
@@ -1650,10 +1406,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(RestartFrameRequest);
 
 // Response to 'restart' request. This is just an acknowledgement, so no body
 // field is required.
-struct RestartResponse : public Response {
-  RestartResponse();
-  ~RestartResponse();
-};
+struct RestartResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(RestartResponse);
 
@@ -1663,19 +1416,13 @@ DAP_DECLARE_STRUCT_TYPEINFO(RestartResponse);
 // the debug adapter first and then launching it anew.
 struct RestartRequest : public Request {
   using Response = RestartResponse;
-
-  RestartRequest();
-  ~RestartRequest();
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(RestartRequest);
 
 // Response to 'reverseContinue' request. This is just an acknowledgement, so no
 // body field is required.
-struct ReverseContinueResponse : public Response {
-  ReverseContinueResponse();
-  ~ReverseContinueResponse();
-};
+struct ReverseContinueResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(ReverseContinueResponse);
 
@@ -1684,10 +1431,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ReverseContinueResponse);
 // true.
 struct ReverseContinueRequest : public Request {
   using Response = ReverseContinueResponse;
-
-  ReverseContinueRequest();
-  ~ReverseContinueRequest();
-
   // Execute 'reverseContinue' for this thread.
   integer threadId;
 };
@@ -1696,9 +1439,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ReverseContinueRequest);
 
 // Response to 'runInTerminal' request.
 struct RunInTerminalResponse : public Response {
-  RunInTerminalResponse();
-  ~RunInTerminalResponse();
-
   // The process ID. The value should be less than or equal to 2147483647 (2^31
   // - 1).
   optional<integer> processId;
@@ -1716,10 +1456,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(RunInTerminalResponse);
 // capability of the 'initialize' request.
 struct RunInTerminalRequest : public Request {
   using Response = RunInTerminalResponse;
-
-  RunInTerminalRequest();
-  ~RunInTerminalRequest();
-
   // List of arguments. The first argument is the command to run.
   array<string> args;
   // Working directory of the command.
@@ -1741,9 +1477,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(RunInTerminalRequest);
 // A Scope is a named container for variables. Optionally a scope can map to a
 // source or a range within a source.
 struct Scope {
-  Scope();
-  ~Scope();
-
   // Optional start column of the range covered by this scope.
   optional<integer> column;
   // Optional end column of the range covered by this scope.
@@ -1783,9 +1516,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Scope);
 
 // Response to 'scopes' request.
 struct ScopesResponse : public Response {
-  ScopesResponse();
-  ~ScopesResponse();
-
   // The scopes of the stackframe. If the array has length zero, there are no
   // scopes available.
   array<Scope> scopes;
@@ -1796,10 +1526,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ScopesResponse);
 // The request returns the variable scopes for a given stackframe ID.
 struct ScopesRequest : public Request {
   using Response = ScopesResponse;
-
-  ScopesRequest();
-  ~ScopesRequest();
-
   // Retrieve the scopes for this stackframe.
   integer frameId;
 };
@@ -1812,9 +1538,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ScopesRequest);
 // verified. The breakpoints returned are in the same order as the elements of
 // the 'breakpoints' (or the deprecated 'lines') array in the arguments.
 struct SetBreakpointsResponse : public Response {
-  SetBreakpointsResponse();
-  ~SetBreakpointsResponse();
-
   // Information about the breakpoints.
   // The array elements are in the same order as the elements of the
   // 'breakpoints' (or the deprecated 'lines') array in the arguments.
@@ -1825,9 +1548,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetBreakpointsResponse);
 
 // Properties of a breakpoint or logpoint passed to the setBreakpoints request.
 struct SourceBreakpoint {
-  SourceBreakpoint();
-  ~SourceBreakpoint();
-
   // An optional source column of the breakpoint.
   optional<integer> column;
   // An optional expression for conditional breakpoints.
@@ -1856,10 +1576,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SourceBreakpoint);
 // 'breakpoint') is generated.
 struct SetBreakpointsRequest : public Request {
   using Response = SetBreakpointsResponse;
-
-  SetBreakpointsRequest();
-  ~SetBreakpointsRequest();
-
   // The code locations of the breakpoints.
   optional<array<SourceBreakpoint>> breakpoints;
   // Deprecated: The code locations of the breakpoints.
@@ -1877,9 +1593,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetBreakpointsRequest);
 // Response to 'setDataBreakpoints' request.
 // Returned is information about each breakpoint created by this request.
 struct SetDataBreakpointsResponse : public Response {
-  SetDataBreakpointsResponse();
-  ~SetDataBreakpointsResponse();
-
   // Information about the data breakpoints. The array elements correspond to
   // the elements of the input argument 'breakpoints' array.
   array<Breakpoint> breakpoints;
@@ -1889,9 +1602,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetDataBreakpointsResponse);
 
 // Properties of a data breakpoint passed to the setDataBreakpoints request.
 struct DataBreakpoint {
-  DataBreakpoint();
-  ~DataBreakpoint();
-
   // The access type of the data.
   optional<DataBreakpointAccessType> accessType;
   // An optional expression for conditional breakpoints.
@@ -1913,10 +1623,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpoint);
 // capability 'supportsDataBreakpoints' is true.
 struct SetDataBreakpointsRequest : public Request {
   using Response = SetDataBreakpointsResponse;
-
-  SetDataBreakpointsRequest();
-  ~SetDataBreakpointsRequest();
-
   // The contents of this array replaces all existing data breakpoints. An empty
   // array clears all data breakpoints.
   array<DataBreakpoint> breakpoints;
@@ -1926,10 +1632,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetDataBreakpointsRequest);
 
 // Response to 'setExceptionBreakpoints' request. This is just an
 // acknowledgement, so no body field is required.
-struct SetExceptionBreakpointsResponse : public Response {
-  SetExceptionBreakpointsResponse();
-  ~SetExceptionBreakpointsResponse();
-};
+struct SetExceptionBreakpointsResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetExceptionBreakpointsResponse);
 
@@ -1938,9 +1641,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetExceptionBreakpointsResponse);
 // one name, it matches the names provided if 'negate' is false or missing or it
 // matches anything except the names provided if 'negate' is true.
 struct ExceptionPathSegment {
-  ExceptionPathSegment();
-  ~ExceptionPathSegment();
-
   // Depending on the value of 'negate' the names that should match or not
   // match.
   array<string> names;
@@ -1953,9 +1653,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ExceptionPathSegment);
 
 // An ExceptionOptions assigns configuration options to a set of exceptions.
 struct ExceptionOptions {
-  ExceptionOptions();
-  ~ExceptionOptions();
-
   // Condition when a thrown exception should result in a break.
   ExceptionBreakMode breakMode;
   // A path that selects a single or multiple exceptions in a tree. If 'path' is
@@ -1972,10 +1669,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ExceptionOptions);
 // 'exceptionBreakpointFilters' returns one or more filters.
 struct SetExceptionBreakpointsRequest : public Request {
   using Response = SetExceptionBreakpointsResponse;
-
-  SetExceptionBreakpointsRequest();
-  ~SetExceptionBreakpointsRequest();
-
   // Configuration options for selected exceptions.
   // The attribute is only honored by a debug adapter if the capability
   // 'supportsExceptionOptions' is true.
@@ -1989,9 +1682,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetExceptionBreakpointsRequest);
 
 // Response to 'setExpression' request.
 struct SetExpressionResponse : public Response {
-  SetExpressionResponse();
-  ~SetExpressionResponse();
-
   // The number of indexed child variables.
   // The client can use this optional information to present the variables in a
   // paged UI and fetch them in chunks. The value should be less than or equal
@@ -2027,10 +1717,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetExpressionResponse);
 // true.
 struct SetExpressionRequest : public Request {
   using Response = SetExpressionResponse;
-
-  SetExpressionRequest();
-  ~SetExpressionRequest();
-
   // The l-value expression to assign to.
   string expression;
   // Specifies how the resulting value should be formatted.
@@ -2047,9 +1733,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetExpressionRequest);
 // Response to 'setFunctionBreakpoints' request.
 // Returned is information about each breakpoint created by this request.
 struct SetFunctionBreakpointsResponse : public Response {
-  SetFunctionBreakpointsResponse();
-  ~SetFunctionBreakpointsResponse();
-
   // Information about the breakpoints. The array elements correspond to the
   // elements of the 'breakpoints' array.
   array<Breakpoint> breakpoints;
@@ -2059,9 +1742,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetFunctionBreakpointsResponse);
 
 // Properties of a breakpoint passed to the setFunctionBreakpoints request.
 struct FunctionBreakpoint {
-  FunctionBreakpoint();
-  ~FunctionBreakpoint();
-
   // An optional expression for conditional breakpoints.
   // It is only honored by a debug adapter if the capability
   // 'supportsConditionalBreakpoints' is true.
@@ -2084,10 +1764,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(FunctionBreakpoint);
 // capability 'supportsFunctionBreakpoints' is true.
 struct SetFunctionBreakpointsRequest : public Request {
   using Response = SetFunctionBreakpointsResponse;
-
-  SetFunctionBreakpointsRequest();
-  ~SetFunctionBreakpointsRequest();
-
   // The function names of the breakpoints.
   array<FunctionBreakpoint> breakpoints;
 };
@@ -2096,9 +1772,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetFunctionBreakpointsRequest);
 
 // Response to 'setInstructionBreakpoints' request
 struct SetInstructionBreakpointsResponse : public Response {
-  SetInstructionBreakpointsResponse();
-  ~SetInstructionBreakpointsResponse();
-
   // Information about the breakpoints. The array elements correspond to the
   // elements of the 'breakpoints' array.
   array<Breakpoint> breakpoints;
@@ -2108,9 +1781,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetInstructionBreakpointsResponse);
 
 // Properties of a breakpoint passed to the setInstructionBreakpoints request
 struct InstructionBreakpoint {
-  InstructionBreakpoint();
-  ~InstructionBreakpoint();
-
   // An optional expression for conditional breakpoints.
   // It is only honored by a debug adapter if the capability
   // 'supportsConditionalBreakpoints' is true.
@@ -2139,10 +1809,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(InstructionBreakpoint);
 // 'supportsInstructionBreakpoints' is true.
 struct SetInstructionBreakpointsRequest : public Request {
   using Response = SetInstructionBreakpointsResponse;
-
-  SetInstructionBreakpointsRequest();
-  ~SetInstructionBreakpointsRequest();
-
   // The instruction references of the breakpoints
   array<InstructionBreakpoint> breakpoints;
 };
@@ -2151,9 +1817,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetInstructionBreakpointsRequest);
 
 // Response to 'setVariable' request.
 struct SetVariableResponse : public Response {
-  SetVariableResponse();
-  ~SetVariableResponse();
-
   // The number of indexed child variables.
   // The client can use this optional information to present the variables in a
   // paged UI and fetch them in chunks. The value should be less than or equal
@@ -2182,10 +1845,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetVariableResponse);
 // 'supportsSetVariable' is true.
 struct SetVariableRequest : public Request {
   using Response = SetVariableResponse;
-
-  SetVariableRequest();
-  ~SetVariableRequest();
-
   // Specifies details on how to format the response value.
   optional<ValueFormat> format;
   // The name of the variable in the container.
@@ -2200,9 +1859,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SetVariableRequest);
 
 // Response to 'source' request.
 struct SourceResponse : public Response {
-  SourceResponse();
-  ~SourceResponse();
-
   // Content of the source reference.
   string content;
   // Optional content type (mime type) of the source.
@@ -2214,10 +1870,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SourceResponse);
 // The request retrieves the source code for a given source reference.
 struct SourceRequest : public Request {
   using Response = SourceResponse;
-
-  SourceRequest();
-  ~SourceRequest();
-
   // Specifies the source content to load. Either source.path or
   // source.sourceReference must be specified.
   optional<Source> source;
@@ -2231,9 +1883,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(SourceRequest);
 
 // A Stackframe contains the source location.
 struct StackFrame {
-  StackFrame();
-  ~StackFrame();
-
   // The column within the line. If source is null or doesn't exist, column is 0
   // and must be ignored.
   integer column;
@@ -2271,9 +1920,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StackFrame);
 
 // Response to 'stackTrace' request.
 struct StackTraceResponse : public Response {
-  StackTraceResponse();
-  ~StackTraceResponse();
-
   // The frames of the stackframe. If the array has length zero, there are no
   // stackframes available. This means that there is no location information
   // available.
@@ -2286,9 +1932,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StackTraceResponse);
 
 // Provides formatting information for a stack frame.
 struct StackFrameFormat : public ValueFormat {
-  StackFrameFormat();
-  ~StackFrameFormat();
-
   // Includes all stack frames, including those the debug adapter might
   // otherwise hide.
   optional<boolean> includeAll;
@@ -2311,10 +1954,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StackFrameFormat);
 // The request returns a stacktrace from the current execution state.
 struct StackTraceRequest : public Request {
   using Response = StackTraceResponse;
-
-  StackTraceRequest();
-  ~StackTraceRequest();
-
   // Specifies details on how to format the stack frames.
   // The attribute is only honored by a debug adapter if the capability
   // 'supportsValueFormattingOptions' is true.
@@ -2332,10 +1971,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(StackTraceRequest);
 
 // Response to 'stepBack' request. This is just an acknowledgement, so no body
 // field is required.
-struct StepBackResponse : public Response {
-  StepBackResponse();
-  ~StepBackResponse();
-};
+struct StepBackResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepBackResponse);
 
@@ -2345,10 +1981,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepBackResponse);
 // request if the capability 'supportsStepBack' is true.
 struct StepBackRequest : public Request {
   using Response = StepBackResponse;
-
-  StepBackRequest();
-  ~StepBackRequest();
-
   // Optional granularity to step. If no granularity is specified, a granularity
   // of 'statement' is assumed.
   optional<SteppingGranularity> granularity;
@@ -2360,10 +1992,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepBackRequest);
 
 // Response to 'stepIn' request. This is just an acknowledgement, so no body
 // field is required.
-struct StepInResponse : public Response {
-  StepInResponse();
-  ~StepInResponse();
-};
+struct StepInResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepInResponse);
 
@@ -2377,10 +2006,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepInResponse);
 // retrieved via the 'stepInTargets' request.
 struct StepInRequest : public Request {
   using Response = StepInResponse;
-
-  StepInRequest();
-  ~StepInRequest();
-
   // Optional granularity to step. If no granularity is specified, a granularity
   // of 'statement' is assumed.
   optional<SteppingGranularity> granularity;
@@ -2395,9 +2020,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepInRequest);
 // A StepInTarget can be used in the 'stepIn' request and determines into which
 // single target the stepIn request should step.
 struct StepInTarget {
-  StepInTarget();
-  ~StepInTarget();
-
   // Unique identifier for a stepIn target.
   integer id;
   // The name of the stepIn target (shown in the UI).
@@ -2408,9 +2030,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepInTarget);
 
 // Response to 'stepInTargets' request.
 struct StepInTargetsResponse : public Response {
-  StepInTargetsResponse();
-  ~StepInTargetsResponse();
-
   // The possible stepIn targets of the specified source location.
   array<StepInTarget> targets;
 };
@@ -2424,10 +2043,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepInTargetsResponse);
 // 'supportsStepInTargetsRequest' is true.
 struct StepInTargetsRequest : public Request {
   using Response = StepInTargetsResponse;
-
-  StepInTargetsRequest();
-  ~StepInTargetsRequest();
-
   // The stack frame for which to retrieve the possible stepIn targets.
   integer frameId;
 };
@@ -2436,10 +2051,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepInTargetsRequest);
 
 // Response to 'stepOut' request. This is just an acknowledgement, so no body
 // field is required.
-struct StepOutResponse : public Response {
-  StepOutResponse();
-  ~StepOutResponse();
-};
+struct StepOutResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepOutResponse);
 
@@ -2448,10 +2060,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepOutResponse);
 // reason 'step') after the step has completed.
 struct StepOutRequest : public Request {
   using Response = StepOutResponse;
-
-  StepOutRequest();
-  ~StepOutRequest();
-
   // Optional granularity to step. If no granularity is specified, a granularity
   // of 'statement' is assumed.
   optional<SteppingGranularity> granularity;
@@ -2465,9 +2073,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepOutRequest);
 // some condition. This can be caused by a break point previously set, a
 // stepping request has completed, by executing a debugger statement etc.
 struct StoppedEvent : public Event {
-  StoppedEvent();
-  ~StoppedEvent();
-
   // If 'allThreadsStopped' is true, a debug adapter can announce that all
   // threads have stopped.
   // - The client should use this information to enable that all threads can be
@@ -2500,10 +2105,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(StoppedEvent);
 
 // Response to 'terminate' request. This is just an acknowledgement, so no body
 // field is required.
-struct TerminateResponse : public Response {
-  TerminateResponse();
-  ~TerminateResponse();
-};
+struct TerminateResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(TerminateResponse);
 
@@ -2512,10 +2114,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(TerminateResponse);
 // call this request if the capability 'supportsTerminateRequest' is true.
 struct TerminateRequest : public Request {
   using Response = TerminateResponse;
-
-  TerminateRequest();
-  ~TerminateRequest();
-
   // A value of true indicates that this 'terminate' request is part of a
   // restart sequence.
   optional<boolean> restart;
@@ -2525,10 +2123,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(TerminateRequest);
 
 // Response to 'terminateThreads' request. This is just an acknowledgement, so
 // no body field is required.
-struct TerminateThreadsResponse : public Response {
-  TerminateThreadsResponse();
-  ~TerminateThreadsResponse();
-};
+struct TerminateThreadsResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(TerminateThreadsResponse);
 
@@ -2537,10 +2132,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(TerminateThreadsResponse);
 // 'supportsTerminateThreadsRequest' is true.
 struct TerminateThreadsRequest : public Request {
   using Response = TerminateThreadsResponse;
-
-  TerminateThreadsRequest();
-  ~TerminateThreadsRequest();
-
   // Ids of threads to be terminated.
   optional<array<integer>> threadIds;
 };
@@ -2550,9 +2141,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(TerminateThreadsRequest);
 // The event indicates that debugging of the debuggee has terminated. This does
 // **not** mean that the debuggee itself has exited.
 struct TerminatedEvent : public Event {
-  TerminatedEvent();
-  ~TerminatedEvent();
-
   // A debug adapter may set 'restart' to true (or to an arbitrary object) to
   // request that the front end restarts the session. The value is not
   // interpreted by the client and passed unmodified as an attribute '__restart'
@@ -2565,9 +2153,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(TerminatedEvent);
 
 // The event indicates that a thread has started or exited.
 struct ThreadEvent : public Event {
-  ThreadEvent();
-  ~ThreadEvent();
-
   // The reason for the event.
   //
   // May be one of the following enumeration values:
@@ -2581,9 +2166,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ThreadEvent);
 
 // A Thread
 struct Thread {
-  Thread();
-  ~Thread();
-
   // Unique identifier for the thread.
   integer id;
   // A name of the thread.
@@ -2594,9 +2176,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Thread);
 
 // Response to 'threads' request.
 struct ThreadsResponse : public Response {
-  ThreadsResponse();
-  ~ThreadsResponse();
-
   // All threads.
   array<Thread> threads;
 };
@@ -2606,9 +2185,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ThreadsResponse);
 // The request retrieves a list of all threads.
 struct ThreadsRequest : public Request {
   using Response = ThreadsResponse;
-
-  ThreadsRequest();
-  ~ThreadsRequest();
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ThreadsRequest);
@@ -2624,9 +2200,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(ThreadsRequest);
 // 'indexedVariables' attributes. The client can use this optional information
 // to present the children in a paged UI and fetch them in chunks.
 struct Variable {
-  Variable();
-  ~Variable();
-
   // Optional evaluatable name of this variable which can be passed to the
   // 'EvaluateRequest' to fetch the variable's value.
   optional<string> evaluateName;
@@ -2665,9 +2238,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(Variable);
 
 // Response to 'variables' request.
 struct VariablesResponse : public Response {
-  VariablesResponse();
-  ~VariablesResponse();
-
   // All (or a range) of variables for the given variable reference.
   array<Variable> variables;
 };
@@ -2679,10 +2249,6 @@ DAP_DECLARE_STRUCT_TYPEINFO(VariablesResponse);
 // or indexed children.
 struct VariablesRequest : public Request {
   using Response = VariablesResponse;
-
-  VariablesRequest();
-  ~VariablesRequest();
-
   // The number of variables to return. If count is missing or 0, all variables
   // are returned.
   optional<integer> count;

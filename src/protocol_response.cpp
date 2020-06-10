@@ -21,39 +21,25 @@
 
 namespace dap {
 
-AttachResponse::AttachResponse() = default;
-AttachResponse::~AttachResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(AttachResponse, "");
 
-BreakpointLocationsResponse::BreakpointLocationsResponse() = default;
-BreakpointLocationsResponse::~BreakpointLocationsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(BreakpointLocationsResponse,
                               "",
                               DAP_FIELD(breakpoints, "breakpoints"));
 
-CancelResponse::CancelResponse() = default;
-CancelResponse::~CancelResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(CancelResponse, "");
 
-CompletionsResponse::CompletionsResponse() = default;
-CompletionsResponse::~CompletionsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(CompletionsResponse,
                               "",
                               DAP_FIELD(targets, "targets"));
 
-ConfigurationDoneResponse::ConfigurationDoneResponse() = default;
-ConfigurationDoneResponse::~ConfigurationDoneResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ConfigurationDoneResponse, "");
 
-ContinueResponse::ContinueResponse() = default;
-ContinueResponse::~ContinueResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ContinueResponse,
                               "",
                               DAP_FIELD(allThreadsContinued,
                                         "allThreadsContinued"));
 
-DataBreakpointInfoResponse::DataBreakpointInfoResponse() = default;
-DataBreakpointInfoResponse::~DataBreakpointInfoResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(DataBreakpointInfoResponse,
                               "",
                               DAP_FIELD(accessTypes, "accessTypes"),
@@ -61,22 +47,14 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(DataBreakpointInfoResponse,
                               DAP_FIELD(dataId, "dataId"),
                               DAP_FIELD(description, "description"));
 
-DisassembleResponse::DisassembleResponse() = default;
-DisassembleResponse::~DisassembleResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(DisassembleResponse,
                               "",
                               DAP_FIELD(instructions, "instructions"));
 
-DisconnectResponse::DisconnectResponse() = default;
-DisconnectResponse::~DisconnectResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(DisconnectResponse, "");
 
-ErrorResponse::ErrorResponse() = default;
-ErrorResponse::~ErrorResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ErrorResponse, "", DAP_FIELD(error, "error"));
 
-EvaluateResponse::EvaluateResponse() = default;
-EvaluateResponse::~EvaluateResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(EvaluateResponse,
                               "",
                               DAP_FIELD(indexedVariables, "indexedVariables"),
@@ -88,8 +66,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(EvaluateResponse,
                               DAP_FIELD(variablesReference,
                                         "variablesReference"));
 
-ExceptionInfoResponse::ExceptionInfoResponse() = default;
-ExceptionInfoResponse::~ExceptionInfoResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ExceptionInfoResponse,
                               "",
                               DAP_FIELD(breakMode, "breakMode"),
@@ -97,18 +73,12 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(ExceptionInfoResponse,
                               DAP_FIELD(details, "details"),
                               DAP_FIELD(exceptionId, "exceptionId"));
 
-GotoResponse::GotoResponse() = default;
-GotoResponse::~GotoResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(GotoResponse, "");
 
-GotoTargetsResponse::GotoTargetsResponse() = default;
-GotoTargetsResponse::~GotoTargetsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(GotoTargetsResponse,
                               "",
                               DAP_FIELD(targets, "targets"));
 
-InitializeResponse::InitializeResponse() = default;
-InitializeResponse::~InitializeResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(
     InitializeResponse,
     "",
@@ -154,80 +124,50 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(
     DAP_FIELD(supportsValueFormattingOptions,
               "supportsValueFormattingOptions"));
 
-LaunchResponse::LaunchResponse() = default;
-LaunchResponse::~LaunchResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(LaunchResponse, "");
 
-LoadedSourcesResponse::LoadedSourcesResponse() = default;
-LoadedSourcesResponse::~LoadedSourcesResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(LoadedSourcesResponse,
                               "",
                               DAP_FIELD(sources, "sources"));
 
-ModulesResponse::ModulesResponse() = default;
-ModulesResponse::~ModulesResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ModulesResponse,
                               "",
                               DAP_FIELD(modules, "modules"),
                               DAP_FIELD(totalModules, "totalModules"));
 
-NextResponse::NextResponse() = default;
-NextResponse::~NextResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(NextResponse, "");
 
-PauseResponse::PauseResponse() = default;
-PauseResponse::~PauseResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(PauseResponse, "");
 
-ReadMemoryResponse::ReadMemoryResponse() = default;
-ReadMemoryResponse::~ReadMemoryResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ReadMemoryResponse,
                               "",
                               DAP_FIELD(address, "address"),
                               DAP_FIELD(data, "data"),
                               DAP_FIELD(unreadableBytes, "unreadableBytes"));
 
-RestartFrameResponse::RestartFrameResponse() = default;
-RestartFrameResponse::~RestartFrameResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(RestartFrameResponse, "");
 
-RestartResponse::RestartResponse() = default;
-RestartResponse::~RestartResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(RestartResponse, "");
 
-ReverseContinueResponse::ReverseContinueResponse() = default;
-ReverseContinueResponse::~ReverseContinueResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ReverseContinueResponse, "");
 
-RunInTerminalResponse::RunInTerminalResponse() = default;
-RunInTerminalResponse::~RunInTerminalResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(RunInTerminalResponse,
                               "",
                               DAP_FIELD(processId, "processId"),
                               DAP_FIELD(shellProcessId, "shellProcessId"));
 
-ScopesResponse::ScopesResponse() = default;
-ScopesResponse::~ScopesResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ScopesResponse, "", DAP_FIELD(scopes, "scopes"));
 
-SetBreakpointsResponse::SetBreakpointsResponse() = default;
-SetBreakpointsResponse::~SetBreakpointsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SetBreakpointsResponse,
                               "",
                               DAP_FIELD(breakpoints, "breakpoints"));
 
-SetDataBreakpointsResponse::SetDataBreakpointsResponse() = default;
-SetDataBreakpointsResponse::~SetDataBreakpointsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SetDataBreakpointsResponse,
                               "",
                               DAP_FIELD(breakpoints, "breakpoints"));
 
-SetExceptionBreakpointsResponse::SetExceptionBreakpointsResponse() = default;
-SetExceptionBreakpointsResponse::~SetExceptionBreakpointsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SetExceptionBreakpointsResponse, "");
 
-SetExpressionResponse::SetExpressionResponse() = default;
-SetExpressionResponse::~SetExpressionResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SetExpressionResponse,
                               "",
                               DAP_FIELD(indexedVariables, "indexedVariables"),
@@ -238,22 +178,14 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(SetExpressionResponse,
                               DAP_FIELD(variablesReference,
                                         "variablesReference"));
 
-SetFunctionBreakpointsResponse::SetFunctionBreakpointsResponse() = default;
-SetFunctionBreakpointsResponse::~SetFunctionBreakpointsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SetFunctionBreakpointsResponse,
                               "",
                               DAP_FIELD(breakpoints, "breakpoints"));
 
-SetInstructionBreakpointsResponse::SetInstructionBreakpointsResponse() =
-    default;
-SetInstructionBreakpointsResponse::~SetInstructionBreakpointsResponse() =
-    default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SetInstructionBreakpointsResponse,
                               "",
                               DAP_FIELD(breakpoints, "breakpoints"));
 
-SetVariableResponse::SetVariableResponse() = default;
-SetVariableResponse::~SetVariableResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SetVariableResponse,
                               "",
                               DAP_FIELD(indexedVariables, "indexedVariables"),
@@ -263,54 +195,34 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(SetVariableResponse,
                               DAP_FIELD(variablesReference,
                                         "variablesReference"));
 
-SourceResponse::SourceResponse() = default;
-SourceResponse::~SourceResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SourceResponse,
                               "",
                               DAP_FIELD(content, "content"),
                               DAP_FIELD(mimeType, "mimeType"));
 
-StackTraceResponse::StackTraceResponse() = default;
-StackTraceResponse::~StackTraceResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StackTraceResponse,
                               "",
                               DAP_FIELD(stackFrames, "stackFrames"),
                               DAP_FIELD(totalFrames, "totalFrames"));
 
-StepBackResponse::StepBackResponse() = default;
-StepBackResponse::~StepBackResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StepBackResponse, "");
 
-StepInResponse::StepInResponse() = default;
-StepInResponse::~StepInResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StepInResponse, "");
 
-StepInTargetsResponse::StepInTargetsResponse() = default;
-StepInTargetsResponse::~StepInTargetsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StepInTargetsResponse,
                               "",
                               DAP_FIELD(targets, "targets"));
 
-StepOutResponse::StepOutResponse() = default;
-StepOutResponse::~StepOutResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StepOutResponse, "");
 
-TerminateResponse::TerminateResponse() = default;
-TerminateResponse::~TerminateResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(TerminateResponse, "");
 
-TerminateThreadsResponse::TerminateThreadsResponse() = default;
-TerminateThreadsResponse::~TerminateThreadsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(TerminateThreadsResponse, "");
 
-ThreadsResponse::ThreadsResponse() = default;
-ThreadsResponse::~ThreadsResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ThreadsResponse,
                               "",
                               DAP_FIELD(threads, "threads"));
 
-VariablesResponse::VariablesResponse() = default;
-VariablesResponse::~VariablesResponse() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(VariablesResponse,
                               "",
                               DAP_FIELD(variables, "variables"));

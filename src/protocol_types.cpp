@@ -21,19 +21,13 @@
 
 namespace dap {
 
-ChecksumAlgorithm::ChecksumAlgorithm() = default;
-ChecksumAlgorithm::~ChecksumAlgorithm() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ChecksumAlgorithm, "");
 
-Checksum::Checksum() = default;
-Checksum::~Checksum() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Checksum,
                               "",
                               DAP_FIELD(algorithm, "algorithm"),
                               DAP_FIELD(checksum, "checksum"));
 
-Source::Source() = default;
-Source::~Source() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Source,
                               "",
                               DAP_FIELD(adapterData, "adapterData"),
@@ -45,8 +39,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(Source,
                               DAP_FIELD(sourceReference, "sourceReference"),
                               DAP_FIELD(sources, "sources"));
 
-Breakpoint::Breakpoint() = default;
-Breakpoint::~Breakpoint() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Breakpoint,
                               "",
                               DAP_FIELD(column, "column"),
@@ -61,8 +53,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(Breakpoint,
                               DAP_FIELD(source, "source"),
                               DAP_FIELD(verified, "verified"));
 
-BreakpointLocation::BreakpointLocation() = default;
-BreakpointLocation::~BreakpointLocation() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(BreakpointLocation,
                               "",
                               DAP_FIELD(column, "column"),
@@ -70,8 +60,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(BreakpointLocation,
                               DAP_FIELD(endLine, "endLine"),
                               DAP_FIELD(line, "line"));
 
-ColumnDescriptor::ColumnDescriptor() = default;
-ColumnDescriptor::~ColumnDescriptor() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ColumnDescriptor,
                               "",
                               DAP_FIELD(attributeName, "attributeName"),
@@ -80,16 +68,12 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(ColumnDescriptor,
                               DAP_FIELD(type, "type"),
                               DAP_FIELD(width, "width"));
 
-ExceptionBreakpointsFilter::ExceptionBreakpointsFilter() = default;
-ExceptionBreakpointsFilter::~ExceptionBreakpointsFilter() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ExceptionBreakpointsFilter,
                               "",
                               DAP_FIELD(def, "default"),
                               DAP_FIELD(filter, "filter"),
                               DAP_FIELD(label, "label"));
 
-Capabilities::Capabilities() = default;
-Capabilities::~Capabilities() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(
     Capabilities,
     "",
@@ -135,12 +119,8 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(
     DAP_FIELD(supportsValueFormattingOptions,
               "supportsValueFormattingOptions"));
 
-CompletionItemType::CompletionItemType() = default;
-CompletionItemType::~CompletionItemType() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(CompletionItemType, "");
 
-CompletionItem::CompletionItem() = default;
-CompletionItem::~CompletionItem() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(CompletionItem,
                               "",
                               DAP_FIELD(label, "label"),
@@ -152,12 +132,8 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(CompletionItem,
                               DAP_FIELD(text, "text"),
                               DAP_FIELD(type, "type"));
 
-DataBreakpointAccessType::DataBreakpointAccessType() = default;
-DataBreakpointAccessType::~DataBreakpointAccessType() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(DataBreakpointAccessType, "");
 
-DisassembledInstruction::DisassembledInstruction() = default;
-DisassembledInstruction::~DisassembledInstruction() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(DisassembledInstruction,
                               "",
                               DAP_FIELD(address, "address"),
@@ -170,8 +146,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(DisassembledInstruction,
                               DAP_FIELD(location, "location"),
                               DAP_FIELD(symbol, "symbol"));
 
-Message::Message() = default;
-Message::~Message() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Message,
                               "",
                               DAP_FIELD(format, "format"),
@@ -182,24 +156,16 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(Message,
                               DAP_FIELD(urlLabel, "urlLabel"),
                               DAP_FIELD(variables, "variables"));
 
-VariablePresentationHint::VariablePresentationHint() = default;
-VariablePresentationHint::~VariablePresentationHint() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(VariablePresentationHint,
                               "",
                               DAP_FIELD(attributes, "attributes"),
                               DAP_FIELD(kind, "kind"),
                               DAP_FIELD(visibility, "visibility"));
 
-ValueFormat::ValueFormat() = default;
-ValueFormat::~ValueFormat() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ValueFormat, "", DAP_FIELD(hex, "hex"));
 
-ExceptionBreakMode::ExceptionBreakMode() = default;
-ExceptionBreakMode::~ExceptionBreakMode() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ExceptionBreakMode, "");
 
-ExceptionDetails::ExceptionDetails() = default;
-ExceptionDetails::~ExceptionDetails() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ExceptionDetails,
                               "",
                               DAP_FIELD(evaluateName, "evaluateName"),
@@ -209,8 +175,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(ExceptionDetails,
                               DAP_FIELD(stackTrace, "stackTrace"),
                               DAP_FIELD(typeName, "typeName"));
 
-GotoTarget::GotoTarget() = default;
-GotoTarget::~GotoTarget() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(GotoTarget,
                               "",
                               DAP_FIELD(column, "column"),
@@ -222,8 +186,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(GotoTarget,
                               DAP_FIELD(label, "label"),
                               DAP_FIELD(line, "line"));
 
-Module::Module() = default;
-Module::~Module() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Module,
                               "",
                               DAP_FIELD(addressRange, "addressRange"),
@@ -237,12 +199,8 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(Module,
                               DAP_FIELD(symbolStatus, "symbolStatus"),
                               DAP_FIELD(version, "version"));
 
-SteppingGranularity::SteppingGranularity() = default;
-SteppingGranularity::~SteppingGranularity() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SteppingGranularity, "");
 
-Scope::Scope() = default;
-Scope::~Scope() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Scope,
                               "",
                               DAP_FIELD(column, "column"),
@@ -258,8 +216,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(Scope,
                               DAP_FIELD(variablesReference,
                                         "variablesReference"));
 
-SourceBreakpoint::SourceBreakpoint() = default;
-SourceBreakpoint::~SourceBreakpoint() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(SourceBreakpoint,
                               "",
                               DAP_FIELD(column, "column"),
@@ -268,8 +224,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(SourceBreakpoint,
                               DAP_FIELD(line, "line"),
                               DAP_FIELD(logMessage, "logMessage"));
 
-DataBreakpoint::DataBreakpoint() = default;
-DataBreakpoint::~DataBreakpoint() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(DataBreakpoint,
                               "",
                               DAP_FIELD(accessType, "accessType"),
@@ -277,30 +231,22 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(DataBreakpoint,
                               DAP_FIELD(dataId, "dataId"),
                               DAP_FIELD(hitCondition, "hitCondition"));
 
-ExceptionPathSegment::ExceptionPathSegment() = default;
-ExceptionPathSegment::~ExceptionPathSegment() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ExceptionPathSegment,
                               "",
                               DAP_FIELD(names, "names"),
                               DAP_FIELD(negate, "negate"));
 
-ExceptionOptions::ExceptionOptions() = default;
-ExceptionOptions::~ExceptionOptions() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(ExceptionOptions,
                               "",
                               DAP_FIELD(breakMode, "breakMode"),
                               DAP_FIELD(path, "path"));
 
-FunctionBreakpoint::FunctionBreakpoint() = default;
-FunctionBreakpoint::~FunctionBreakpoint() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(FunctionBreakpoint,
                               "",
                               DAP_FIELD(condition, "condition"),
                               DAP_FIELD(hitCondition, "hitCondition"),
                               DAP_FIELD(name, "name"));
 
-InstructionBreakpoint::InstructionBreakpoint() = default;
-InstructionBreakpoint::~InstructionBreakpoint() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(InstructionBreakpoint,
                               "",
                               DAP_FIELD(condition, "condition"),
@@ -309,8 +255,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(InstructionBreakpoint,
                                         "instructionReference"),
                               DAP_FIELD(offset, "offset"));
 
-StackFrame::StackFrame() = default;
-StackFrame::~StackFrame() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StackFrame,
                               "",
                               DAP_FIELD(column, "column"),
@@ -325,8 +269,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(StackFrame,
                               DAP_FIELD(presentationHint, "presentationHint"),
                               DAP_FIELD(source, "source"));
 
-StackFrameFormat::StackFrameFormat() = default;
-StackFrameFormat::~StackFrameFormat() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StackFrameFormat,
                               "",
                               DAP_FIELD(includeAll, "includeAll"),
@@ -337,22 +279,16 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(StackFrameFormat,
                               DAP_FIELD(parameterValues, "parameterValues"),
                               DAP_FIELD(parameters, "parameters"));
 
-StepInTarget::StepInTarget() = default;
-StepInTarget::~StepInTarget() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(StepInTarget,
                               "",
                               DAP_FIELD(id, "id"),
                               DAP_FIELD(label, "label"));
 
-Thread::Thread() = default;
-Thread::~Thread() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Thread,
                               "",
                               DAP_FIELD(id, "id"),
                               DAP_FIELD(name, "name"));
 
-Variable::Variable() = default;
-Variable::~Variable() = default;
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Variable,
                               "",
                               DAP_FIELD(evaluateName, "evaluateName"),

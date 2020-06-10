@@ -28,6 +28,7 @@ class Serializer;
 // types. TypeInfo is used by the serialization system to encode and decode DAP
 // requests, responses, events and structs.
 struct TypeInfo {
+  virtual ~TypeInfo();
   virtual std::string name() const = 0;
   virtual size_t size() const = 0;
   virtual size_t alignment() const = 0;

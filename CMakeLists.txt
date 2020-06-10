@@ -78,6 +78,7 @@ set(CPPDAP_LIST
     ${CPPDAP_SRC_DIR}/protocol_types.cpp
     ${CPPDAP_SRC_DIR}/session.cpp
     ${CPPDAP_SRC_DIR}/socket.cpp
+    ${CPPDAP_SRC_DIR}/typeinfo.cpp
     ${CPPDAP_SRC_DIR}/typeof.cpp
 )
 
