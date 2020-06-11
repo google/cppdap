@@ -31,7 +31,51 @@ DAP_STRUCT_TYPEINFO(AnyTestObject,
                     DAP_FIELD(i, "i"),
                     DAP_FIELD(n, "n"));
 
+inline bool operator==(const AnyTestObject& a, const AnyTestObject& b) {
+  return a.i == b.i && a.n == b.n;
+}
+
 }  // namespace dap
+
+namespace {
+
+template <typename T>
+struct TestValue {};
+
+template <>
+struct TestValue<dap::integer> {
+  static const dap::integer value;
+};
+template <>
+struct TestValue<dap::boolean> {
+  static const dap::boolean value;
+};
+template <>
+struct TestValue<dap::number> {
+  static const dap::number value;
+};
+template <>
+struct TestValue<dap::string> {
+  static const dap::string value;
+};
+template <>
+struct TestValue<dap::array<dap::string>> {
+  static const dap::array<dap::string> value;
+};
+template <>
+struct TestValue<dap::AnyTestObject> {
+  static const dap::AnyTestObject value;
+};
+
+const dap::integer TestValue<dap::integer>::value = 20;
+const dap::boolean TestValue<dap::boolean>::value = true;
+const dap::number TestValue<dap::number>::value = 123.45;
+const dap::string TestValue<dap::string>::value = "hello world";
+const dap::array<dap::string> TestValue<dap::array<dap::string>>::value = {
+    "one", "two", "three"};
+const dap::AnyTestObject TestValue<dap::AnyTestObject>::value = {10, 20.30};
+
+}  // namespace
 
 TEST(Any, EmptyConstruct) {
   dap::any any;
@@ -105,31 +149,83 @@ TEST(Any, TestObject) {
   ASSERT_EQ(any.get<dap::AnyTestObject>().n, 3.0);
 }
 
-TEST(Any, Assign) {
-  dap::any any;
-  any = dap::integer(10);
-  ASSERT_TRUE(any.is<dap::integer>());
-  ASSERT_FALSE(any.is<dap::boolean>());
-  ASSERT_FALSE(any.is<dap::AnyTestObject>());
-  ASSERT_EQ(any.get<dap::integer>(), dap::integer(10));
-  any = dap::boolean(true);
-  ASSERT_FALSE(any.is<dap::integer>());
-  ASSERT_TRUE(any.is<dap::boolean>());
-  ASSERT_FALSE(any.is<dap::AnyTestObject>());
-  ASSERT_EQ(any.get<dap::boolean>(), dap::boolean(true));
-  any = dap::AnyTestObject{5, 3.0};
-  ASSERT_FALSE(any.is<dap::integer>());
-  ASSERT_FALSE(any.is<dap::boolean>());
-  ASSERT_TRUE(any.is<dap::AnyTestObject>());
-  ASSERT_EQ(any.get<dap::AnyTestObject>().i, 5);
-  ASSERT_EQ(any.get<dap::AnyTestObject>().n, 3.0);
-  any = dap::string("hello world");
-  ASSERT_FALSE(any.is<dap::integer>());
-  ASSERT_FALSE(any.is<dap::boolean>());
-  ASSERT_FALSE(any.is<dap::AnyTestObject>());
-  ASSERT_TRUE(any.is<dap::string>());
-  ASSERT_EQ(any.get<dap::string>(), dap::string("hello world"));
+template <typename T>
+class AnyT : public ::testing::Test {
+ protected:
+  void check(const dap::any& any, const T& expect) {
+    ASSERT_EQ(any.is<dap::integer>(), (std::is_same<T, dap::integer>::value));
+    ASSERT_EQ(any.is<dap::boolean>(), (std::is_same<T, dap::boolean>::value));
+    ASSERT_EQ(any.is<dap::number>(), (std::is_same<T, dap::number>::value));
+    ASSERT_EQ(any.is<dap::string>(), (std::is_same<T, dap::string>::value));
+    ASSERT_EQ(any.is<dap::array<dap::string>>(),
+              (std::is_same<T, dap::array<dap::string>>::value));
+    ASSERT_EQ(any.is<dap::AnyTestObject>(),
+              (std::is_same<T, dap::AnyTestObject>::value));
+
+    ASSERT_EQ(any.get<T>(), expect);
+  }
+};
+TYPED_TEST_SUITE_P(AnyT);
+
+TYPED_TEST_P(AnyT, CopyConstruct) {
+  auto val = TestValue<TypeParam>::value;
+  dap::any any(val);
+  this->check(any, val);
 }
+
+TYPED_TEST_P(AnyT, MoveConstruct) {
+  auto val = TestValue<TypeParam>::value;
+  dap::any any(std::move(val));
+  this->check(any, val);
+}
+
+TYPED_TEST_P(AnyT, Assign) {
+  auto val = TestValue<TypeParam>::value;
+  dap::any any;
+  any = val;
+  this->check(any, val);
+}
+
+TYPED_TEST_P(AnyT, MoveAssign) {
+  auto val = TestValue<TypeParam>::value;
+  dap::any any;
+  any = std::move(val);
+  this->check(any, val);
+}
+
+TYPED_TEST_P(AnyT, RepeatedAssign) {
+  dap::string str = "hello world";
+  auto val = TestValue<TypeParam>::value;
+  dap::any any;
+  any = str;
+  any = val;
+  this->check(any, val);
+}
+
+TYPED_TEST_P(AnyT, RepeatedMoveAssign) {
+  dap::string str = "hello world";
+  auto val = TestValue<TypeParam>::value;
+  dap::any any;
+  any = std::move(str);
+  any = std::move(val);
+  this->check(any, val);
+}
+
+REGISTER_TYPED_TEST_SUITE_P(AnyT,
+                            CopyConstruct,
+                            MoveConstruct,
+                            Assign,
+                            MoveAssign,
+                            RepeatedAssign,
+                            RepeatedMoveAssign);
+
+using AnyTypes = ::testing::Types<dap::integer,
+                                  dap::boolean,
+                                  dap::number,
+                                  dap::string,
+                                  dap::array<dap::string>,
+                                  dap::AnyTestObject>;
+INSTANTIATE_TYPED_TEST_SUITE_P(T, AnyT, AnyTypes);
 
 TEST(Any, Reset) {
   dap::any any(dap::integer(10));
