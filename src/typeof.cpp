@@ -14,55 +14,58 @@
 
 #include "dap/typeof.h"
 
+namespace {
+
+struct NullTI : public dap::TypeInfo {
+  using null = dap::null;
+  inline std::string name() const { return "null"; }
+  inline size_t size() const { return sizeof(null); }
+  inline size_t alignment() const { return alignof(null); }
+  inline void construct(void* ptr) const { new (ptr) null(); }
+  inline void copyConstruct(void* dst, const void* src) const {
+    new (dst) null(*reinterpret_cast<const null*>(src));
+  }
+  inline void destruct(void* ptr) const {
+    reinterpret_cast<null*>(ptr)->~null();
+  }
+  inline bool deserialize(const dap::Deserializer*, void*) const {
+    return true;
+  }
+  inline bool serialize(dap::Serializer*, const void*) const { return true; }
+};
+
+static dap::BasicTypeInfo<dap::boolean> booleanTI("boolean");
+static dap::BasicTypeInfo<dap::string> stringTI("string");
+static dap::BasicTypeInfo<dap::integer> integerTI("integer");
+static dap::BasicTypeInfo<dap::number> numberTI("number");
+static dap::BasicTypeInfo<dap::object> objectTI("object");
+static dap::BasicTypeInfo<dap::any> anyTI("any");
+static NullTI nullTI;
+
+}  // namespace
+
 namespace dap {
 
 const TypeInfo* TypeOf<boolean>::type() {
-  static BasicTypeInfo<boolean> typeinfo("boolean");
-  return &typeinfo;
+  return &booleanTI;
 }
-
 const TypeInfo* TypeOf<string>::type() {
-  static BasicTypeInfo<string> typeinfo("string");
-  return &typeinfo;
+  return &stringTI;
 }
-
 const TypeInfo* TypeOf<integer>::type() {
-  static BasicTypeInfo<integer> typeinfo("integer");
-  return &typeinfo;
+  return &integerTI;
 }
-
 const TypeInfo* TypeOf<number>::type() {
-  static BasicTypeInfo<number> typeinfo("number");
-  return &typeinfo;
+  return &numberTI;
 }
-
 const TypeInfo* TypeOf<object>::type() {
-  static BasicTypeInfo<object> typeinfo("object");
-  return &typeinfo;
+  return &objectTI;
 }
-
 const TypeInfo* TypeOf<any>::type() {
-  static BasicTypeInfo<any> typeinfo("any");
-  return &typeinfo;
+  return &anyTI;
 }
-
 const TypeInfo* TypeOf<null>::type() {
-  struct TI : public TypeInfo {
-    inline std::string name() const { return "null"; }
-    inline size_t size() const { return sizeof(null); }
-    inline size_t alignment() const { return alignof(null); }
-    inline void construct(void* ptr) const { new (ptr) null(); }
-    inline void copyConstruct(void* dst, const void* src) const {
-      new (dst) null(*reinterpret_cast<const null*>(src));
-    }
-    inline void destruct(void* ptr) const {
-      reinterpret_cast<null*>(ptr)->~null();
-    }
-    inline bool deserialize(const Deserializer*, void*) const { return true; }
-    inline bool serialize(Serializer*, const void*) const { return true; }
-  };
-  static TI typeinfo;
-  return &typeinfo;
-}  // namespace dap
+  return &nullTI;
+}
 
 }  // namespace dap
