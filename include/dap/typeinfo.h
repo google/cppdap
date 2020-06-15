@@ -37,6 +37,21 @@ struct TypeInfo {
   virtual void destruct(void*) const = 0;
   virtual bool deserialize(const Deserializer*, void*) const = 0;
   virtual bool serialize(Serializer*, const void*) const = 0;
+
+  // create() allocates and constructs the TypeInfo of type T, registers the
+  // pointer for deletion on cppdap library termination, and returns the pointer
+  // to T.
+  template <typename T, typename... ARGS>
+  static T* create(ARGS&&... args) {
+    auto typeinfo = new T(std::forward<ARGS>(args)...);
+    deleteOnExit(typeinfo);
+    return typeinfo;
+  }
+
+ private:
+  // deleteOnExit() ensures that the TypeInfo is destructed and deleted on
+  // library termination.
+  static void deleteOnExit(TypeInfo*);
 };
 
 }  // namespace dap

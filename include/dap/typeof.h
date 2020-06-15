@@ -29,18 +29,20 @@ struct BasicTypeInfo : public TypeInfo {
   constexpr BasicTypeInfo(std::string&& name) : name_(std::move(name)) {}
 
   // TypeInfo compliance
-  inline std::string name() const { return name_; }
-  inline size_t size() const { return sizeof(T); }
-  inline size_t alignment() const { return alignof(T); }
-  inline void construct(void* ptr) const { new (ptr) T(); }
-  inline void copyConstruct(void* dst, const void* src) const {
+  inline std::string name() const override { return name_; }
+  inline size_t size() const override { return sizeof(T); }
+  inline size_t alignment() const override { return alignof(T); }
+  inline void construct(void* ptr) const override { new (ptr) T(); }
+  inline void copyConstruct(void* dst, const void* src) const override {
     new (dst) T(*reinterpret_cast<const T*>(src));
   }
-  inline void destruct(void* ptr) const { reinterpret_cast<T*>(ptr)->~T(); }
-  inline bool deserialize(const Deserializer* d, void* ptr) const {
+  inline void destruct(void* ptr) const override {
+    reinterpret_cast<T*>(ptr)->~T();
+  }
+  inline bool deserialize(const Deserializer* d, void* ptr) const override {
     return d->deserialize(reinterpret_cast<T*>(ptr));
   }
-  inline bool serialize(Serializer* s, const void* ptr) const {
+  inline bool serialize(Serializer* s, const void* ptr) const override {
     return s->serialize(*reinterpret_cast<const T*>(ptr));
   }
 
@@ -88,44 +90,32 @@ struct TypeOf<null> {
   static const TypeInfo* type();
 };
 
-// TypeOf for template types requires dynamic generation of type information,
-// triggering the clang -Wexit-time-destructors warning.
-// TODO(bclayton): See if there's a way to avoid this, without requiring manual
-// instantiation of each type.
-#ifdef __clang__
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wexit-time-destructors"
-#endif  // __clang__
-
 template <typename T>
 struct TypeOf<array<T>> {
   static inline const TypeInfo* type() {
-    static BasicTypeInfo<array<T>> typeinfo("array<" +
-                                            TypeOf<T>::type()->name() + ">");
-    return &typeinfo;
+    static auto typeinfo = TypeInfo::create<BasicTypeInfo<array<T>>>(
+        "array<" + TypeOf<T>::type()->name() + ">");
+    return typeinfo;
   }
 };
 
 template <typename T0, typename... Types>
 struct TypeOf<variant<T0, Types...>> {
   static inline const TypeInfo* type() {
-    static BasicTypeInfo<variant<T0, Types...>> typeinfo("variant");
-    return &typeinfo;
+    static auto typeinfo =
+        TypeInfo::create<BasicTypeInfo<variant<T0, Types...>>>("variant");
+    return typeinfo;
   }
 };
 
 template <typename T>
 struct TypeOf<optional<T>> {
   static inline const TypeInfo* type() {
-    static BasicTypeInfo<optional<T>> typeinfo("optional<" +
-                                               TypeOf<T>::type()->name() + ">");
-    return &typeinfo;
+    static auto typeinfo = TypeInfo::create<BasicTypeInfo<optional<T>>>(
+        "optional<" + TypeOf<T>::type()->name() + ">");
+    return typeinfo;
   }
 };
-
-#ifdef __clang__
-#pragma clang diagnostic pop
-#endif  // __clang__
 
 // DAP_OFFSETOF() macro is a generalization of the offsetof() macro defined in
 // <cstddef>. It evaluates to the offset of the given field, with fewer
