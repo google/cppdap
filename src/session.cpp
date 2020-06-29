@@ -167,7 +167,8 @@ class Impl : public dap::Session {
       }
     }
 
-    std::pair<const dap::TypeInfo*, GenericResponseHandler> response(int seq) {
+    std::pair<const dap::TypeInfo*, GenericResponseHandler> response(
+        int64_t seq) {
       std::unique_lock<std::mutex> lock(responseMutex);
       auto responseIt = responseMap.find(seq);
       if (responseIt == responseMap.end()) {
@@ -252,7 +253,7 @@ class Impl : public dap::Session {
         requestMap;
 
     std::mutex responseMutex;
-    std::unordered_map<int,
+    std::unordered_map<int64_t,
                        std::pair<const dap::TypeInfo*, GenericResponseHandler>>
         responseMap;
 

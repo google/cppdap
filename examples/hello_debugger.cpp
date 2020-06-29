@@ -50,7 +50,7 @@ You can set breakpoints, and single line step.
 You may also notice that the locals contains a single variable for the currently executing line number.)";
 
 // Total number of newlines in source.
-constexpr int numSourceLines = 7;
+constexpr int64_t numSourceLines = 7;
 
 // Debugger holds the dummy debugger state and fires events to the EventHandler
 // passed to the constructor.
@@ -68,7 +68,7 @@ class Debugger {
   void pause();
 
   // currentLine() returns the currently executing line number.
-  int currentLine();
+  int64_t currentLine();
 
   // stepForward() instructs the debugger to step forward one line.
   void stepForward();
@@ -77,21 +77,21 @@ class Debugger {
   void clearBreakpoints();
 
   // addBreakpoint() sets a new breakpoint on the given line.
-  void addBreakpoint(int line);
+  void addBreakpoint(int64_t line);
 
  private:
   EventHandler onEvent;
   std::mutex mutex;
-  int line = 1;
-  std::unordered_set<int> breakpoints;
+  int64_t line = 1;
+  std::unordered_set<int64_t> breakpoints;
 };
 
 Debugger::Debugger(const EventHandler& onEvent) : onEvent(onEvent) {}
 
 void Debugger::run() {
   std::unique_lock<std::mutex> lock(mutex);
-  for (int i = 0; i < numSourceLines; i++) {
-    auto l = ((line + i) % numSourceLines) + 1;
+  for (int64_t i = 0; i < numSourceLines; i++) {
+    int64_t l = ((line + i) % numSourceLines) + 1;
     if (breakpoints.count(l)) {
       line = l;
       lock.unlock();
@@ -105,7 +105,7 @@ void Debugger::pause() {
   onEvent(Event::Paused);
 }
 
-int Debugger::currentLine() {
+int64_t Debugger::currentLine() {
   std::unique_lock<std::mutex> lock(mutex);
   return line;
 }
@@ -122,7 +122,7 @@ void Debugger::clearBreakpoints() {
   this->breakpoints.clear();
 }
 
-void Debugger::addBreakpoint(int l) {
+void Debugger::addBreakpoint(int64_t l) {
   std::unique_lock<std::mutex> lock(mutex);
   this->breakpoints.emplace(l);
 }
@@ -156,7 +156,7 @@ void Event::fire() {
 }  // anonymous namespace
 
 // main() entry point to the DAP server.
-int main(int, char* []) {
+int main(int, char*[]) {
 #ifdef OS_WINDOWS
   // Change stdin & stdout from text mode to binary mode.
   // This ensures sequences of \r\n are not changed to \n.
