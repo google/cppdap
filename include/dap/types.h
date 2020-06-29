@@ -25,6 +25,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <stdint.h>
+
 namespace dap {
 
 // string is a sequence of characters.
@@ -52,9 +54,9 @@ class boolean {
 class integer {
  public:
   inline integer() : val(0) {}
-  inline integer(int i) : val(i) {}
-  inline operator int() const { return val; }
-  inline integer& operator=(int i) {
+  inline integer(int64_t i) : val(i) {}
+  inline operator int64_t() const { return val; }
+  inline integer& operator=(int64_t i) {
     val = i;
     return *this;
   }
@@ -65,7 +67,7 @@ class integer {
   }
 
  private:
-  int val;
+  int64_t val;
 };
 
 // number holds a 64-bit floating point number.
