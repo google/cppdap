@@ -72,6 +72,10 @@ set(CPPDAP_GOOGLETEST_DIR  <path-to-googletest>)         # defaults to ${CPPDAP_
 add_subdirectory(${CPPDAP_DIR})
 ```
 
+## Projects using cppdap:
+* [JCIDE](https://www.javacardos.com/tools)
+
 ---
 
 Note: This is not an officially supported Google product
+
