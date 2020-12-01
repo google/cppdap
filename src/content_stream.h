@@ -47,6 +47,7 @@ class ContentReader {
 
   std::shared_ptr<Reader> reader;
   std::deque<uint8_t> buf;
+  uint32_t matched_idx = 0;
 };
 
 class ContentWriter {
