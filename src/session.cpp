@@ -52,17 +52,7 @@ class Impl : public dap::Session {
     handlers.put(typeinfo, handler);
   }
 
-  void bindNoThread(const std::shared_ptr<dap::Reader>& r,
-                    const std::shared_ptr<dap::Writer>& w) override {
-    if (isBound.exchange(true)) {
-      handlers.error("Session is already bound!");
-      return;
-    }
-    reader = dap::ContentReader(r);
-    writer = dap::ContentWriter(w);
-  }
-
-  std::function<void()> OnDataAvailable() override {
+  std::function<void()> getPayload() override {
     auto request = reader.read();
     if (request.size() > 0) {
       if (auto payload = processMessage(request)) {
@@ -72,8 +62,8 @@ class Impl : public dap::Session {
     return {};
   }
 
-  void bind(const std::shared_ptr<dap::Reader>& r,
-            const std::shared_ptr<dap::Writer>& w) override {
+  void connect(const std::shared_ptr<dap::Reader>& r,
+               const std::shared_ptr<dap::Writer>& w) override {
     if (isBound.exchange(true)) {
       handlers.error("Session is already bound!");
       return;
@@ -81,14 +71,13 @@ class Impl : public dap::Session {
 
     reader = dap::ContentReader(r);
     writer = dap::ContentWriter(w);
+  }
 
+  void startProcessingMessages() override {
     recvThread = std::thread([this] {
       while (reader.isOpen()) {
-        auto request = reader.read();
-        if (request.size() > 0) {
-          if (auto payload = processMessage(request)) {
-            inbox.put(std::move(payload));
-          }
+        if (auto payload = getPayload()) {
+          inbox.put(std::move(payload));
         }
       }
     });
