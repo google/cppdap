@@ -199,6 +199,16 @@ class Session {
                     const std::shared_ptr<Writer>&) = 0;
   inline void bind(const std::shared_ptr<ReaderWriter>&);
 
+
+  // Alternative to bind() for control over which thread the request is processed.
+  // If bindNoThread is used, the user must call OnDataAvailable() whenever data is
+  // ready in the reader pipe. The processing will be done on the calling thread
+  // and a function to handle the request will be returned in some cases, which can
+  // be executed on any thread of user choice.
+  virtual std::function<void()> OnDataAvailable() = 0;
+  virtual void bindNoThread(const std::shared_ptr<dap::Reader>& r,
+                            const std::shared_ptr<dap::Writer>& w) = 0;
+
  protected:
   using RequestSuccessCallback =
       std::function<void(const TypeInfo*, const void*)>;

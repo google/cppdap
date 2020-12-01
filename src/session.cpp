@@ -52,6 +52,26 @@ class Impl : public dap::Session {
     handlers.put(typeinfo, handler);
   }
 
+  void bindNoThread(const std::shared_ptr<dap::Reader>& r,
+                    const std::shared_ptr<dap::Writer>& w) override {
+    if (isBound.exchange(true)) {
+      handlers.error("Session is already bound!");
+      return;
+    }
+    reader = dap::ContentReader(r);
+    writer = dap::ContentWriter(w);
+  }
+
+  std::function<void()> OnDataAvailable() override {
+    auto request = reader.read();
+    if (request.size() > 0) {
+      if (auto payload = processMessage(request)) {
+        return payload;
+      }
+    }
+    return {};
+  }
+
   void bind(const std::shared_ptr<dap::Reader>& r,
             const std::shared_ptr<dap::Writer>& w) override {
     if (isBound.exchange(true)) {
