@@ -12,55 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "json_serializer.h"
+#include "nlohmann_json_serializer.h"
+
+#include "null_json_serializer.h"
 
 // Disable JSON exceptions. We should be guarding against any exceptions being
 // fired in this file.
 #define JSON_NOEXCEPTION 1
 #include <nlohmann/json.hpp>
 
-namespace {
-
-struct NullDeserializer : public dap::Deserializer {
-  static NullDeserializer instance;
-
-  bool deserialize(dap::boolean*) const override { return false; }
-  bool deserialize(dap::integer*) const override { return false; }
-  bool deserialize(dap::number*) const override { return false; }
-  bool deserialize(dap::string*) const override { return false; }
-  bool deserialize(dap::object*) const override { return false; }
-  bool deserialize(dap::any*) const override { return false; }
-  size_t count() const override { return 0; }
-  bool array(const std::function<bool(dap::Deserializer*)>&) const override {
-    return false;
-  }
-  bool field(const std::string&,
-             const std::function<bool(dap::Deserializer*)>&) const override {
-    return false;
-  }
-};
-
-NullDeserializer NullDeserializer::instance;
-
-}  // anonymous namespace
-
 namespace dap {
 namespace json {
 
-Deserializer::Deserializer(const std::string& str)
+NlohmannDeserializer::NlohmannDeserializer(const std::string& str)
     : json(new nlohmann::json(nlohmann::json::parse(str, nullptr, false))),
       ownsJson(true) {}
 
-Deserializer::Deserializer(const nlohmann::json* json)
+NlohmannDeserializer::NlohmannDeserializer(const nlohmann::json* json)
     : json(json), ownsJson(false) {}
 
-Deserializer::~Deserializer() {
+NlohmannDeserializer::~NlohmannDeserializer() {
   if (ownsJson) {
     delete json;
   }
 }
 
-bool Deserializer::deserialize(dap::boolean* v) const {
+bool NlohmannDeserializer::deserialize(dap::boolean* v) const {
   if (!json->is_boolean()) {
     return false;
   }
@@ -68,7 +45,7 @@ bool Deserializer::deserialize(dap::boolean* v) const {
   return true;
 }
 
-bool Deserializer::deserialize(dap::integer* v) const {
+bool NlohmannDeserializer::deserialize(dap::integer* v) const {
   if (!json->is_number_integer()) {
     return false;
   }
@@ -76,7 +53,7 @@ bool Deserializer::deserialize(dap::integer* v) const {
   return true;
 }
 
-bool Deserializer::deserialize(dap::number* v) const {
+bool NlohmannDeserializer::deserialize(dap::number* v) const {
   if (!json->is_number()) {
     return false;
   }
@@ -84,7 +61,7 @@ bool Deserializer::deserialize(dap::number* v) const {
   return true;
 }
 
-bool Deserializer::deserialize(dap::string* v) const {
+bool NlohmannDeserializer::deserialize(dap::string* v) const {
   if (!json->is_string()) {
     return false;
   }
@@ -92,10 +69,10 @@ bool Deserializer::deserialize(dap::string* v) const {
   return true;
 }
 
-bool Deserializer::deserialize(dap::object* v) const {
+bool NlohmannDeserializer::deserialize(dap::object* v) const {
   v->reserve(json->size());
   for (auto& el : json->items()) {
-    Deserializer d(&el.value());
+    NlohmannDeserializer d(&el.value());
     dap::any val;
     if (!d.deserialize(&val)) {
       return false;
@@ -105,7 +82,7 @@ bool Deserializer::deserialize(dap::object* v) const {
   return true;
 }
 
-bool Deserializer::deserialize(dap::any* v) const {
+bool NlohmannDeserializer::deserialize(dap::any* v) const {
   if (json->is_boolean()) {
     *v = dap::boolean(json->get<bool>());
   } else if (json->is_number_float()) {
@@ -122,17 +99,17 @@ bool Deserializer::deserialize(dap::any* v) const {
   return true;
 }
 
-size_t Deserializer::count() const {
+size_t NlohmannDeserializer::count() const {
   return json->size();
 }
 
-bool Deserializer::array(
+bool NlohmannDeserializer::array(
     const std::function<bool(dap::Deserializer*)>& cb) const {
   if (!json->is_array()) {
     return false;
   }
   for (size_t i = 0; i < json->size(); i++) {
-    Deserializer d(&(*json)[i]);
+    NlohmannDeserializer d(&(*json)[i]);
     if (!cb(&d)) {
       return false;
     }
@@ -140,7 +117,7 @@ bool Deserializer::array(
   return true;
 }
 
-bool Deserializer::field(
+bool NlohmannDeserializer::field(
     const std::string& name,
     const std::function<bool(dap::Deserializer*)>& cb) const {
   if (!json->is_structured()) {
@@ -151,47 +128,49 @@ bool Deserializer::field(
     return cb(&NullDeserializer::instance);
   }
   auto obj = *it;
-  Deserializer d(&obj);
+  NlohmannDeserializer d(&obj);
   return cb(&d);
 }
 
-Serializer::Serializer() : json(new nlohmann::json()), ownsJson(true) {}
+NlohmannSerializer::NlohmannSerializer()
+    : json(new nlohmann::json()), ownsJson(true) {}
 
-Serializer::Serializer(nlohmann::json* json) : json(json), ownsJson(false) {}
+NlohmannSerializer::NlohmannSerializer(nlohmann::json* json)
+    : json(json), ownsJson(false) {}
 
-Serializer::~Serializer() {
+NlohmannSerializer::~NlohmannSerializer() {
   if (ownsJson) {
     delete json;
   }
 }
 
-std::string Serializer::dump() const {
+std::string NlohmannSerializer::dump() const {
   return json->dump();
 }
 
-bool Serializer::serialize(dap::boolean v) {
+bool NlohmannSerializer::serialize(dap::boolean v) {
   *json = (bool)v;
   return true;
 }
 
-bool Serializer::serialize(dap::integer v) {
+bool NlohmannSerializer::serialize(dap::integer v) {
   *json = (int)v;
   return true;
 }
 
-bool Serializer::serialize(dap::number v) {
+bool NlohmannSerializer::serialize(dap::number v) {
   *json = (double)v;
   return true;
 }
 
-bool Serializer::serialize(const dap::string& v) {
+bool NlohmannSerializer::serialize(const dap::string& v) {
   *json = v;
   return true;
 }
 
-bool Serializer::serialize(const dap::object& v) {
+bool NlohmannSerializer::serialize(const dap::object& v) {
   for (auto& it : v) {
-    Serializer s(&(*json)[it.first]);
+    NlohmannSerializer s(&(*json)[it.first]);
     if (!s.serialize(it.second)) {
       return false;
     }
@@ -199,7 +178,7 @@ bool Serializer::serialize(const dap::object& v) {
   return true;
 }
 
-bool Serializer::serialize(const dap::any& v) {
+bool NlohmannSerializer::serialize(const dap::any& v) {
   if (v.is<dap::boolean>()) {
     *json = (bool)v.get<dap::boolean>();
   } else if (v.is<dap::integer>()) {
@@ -216,11 +195,12 @@ bool Serializer::serialize(const dap::any& v) {
   return true;
 }
 
-bool Serializer::array(size_t count,
-                       const std::function<bool(dap::Serializer*)>& cb) {
+bool NlohmannSerializer::array(
+    size_t count,
+    const std::function<bool(dap::Serializer*)>& cb) {
   *json = std::vector<int>();
   for (size_t i = 0; i < count; i++) {
-    Serializer s(&(*json)[i]);
+    NlohmannSerializer s(&(*json)[i]);
     if (!cb(&s)) {
       return false;
     }
@@ -228,13 +208,14 @@ bool Serializer::array(size_t count,
   return true;
 }
 
-bool Serializer::object(const std::function<bool(dap::FieldSerializer*)>& cb) {
+bool NlohmannSerializer::object(
+    const std::function<bool(dap::FieldSerializer*)>& cb) {
   struct FS : public FieldSerializer {
     nlohmann::json* const json;
 
     FS(nlohmann::json* json) : json(json) {}
     bool field(const std::string& name, const SerializeFunc& cb) override {
-      Serializer s(&(*json)[name]);
+      NlohmannSerializer s(&(*json)[name]);
       auto res = cb(&s);
       if (s.removed) {
         json->erase(name);
@@ -248,7 +229,7 @@ bool Serializer::object(const std::function<bool(dap::FieldSerializer*)>& cb) {
   return cb(&fs);
 }
 
-void Serializer::remove() {
+void NlohmannSerializer::remove() {
   removed = true;
 }
 

@@ -302,7 +302,7 @@ std::shared_ptr<ReaderWriter> Socket::connect(const char* address,
 
       timeval tv;
       tv.tv_sec = microseconds / 1000000;
-      tv.tv_usec = microseconds - (tv.tv_sec * 1000000);
+      tv.tv_usec = microseconds - static_cast<uint32_t>(tv.tv_sec * 1000000);
       res = select(static_cast<int>(socket + 1), nullptr, &fdset, nullptr, &tv);
       if (res > 0 && !errored(socket) && setBlocking(socket, true)) {
         out = shared;

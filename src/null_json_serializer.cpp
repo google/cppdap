@@ -12,31 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef dap_json_serializer_h
-#define dap_json_serializer_h
-
-#if defined(CPPDAP_JSON_NLOHMANN)
-#include "nlohmann_json_serializer.h"
-#elif defined(CPPDAP_JSON_RAPID)
-#include "rapid_json_serializer.h"
-#else
-#error "Unrecognised cppdap JSON library"
-#endif
+#include "null_json_serializer.h"
 
 namespace dap {
 namespace json {
 
-#if defined(CPPDAP_JSON_NLOHMANN)
-using Deserializer = NlohmannDeserializer;
-using Serializer = NlohmannSerializer;
-#elif defined(CPPDAP_JSON_RAPID)
-using Deserializer = RapidDeserializer;
-using Serializer = RapidSerializer;
-#else
-#error "Unrecognised cppdap JSON library"
-#endif
+NullDeserializer NullDeserializer::instance;
 
 }  // namespace json
 }  // namespace dap
-
-#endif  // dap_json_serializer_h
