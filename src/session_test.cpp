@@ -370,6 +370,45 @@ TEST_F(SessionTest, SendEventNoBind) {
   ASSERT_TRUE(errored);
 }
 
+TEST_F(SessionTest, SingleThread) {
+  server->registerHandler(
+      [&](const dap::TestRequest&) { return createResponse(); });
+
+  // Explicitly connect and process request on this test thread instead of
+  // calling bind() which inturn starts processing messages immediately on a new
+  // thread.
+  auto client2server = dap::pipe();
+  auto server2client = dap::pipe();
+  client->connect(server2client, client2server);
+  server->connect(client2server, server2client);
+
+  auto request = createRequest();
+  auto response = client->send(request);
+
+  // Process request and response on this thread
+  if (auto payload = server->getPayload()) {
+    payload();
+  }
+  if (auto payload = client->getPayload()) {
+    payload();
+  }
+
+  auto got = response.get();
+  // Check response was received correctly.
+  ASSERT_EQ(got.error, false);
+  ASSERT_EQ(got.response.b, dap::boolean(true));
+  ASSERT_EQ(got.response.i, dap::integer(99));
+  ASSERT_EQ(got.response.n, dap::number(123.456));
+  ASSERT_EQ(got.response.a, dap::array<dap::integer>({5, 4, 3, 2, 1}));
+  ASSERT_EQ(got.response.o.size(), 3U);
+  ASSERT_EQ(got.response.o["one"].get<dap::integer>(), dap::integer(1));
+  ASSERT_EQ(got.response.o["two"].get<dap::number>(), dap::number(2));
+  ASSERT_EQ(got.response.o["three"].get<dap::string>(), dap::string("3"));
+  ASSERT_EQ(got.response.s, "ROGER");
+  ASSERT_EQ(got.response.o1, dap::optional<dap::integer>(50));
+  ASSERT_FALSE(got.response.o2.has_value());
+}
+
 TEST_F(SessionTest, Concurrency) {
   std::atomic<int> numEventsHandled = {0};
   std::atomic<bool> done = {false};

@@ -192,22 +192,28 @@ class Session {
   template <typename T, typename = IsEvent<T>>
   void send(const T& event);
 
-  // bind() connects this Session to an endpoint.
-  // bind() can only be called once. Repeated calls will raise an error, but
+  // connect() connects this Session to an endpoint.
+  // connect() can only be called once. Repeated calls will raise an error, but
   // otherwise will do nothing.
-  virtual void bind(const std::shared_ptr<Reader>&,
-                    const std::shared_ptr<Writer>&) = 0;
+  virtual void connect(const std::shared_ptr<Reader>&,
+                       const std::shared_ptr<Writer>&) = 0;
+  inline void connect(const std::shared_ptr<ReaderWriter>&);
+
+  // startProcessingMessages() starts a new thread to receive and dispatch
+  // incoming messages.
+  virtual void startProcessingMessages() = 0;
+
+  // bind() connects this Session to an endpoint using connect(), and then
+  // starts processing incoming messages with startProcessingMessages().
+  inline void bind(const std::shared_ptr<Reader>&,
+                   const std::shared_ptr<Writer>&);
   inline void bind(const std::shared_ptr<ReaderWriter>&);
 
-
-  // Alternative to bind() for control over which thread the request is processed.
-  // If bindNoThread is used, the user must call OnDataAvailable() whenever data is
-  // ready in the reader pipe. The processing will be done on the calling thread
-  // and a function to handle the request will be returned in some cases, which can
-  // be executed on any thread of user choice.
-  virtual std::function<void()> OnDataAvailable() = 0;
-  virtual void bindNoThread(const std::shared_ptr<dap::Reader>& r,
-                            const std::shared_ptr<dap::Writer>& w) = 0;
+  // getPayload() blocks until the next incoming message is received, returning
+  // the payload or an empty function if the connection was lost. The returned
+  // payload is function that can be called on any thread to dispatch the
+  // message to the Session handler.
+  virtual std::function<void()> getPayload() = 0;
 
  protected:
   using RequestSuccessCallback =
@@ -307,6 +313,16 @@ template <typename T, typename>
 void Session::send(const T& event) {
   const TypeInfo* typeinfo = TypeOf<T>::type();
   send(typeinfo, &event);
+}
+
+void Session::connect(const std::shared_ptr<ReaderWriter>& rw) {
+  connect(rw, rw);
+}
+
+void Session::bind(const std::shared_ptr<dap::Reader>& r,
+                   const std::shared_ptr<dap::Writer>& w) {
+  connect(r, w);
+  startProcessingMessages();
 }
 
 void Session::bind(const std::shared_ptr<ReaderWriter>& rw) {
