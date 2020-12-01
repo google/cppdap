@@ -130,7 +130,7 @@ const TypeInfo* TypeOf<null>::type() {
 }
 
 void TypeInfo::deleteOnExit(TypeInfo* ti) {
-  return TypeInfos::get()->types.emplace_back(std::unique_ptr<TypeInfo>(ti));
+  TypeInfos::get()->types.emplace_back(std::unique_ptr<TypeInfo>(ti));
 }
 
 void initialize() {

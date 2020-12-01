@@ -145,7 +145,7 @@ class File : public dap::ReaderWriter {
   const bool closable;
   std::mutex readMutex;
   std::mutex writeMutex;
-  std::atomic<bool> closed = { false };
+  std::atomic<bool> closed = {false};
 };
 
 class ReaderSpy : public dap::Reader {

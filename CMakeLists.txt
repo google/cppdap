@@ -65,13 +65,33 @@ if(CPPDAP_BUILD_TESTS)
 endif(CPPDAP_BUILD_TESTS)
 
 ###########################################################
+# JSON library
+###########################################################
+if(NOT DEFINED CPPDAP_JSON_LIBRARY)
+    # Attempt to detect JSON library from CPPDAP_JSON_DIR
+    if(NOT EXISTS "${CPPDAP_JSON_DIR}")
+        message(FATAL_ERROR "CPPDAP_JSON_DIR '${CPPDAP_JSON_DIR}' does not exist")
+    endif()
+
+    if(EXISTS "${CPPDAP_JSON_DIR}/include/nlohmann")
+        set(CPPDAP_JSON_LIBRARY "nlohmann")
+    elseif(EXISTS "${CPPDAP_JSON_DIR}/include/rapidjson")
+        set(CPPDAP_JSON_LIBRARY "rapid")
+    else()
+        message(FATAL_ERROR "Could not determine JSON library from ${CPPDAP_JSON_LIBRARY}")
+    endif()
+endif()
+string(TOUPPER ${CPPDAP_JSON_LIBRARY} CPPDAP_JSON_LIBRARY_UPPER)
+
+###########################################################
 # File lists
 ###########################################################
 set(CPPDAP_LIST
     ${CPPDAP_SRC_DIR}/content_stream.cpp
     ${CPPDAP_SRC_DIR}/io.cpp
-    ${CPPDAP_SRC_DIR}/json_serializer.cpp
+    ${CPPDAP_SRC_DIR}/${CPPDAP_JSON_LIBRARY}_json_serializer.cpp
     ${CPPDAP_SRC_DIR}/network.cpp
+    ${CPPDAP_SRC_DIR}/null_json_serializer.cpp
     ${CPPDAP_SRC_DIR}/protocol_events.cpp
     ${CPPDAP_SRC_DIR}/protocol_requests.cpp
     ${CPPDAP_SRC_DIR}/protocol_response.cpp
@@ -117,6 +137,11 @@ function(cppdap_set_target_options target)
         )
     endif()
 
+    # Add define for JSON library in use
+    set_target_properties(${target} PROPERTIES
+        COMPILE_DEFINITIONS "CPPDAP_JSON_${CPPDAP_JSON_LIBRARY_UPPER}=1"
+    )
+
     # Treat all warnings as errors
     if(CPPDAP_WARNINGS_AS_ERRORS)
         if(MSVC)
@@ -151,9 +176,7 @@ endfunction(cppdap_set_target_options)
 
 # dap
 add_library(cppdap STATIC ${CPPDAP_LIST})
-set_target_properties(cppdap PROPERTIES
-    POSITION_INDEPENDENT_CODE 1
-)
+set_target_properties(cppdap PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
 target_include_directories(cppdap PRIVATE "${CPPDAP_JSON_DIR}/include/")
 
