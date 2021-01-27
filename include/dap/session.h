@@ -146,6 +146,14 @@ class Session {
   template <typename F>
   using ArgTy = typename detail::ArgTy<F>::type;
 
+  template <typename R>
+  using ResponseCallback = const std::function<void(ResponseOrError<R>)>&;
+
+  template <typename T>
+  using RequestHandlerType2 =
+      const std::function<void(const T&,
+                               RequestResponseCallback<typename T::Response>)>&;
+
  public:
   virtual ~Session();
 
@@ -169,6 +177,41 @@ class Session {
   //   Error(const RequestType&)
   template <typename F, typename RequestType = ArgTy<F>>
   inline IsRequest<RequestType> registerHandler(F&& handler);
+
+  // registerHandler2() registers a request handler for a specific request type.
+  // The handler can defer sending response; handler can use the passed
+  // response callback to send response at a later point.
+  // The function F must have the following signature:
+  //    void (const RequestType&, ResponseCallback)
+  //
+  // TODO: 1. T needs to be derived from F. But ArgTy<F> does not work in this
+  //          case. Tried adding -
+  //            template <typename Arg1, typename Arg2>
+  //            struct ArgTy<void (*)(Arg1, Arg2)> {
+  //              using type = typename std::decay<Arg1>::type;
+  //            };
+  //       2. Merge this with the above registerHandler() method. Overload
+  //       the definition based on F. Tried adding this but didn't work -
+  //          template <typename T, typename F>
+  //          using IsRequest1 = typename std::enable_if <
+  //          detail::traits<T>::isRequest && !std::is_same<F,
+  //          RequestHandlerType2<T>>::isCallback > ::type;
+  //
+  //          template <typename T, typename F>
+  //          using IsRequest2 = typename std::enable_if <
+  //          detail::traits<T>::isRequest && std::is_same<F,
+  //          RequestHandlerType2<T>>::isCallback > ::type;
+  //
+  //          // Selectively enable definitions
+  //          template <typename F, typename T>
+  //          Session::IsRequest1<T> Session::registerHandler(F&& handler)
+  //          {....}
+  //
+  //          template <typename F, typename T>
+  //          Session::IsRequest2<T> Session::registerHandler(F&& handler)
+  //          {....}
+  template <typename T, typename F>
+  inline IsRequest<T> registerHandler2(F&& handler);
 
   // registerHandler() registers a event handler for a specific event type.
   // The function F must have the following signature:
@@ -263,6 +306,24 @@ Session::IsRequest<T> Session::registerHandler(F&& handler) {
     } else {
       onSuccess(TypeOf<ResponseType>::type(), &res.response);
     }
+  };
+  const TypeInfo* typeinfo = TypeOf<T>::type();
+  registerHandler(typeinfo, cb);
+}
+
+template <typename T, typename F>
+Session::IsRequest<T> Session::registerHandler2(F&& handler) {
+  using ResponseType = typename T::Response;
+  auto cb = [handler](const void* args, const RequestSuccessCallback& onSuccess,
+                      const RequestErrorCallback& onError) {
+    auto response_cb = [onSuccess, onError](ResponseOrError<ResponseType> res) {
+      if (res.error) {
+        onError(TypeOf<ResponseType>::type(), res.error);
+      } else {
+        onSuccess(TypeOf<ResponseType>::type(), &res.response);
+      }
+    };
+    handler(*reinterpret_cast<const T*>(args), response_cb);
   };
   const TypeInfo* typeinfo = TypeOf<T>::type();
   registerHandler(typeinfo, cb);
