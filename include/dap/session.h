@@ -17,6 +17,7 @@
 
 #include "future.h"
 #include "io.h"
+#include "traits.h"
 #include "typeinfo.h"
 #include "typeof.h"
 
@@ -28,33 +29,6 @@ namespace dap {
 struct Request;
 struct Response;
 struct Event;
-
-// internal functionality
-namespace detail {
-template <typename T>
-struct traits {
-  static constexpr bool isRequest = std::is_base_of<dap::Request, T>::value;
-  static constexpr bool isResponse = std::is_base_of<dap::Response, T>::value;
-  static constexpr bool isEvent = std::is_base_of<dap::Event, T>::value;
-};
-
-// ArgTy<F>::type resolves to the first argument type of the function F.
-// F can be a function, static member function, or lambda.
-template <typename F>
-struct ArgTy {
-  using type = typename ArgTy<decltype(&F::operator())>::type;
-};
-
-template <typename R, typename Arg>
-struct ArgTy<R (*)(Arg)> {
-  using type = typename std::decay<Arg>::type;
-};
-
-template <typename R, typename C, typename Arg>
-struct ArgTy<R (C::*)(Arg) const> {
-  using type = typename std::decay<Arg>::type;
-};
-}  // namespace detail
 
 ////////////////////////////////////////////////////////////////////////////////
 // Error
@@ -137,14 +111,24 @@ ResponseOrError<T>& ResponseOrError<T>::operator=(ResponseOrError&& other) {
 // (3) Bind the session to the remote endpoint with bind().
 // (4) Send requests or events with send().
 class Session {
-  template <typename T>
-  using IsRequest = typename std::enable_if<detail::traits<T>::isRequest>::type;
+  template <typename F, int N>
+  using ParamType = traits::ParameterType<F, N>;
 
   template <typename T>
-  using IsEvent = typename std::enable_if<detail::traits<T>::isEvent>::type;
+  using IsRequest = traits::EnableIfIsType<dap::Request, T>;
+
+  template <typename T>
+  using IsEvent = traits::EnableIfIsType<dap::Event, T>;
 
   template <typename F>
-  using ArgTy = typename detail::ArgTy<F>::type;
+  using IsRequestHandlerWithoutCallback = traits::EnableIf<
+      traits::CompatibleWith<F, std::function<void(dap::Request)>>::value>;
+
+  template <typename F, typename CallbackType>
+  using IsRequestHandlerWithCallback = traits::EnableIf<traits::CompatibleWith<
+      F,
+      std::function<void(dap::Request, std::function<void(CallbackType)>)>>::
+                                                            value>;
 
  public:
   virtual ~Session();
@@ -167,20 +151,47 @@ class Session {
   //   ResponseOrError<ResponseType>(const RequestType&)
   //   ResponseType(const RequestType&)
   //   Error(const RequestType&)
-  template <typename F, typename RequestType = ArgTy<F>>
-  inline IsRequest<RequestType> registerHandler(F&& handler);
+  template <typename F, typename RequestType = ParamType<F, 0>>
+  inline IsRequestHandlerWithoutCallback<F> registerHandler(F&& handler);
+
+  // registerHandler() registers a request handler for a specific request type.
+  // The handler has a response callback function for the second argument of the
+  // handler function. This callback may be called after the handler has
+  // returned.
+  // The function F must have the following signature:
+  //   void(const RequestType& request,
+  //        std::function<void(ResponseType)> response)
+  template <typename F,
+            typename RequestType = ParamType<F, 0>,
+            typename ResponseType = typename RequestType::Response>
+  inline IsRequestHandlerWithCallback<F, ResponseType> registerHandler(
+      F&& handler);
+
+  // registerHandler() registers a request handler for a specific request type.
+  // The handler has a response callback function for the second argument of the
+  // handler function. This callback may be called after the handler has
+  // returned.
+  // The function F must have the following signature:
+  //   void(const RequestType& request,
+  //        std::function<void(ResponseOrError<ResponseType>)> response)
+  template <typename F,
+            typename RequestType = ParamType<F, 0>,
+            typename ResponseType = typename RequestType::Response>
+  inline IsRequestHandlerWithCallback<F, ResponseOrError<ResponseType>>
+  registerHandler(F&& handler);
 
   // registerHandler() registers a event handler for a specific event type.
   // The function F must have the following signature:
   //   void(const EventType&)
-  template <typename F, typename EventType = ArgTy<F>>
+  template <typename F, typename EventType = ParamType<F, 0>>
   inline IsEvent<EventType> registerHandler(F&& handler);
 
   // registerSentHandler() registers the function F to be called when a response
   // of the specific type has been sent.
   // The function F must have the following signature:
   //   void(const ResponseOrError<ResponseType>&)
-  template <typename F, typename ResponseType = typename ArgTy<F>::Request>
+  template <typename F,
+            typename ResponseType = typename ParamType<F, 0>::Request>
   inline void registerSentHandler(F&& handler);
 
   // send() sends the request to the connected endpoint and returns a
@@ -251,21 +262,57 @@ class Session {
   virtual bool send(const TypeInfo*, const void* event) = 0;
 };
 
-template <typename F, typename T>
-Session::IsRequest<T> Session::registerHandler(F&& handler) {
-  using ResponseType = typename T::Response;
-  auto cb = [handler](const void* args, const RequestSuccessCallback& onSuccess,
-                      const RequestErrorCallback& onError) {
+template <typename F, typename RequestType>
+Session::IsRequestHandlerWithoutCallback<F> Session::registerHandler(
+    F&& handler) {
+  using ResponseType = typename RequestType::Response;
+  const TypeInfo* typeinfo = TypeOf<RequestType>::type();
+  registerHandler(typeinfo, [handler](const void* args,
+                                      const RequestSuccessCallback& onSuccess,
+                                      const RequestErrorCallback& onError) {
     ResponseOrError<ResponseType> res =
-        handler(*reinterpret_cast<const T*>(args));
+        handler(*reinterpret_cast<const RequestType*>(args));
     if (res.error) {
       onError(TypeOf<ResponseType>::type(), res.error);
     } else {
       onSuccess(TypeOf<ResponseType>::type(), &res.response);
     }
-  };
-  const TypeInfo* typeinfo = TypeOf<T>::type();
-  registerHandler(typeinfo, cb);
+  });
+}
+
+template <typename F, typename RequestType, typename ResponseType>
+Session::IsRequestHandlerWithCallback<F, ResponseType> Session::registerHandler(
+    F&& handler) {
+  using CallbackType = ParamType<F, 1>;
+  registerHandler(
+      TypeOf<RequestType>::type(),
+      [handler](const void* args, const RequestSuccessCallback& onSuccess,
+                const RequestErrorCallback&) {
+        CallbackType responseCallback = [onSuccess](const ResponseType& res) {
+          onSuccess(TypeOf<ResponseType>::type(), &res);
+        };
+        handler(*reinterpret_cast<const RequestType*>(args), responseCallback);
+      });
+}
+
+template <typename F, typename RequestType, typename ResponseType>
+Session::IsRequestHandlerWithCallback<F, ResponseOrError<ResponseType>>
+Session::registerHandler(F&& handler) {
+  using CallbackType = ParamType<F, 1>;
+  registerHandler(
+      TypeOf<RequestType>::type(),
+      [handler](const void* args, const RequestSuccessCallback& onSuccess,
+                const RequestErrorCallback& onError) {
+        CallbackType responseCallback =
+            [onError, onSuccess](const ResponseOrError<ResponseType>& res) {
+              if (res.error) {
+                onError(TypeOf<ResponseType>::type(), res.error);
+              } else {
+                onSuccess(TypeOf<ResponseType>::type(), &res.response);
+              }
+            };
+        handler(*reinterpret_cast<const RequestType*>(args), responseCallback);
+      });
 }
 
 template <typename F, typename T>

@@ -269,6 +269,142 @@ TEST_F(SessionTest, RequestResponseError) {
   ASSERT_EQ(got.error.message, "Oh noes!");
 }
 
+TEST_F(SessionTest, RequestCallbackResponse) {
+  using ResponseCallback = std::function<void(dap::SetBreakpointsResponse)>;
+
+  server->registerHandler(
+      [&](const dap::SetBreakpointsRequest&, const ResponseCallback& callback) {
+        dap::SetBreakpointsResponse response;
+        dap::Breakpoint bp;
+        bp.line = 2;
+        response.breakpoints.emplace_back(std::move(bp));
+        callback(response);
+      });
+
+  bind();
+
+  auto got = client->send(dap::SetBreakpointsRequest{}).get();
+
+  // Check response was received correctly.
+  ASSERT_EQ(got.error, false);
+  ASSERT_EQ(got.response.breakpoints.size(), 1U);
+}
+
+TEST_F(SessionTest, RequestCallbackResponseOrError) {
+  using ResponseCallback =
+      std::function<void(dap::ResponseOrError<dap::SetBreakpointsResponse>)>;
+
+  server->registerHandler(
+      [&](const dap::SetBreakpointsRequest&, const ResponseCallback& callback) {
+        dap::SetBreakpointsResponse response;
+        dap::Breakpoint bp;
+        bp.line = 2;
+        response.breakpoints.emplace_back(std::move(bp));
+        callback(response);
+      });
+
+  bind();
+
+  auto got = client->send(dap::SetBreakpointsRequest{}).get();
+
+  // Check response was received correctly.
+  ASSERT_EQ(got.error, false);
+  ASSERT_EQ(got.response.breakpoints.size(), 1U);
+}
+
+TEST_F(SessionTest, RequestCallbackError) {
+  using ResponseCallback =
+      std::function<void(dap::ResponseOrError<dap::SetBreakpointsResponse>)>;
+
+  server->registerHandler(
+      [&](const dap::SetBreakpointsRequest&, const ResponseCallback& callback) {
+        callback(dap::Error("Oh noes!"));
+      });
+
+  bind();
+
+  auto got = client->send(dap::SetBreakpointsRequest{}).get();
+
+  // Check response was received correctly.
+  ASSERT_EQ(got.error, true);
+  ASSERT_EQ(got.error.message, "Oh noes!");
+}
+
+TEST_F(SessionTest, RequestCallbackSuccessAfterReturn) {
+  using ResponseCallback =
+      std::function<void(dap::ResponseOrError<dap::SetBreakpointsResponse>)>;
+
+  ResponseCallback callback;
+  std::mutex mutex;
+  std::condition_variable cv;
+
+  server->registerHandler(
+      [&](const dap::SetBreakpointsRequest&, const ResponseCallback& cb) {
+        std::unique_lock<std::mutex> lock(mutex);
+        callback = cb;
+        cv.notify_all();
+      });
+
+  bind();
+
+  auto future = client->send(dap::SetBreakpointsRequest{});
+
+  {
+    dap::SetBreakpointsResponse response;
+    dap::Breakpoint bp;
+    bp.line = 2;
+    response.breakpoints.emplace_back(std::move(bp));
+
+    // Wait for the handler to be called.
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [&] { return static_cast<bool>(callback); });
+
+    // Issue the callback
+    callback(response);
+  }
+
+  auto got = future.get();
+
+  // Check response was received correctly.
+  ASSERT_EQ(got.error, false);
+  ASSERT_EQ(got.response.breakpoints.size(), 1U);
+}
+
+TEST_F(SessionTest, RequestCallbackErrorAfterReturn) {
+  using ResponseCallback =
+      std::function<void(dap::ResponseOrError<dap::SetBreakpointsResponse>)>;
+
+  ResponseCallback callback;
+  std::mutex mutex;
+  std::condition_variable cv;
+
+  server->registerHandler(
+      [&](const dap::SetBreakpointsRequest&, const ResponseCallback& cb) {
+        std::unique_lock<std::mutex> lock(mutex);
+        callback = cb;
+        cv.notify_all();
+      });
+
+  bind();
+
+  auto future = client->send(dap::SetBreakpointsRequest{});
+
+  {
+    // Wait for the handler to be called.
+    std::unique_lock<std::mutex> lock(mutex);
+    cv.wait(lock, [&] { return static_cast<bool>(callback); });
+
+    // Issue the callback
+    callback(dap::Error("Oh noes!"));
+  }
+
+  auto got = future.get();
+
+  // Check response was received correctly.
+  ASSERT_EQ(got.error, true);
+  ASSERT_EQ(got.error.message, "Oh noes!");
+}
+
 TEST_F(SessionTest, ResponseSentHandlerSuccess) {
   const auto response = createResponse();
 
