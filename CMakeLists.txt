@@ -221,6 +221,7 @@ if(CPPDAP_BUILD_TESTS)
         ${CPPDAP_SRC_DIR}/rwmutex_test.cpp
         ${CPPDAP_SRC_DIR}/session_test.cpp
         ${CPPDAP_SRC_DIR}/socket_test.cpp
+        ${CPPDAP_SRC_DIR}/traits_test.cpp
         ${CPPDAP_SRC_DIR}/typeinfo_test.cpp
         ${CPPDAP_SRC_DIR}/variant_test.cpp
         ${CPPDAP_GOOGLETEST_DIR}/googletest/src/gtest-all.cc
