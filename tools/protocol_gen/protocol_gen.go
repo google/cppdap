@@ -104,14 +104,16 @@ func main() {
 	}
 }
 
+// root object of the parsed schema
 type root struct {
-	Schema      string                `json:"$schema"`
-	Title       string                `json:"title"`
-	Description string                `json:"description"`
-	Ty          string                `json:"type"`
-	Definitions map[string]definition `json:"definitions"`
+	Schema      string                 `json:"$schema"`
+	Title       string                 `json:"title"`
+	Description string                 `json:"description"`
+	Ty          string                 `json:"type"`
+	Definitions map[string]*definition `json:"definitions"`
 }
 
+// definitions() returns a lexicographically-stored list of named definitions
 func (r *root) definitions() []namedDefinition {
 	sortedDefinitions := make([]namedDefinition, 0, len(r.Definitions))
 	for name, def := range r.Definitions {
@@ -121,6 +123,8 @@ func (r *root) definitions() []namedDefinition {
 	return sortedDefinitions
 }
 
+// getRef() returns the namedDefinition with the given reference string
+// References have the form '#/definitions/<name>'
 func (r *root) getRef(ref string) (namedDefinition, error) {
 	if !strings.HasPrefix(ref, "#/definitions/") {
 		return namedDefinition{}, fmt.Errorf("Unknown $ref '%s'", ref)
@@ -133,164 +137,95 @@ func (r *root) getRef(ref string) (namedDefinition, error) {
 	return namedDefinition{name, def}, nil
 }
 
+// namedDefinition is a [name, definition] pair
 type namedDefinition struct {
-	name string
-	def  definition
+	name string      // name as defined in the schema
+	def  *definition // definition node
 }
 
+// definition is the core JSON object type in the schema, describing requests,
+// responses, events, properties and more.
 type definition struct {
-	Ty          string       `json:"type"`
-	Title       string       `json:"title"`
-	Description string       `json:"description"`
-	Properties  properties   `json:"properties"`
-	Required    []string     `json:"required"`
-	AllOf       []definition `json:"allOf"`
-	Ref         string       `json:"$ref"`
+	Ty          interface{}   `json:"type"`
+	Title       string        `json:"title"`
+	Items       *definition   `json:"items"`
+	Description string        `json:"description"`
+	Properties  properties    `json:"properties"`
+	Required    []string      `json:"required"`
+	AllOf       []*definition `json:"allOf"`
+	Ref         string        `json:"$ref"`
+	OpenEnum    []string      `json:"_enum"`
+	ClosedEnum  []string      `json:"enum"`
+
+	// The resolved C++ type of the definition
+	cppType cppType
 }
 
-type properties map[string]property
+// properties is a map of property name to the property definition
+type properties map[string]*definition
 
-func (p *properties) foreach(cb func(string, property) error) error {
-	type namedProperty struct {
-		name     string
-		property property
-	}
-	sorted := make([]namedProperty, 0, len(*p))
+// foreach() calls cb for each property in the map. cb is called in
+// lexicographically-stored order for deterministic processing.
+func (p *properties) foreach(cb func(string, *definition) error) error {
+	sorted := make([]namedDefinition, 0, len(*p))
 	for name, property := range *p {
-		sorted = append(sorted, namedProperty{name, property})
+		sorted = append(sorted, namedDefinition{name, property})
 	}
 	sort.Slice(sorted, func(i, j int) bool { return sorted[i].name < sorted[j].name })
 	for _, entry := range sorted {
-		if err := cb(entry.name, entry.property); err != nil {
+		if err := cb(entry.name, entry.def); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-type property struct {
-	typed
-	Description string `json:"description"`
-}
-
-func (p *property) properties(r *root) (properties, []string, error) {
-	if p.Ref == "" {
-		return p.Properties, p.Required, nil
-	}
-
-	d, err := r.getRef(p.Ref)
-	if err != nil {
-		return nil, nil, err
-	}
-	return d.def.Properties, d.def.Required, nil
-}
-
-type typed struct {
-	Ty         interface{} `json:"type"`
-	Items      *typed      `json:"items"`
-	Ref        string      `json:"$ref"`
-	Properties properties  `json:"properties"`
-	Required   []string    `json:"required"`
-	ClosedEnum []string    `json:"enum"`
-	OpenEnum   []string    `json:"_enum"`
-}
-
-func (t typed) typename(r *root, refs *[]string) (string, error) {
-	if t.Ref != "" {
-		d, err := r.getRef(t.Ref)
-		if err != nil {
-			return "", err
-		}
-		*refs = append(*refs, d.name)
-		return d.name, nil
-	}
-
-	if t.Ty == nil {
-		return "", fmt.Errorf("No type specified")
-	}
-
-	var typeof func(v reflect.Value) (string, error)
-	typeof = func(v reflect.Value) (string, error) {
-		if v.Kind() == reflect.Interface {
-			v = v.Elem()
-		}
-		switch v.Kind() {
-		case reflect.String:
-			ty := v.Interface().(string)
-			switch ty {
-			case "boolean", "string", "integer", "number", "object", "null":
-				return ty, nil
-			case "array":
-				if t.Items != nil {
-					el, err := t.Items.typename(r, refs)
-					if err != nil {
-						return "", err
-					}
-					return fmt.Sprintf("array<%s>", el), nil
-				}
-				return "array<any>", nil
-			default:
-				return "", fmt.Errorf("Unhandled property type '%v'", ty)
-			}
-
-		case reflect.Slice, reflect.Array:
-			ty := "variant<"
-			for i := 0; i < v.Len(); i++ {
-				if i > 0 {
-					ty += ", "
-				}
-				el, err := typeof(v.Index(i))
-				if err != nil {
-					return "", err
-				}
-				ty += el
-			}
-			ty += ">"
-			return ty, nil
-		}
-
-		return "", fmt.Errorf("Unsupported type '%v' kind: %v", v.Interface(), v.Kind())
-	}
-
-	return typeof(reflect.ValueOf(t.Ty))
-}
-
+// cppField describes a single C++ field of a C++ structure
 type cppField struct {
-	desc         string
-	ty           string
-	name         string
-	defaultValue string
-	optional     bool
-}
-
-type cppStruct struct {
 	desc     string
+	ty       cppType
 	name     string
-	typename string
-	base     string
-	fields   []cppField
-	deps     []string
-	emit     bool
-	typedefs []cppTypedef
-	ty       structType
+	optional bool
 }
 
-type cppTypedef struct {
-	from string
-	to   string
+// cppType is an interface for all C++ generated types
+type cppType interface {
+	// Name() returns the type name, used to refer to the type
+	Name() string
+	// Dependencies() returns a list of dependent types, which must be emitted
+	// before this type
+	Dependencies() []cppType
+	// File() returns the cppTargetFile that this type should be written to
+	File() cppTargetFile
+	// Description() returns the type description as parsed from the schema
+	Description() string
+	// DefaultValue() returns the default value that should be used for any
+	// fields of this type
+	DefaultValue() string
+	// WriteHeader() writes the type definition to the given .h file writer
+	WriteHeader(w io.Writer)
+	// WriteHeader() writes the type definition to the given .cpp file writer
+	WriteCPP(w io.Writer)
 }
 
-func sanitize(s string) string {
-	s = strings.Trim(s, "_")
-	switch s {
-	case "default":
-		return "def"
-	default:
-		return s
-	}
+// cppStruct implements the cppType interface, describing a C++ structure
+type cppStruct struct {
+	name      string        // C++ type name
+	protoname string        // DAP name
+	desc      string        // Description
+	base      string        // Base class name
+	fields    []cppField    // All fields of the structure
+	deps      []cppType     // Types this structure depends on
+	typedefs  []cppTypedef  // All nested typedefs
+	file      cppTargetFile // The files this type should be written to
 }
 
-func (s *cppStruct) writeHeader(w io.Writer) {
+func (s *cppStruct) Name() string            { return s.name }
+func (s *cppStruct) Dependencies() []cppType { return s.deps }
+func (s *cppStruct) File() cppTargetFile     { return s.file }
+func (s *cppStruct) Description() string     { return s.desc }
+func (s *cppStruct) DefaultValue() string    { return "" }
+func (s *cppStruct) WriteHeader(w io.Writer) {
 	if s.desc != "" {
 		io.WriteString(w, "// ")
 		io.WriteString(w, strings.ReplaceAll(s.desc, "\n", "\n// "))
@@ -309,7 +244,7 @@ func (s *cppStruct) writeHeader(w io.Writer) {
 		io.WriteString(w, "\n  using ")
 		io.WriteString(w, t.from)
 		io.WriteString(w, " = ")
-		io.WriteString(w, t.to)
+		io.WriteString(w, t.to.Name())
 		io.WriteString(w, ";")
 	}
 
@@ -321,16 +256,16 @@ func (s *cppStruct) writeHeader(w io.Writer) {
 		io.WriteString(w, "\n  ")
 		if f.optional {
 			io.WriteString(w, "optional<")
-			io.WriteString(w, f.ty)
+			io.WriteString(w, f.ty.Name())
 			io.WriteString(w, ">")
 		} else {
-			io.WriteString(w, f.ty)
+			io.WriteString(w, f.ty.Name())
 		}
 		io.WriteString(w, " ")
 		io.WriteString(w, sanitize(f.name))
-		if !f.optional && f.defaultValue != "" {
+		if !f.optional && f.ty.DefaultValue() != "" {
 			io.WriteString(w, " = ")
-			io.WriteString(w, f.defaultValue)
+			io.WriteString(w, f.ty.DefaultValue())
 		}
 		io.WriteString(w, ";")
 	}
@@ -341,13 +276,12 @@ func (s *cppStruct) writeHeader(w io.Writer) {
 	io.WriteString(w, s.name)
 	io.WriteString(w, ");\n\n")
 }
-
-func (s *cppStruct) writeCPP(w io.Writer) {
+func (s *cppStruct) WriteCPP(w io.Writer) {
 	// typeinfo
 	io.WriteString(w, "DAP_IMPLEMENT_STRUCT_TYPEINFO(")
 	io.WriteString(w, s.name)
 	io.WriteString(w, ",\n                    \"")
-	io.WriteString(w, s.typename)
+	io.WriteString(w, s.protoname)
 	io.WriteString(w, "\"")
 	for _, f := range s.fields {
 		io.WriteString(w, ",\n                    ")
@@ -360,7 +294,277 @@ func (s *cppStruct) writeCPP(w io.Writer) {
 	io.WriteString(w, ");\n\n")
 }
 
-func buildStructs(r *root) ([]*cppStruct, error) {
+// cppStruct implements the cppType interface, describing a C++ typedef
+type cppTypedef struct {
+	from string  // Name of the typedef
+	to   cppType // Target of the typedef
+	desc string  // Description
+}
+
+func (ty *cppTypedef) Name() string            { return ty.from }
+func (ty *cppTypedef) Dependencies() []cppType { return []cppType{ty.to} }
+func (ty *cppTypedef) File() cppTargetFile     { return types }
+func (ty *cppTypedef) Description() string     { return ty.desc }
+func (ty *cppTypedef) DefaultValue() string    { return ty.to.DefaultValue() }
+func (ty *cppTypedef) WriteHeader(w io.Writer) {
+	if ty.desc != "" {
+		io.WriteString(w, "// ")
+		io.WriteString(w, strings.ReplaceAll(ty.desc, "\n", "\n// "))
+		io.WriteString(w, "\n")
+	}
+
+	io.WriteString(w, "using ")
+	io.WriteString(w, ty.from)
+	io.WriteString(w, " = ")
+	io.WriteString(w, ty.to.Name())
+	io.WriteString(w, ";\n\n")
+}
+func (ty *cppTypedef) WriteCPP(w io.Writer) {}
+
+// cppStruct implements the cppType interface, describing a basic C++ type
+type cppBasicType struct {
+	name         string    // Type name
+	desc         string    // Description
+	deps         []cppType // Types this type depends on
+	defaultValue string    // Default value for fields of this type
+}
+
+func (ty *cppBasicType) Name() string            { return ty.name }
+func (ty *cppBasicType) Dependencies() []cppType { return ty.deps }
+func (ty *cppBasicType) File() cppTargetFile     { return types }
+func (ty *cppBasicType) Description() string     { return ty.desc }
+func (ty *cppBasicType) DefaultValue() string    { return ty.defaultValue }
+func (ty *cppBasicType) WriteHeader(w io.Writer) {}
+func (ty *cppBasicType) WriteCPP(w io.Writer)    {}
+
+// sanitize() returns the given identifier transformed into a legal C++ identifier
+func sanitize(s string) string {
+	s = strings.Trim(s, "_")
+	switch s {
+	case "default":
+		return "def"
+	default:
+		return s
+	}
+}
+
+// appendEnumDetails() appends any enumerator details to the given description string.
+func appendEnumDetails(desc string, openEnum []string, closedEnum []string) string {
+	if len(closedEnum) > 0 {
+		desc += "\n\nMust be one of the following enumeration values:\n"
+		for i, enum := range closedEnum {
+			if i > 0 {
+				desc += ", "
+			}
+			desc += "'" + enum + "'"
+		}
+	}
+
+	if len(openEnum) > 0 {
+		desc += "\n\nMay be one of the following enumeration values:\n"
+		for i, enum := range openEnum {
+			if i > 0 {
+				desc += ", "
+			}
+			desc += "'" + enum + "'"
+		}
+	}
+	return desc
+}
+
+// buildRootStruct() populates the cppStruct type with information found in def.
+// buildRootStruct() must only be called after all the root definitions have had
+// a type constructed (however, not necessarily fully populated)
+func (r *root) buildRootStruct(ty *cppStruct, def *definition) error {
+	if len(def.AllOf) > 1 && def.AllOf[0].Ref != "" {
+		ref, err := r.getRef(def.AllOf[0].Ref)
+		if err != nil {
+			return err
+		}
+		ty.base = ref.name
+		if len(def.AllOf) > 2 {
+			return fmt.Errorf("Cannot handle allOf with more than 2 entries")
+		}
+		def = def.AllOf[1]
+	}
+
+	if def.Ty != "object" {
+		return fmt.Errorf("Definion '%v' was of unexpected type '%v'", ty.name, def.Ty)
+	}
+
+	ty.desc = def.Description
+
+	var body *definition
+	var err error
+	switch ty.base {
+	case "Request":
+		if arguments, ok := def.Properties["arguments"]; ok {
+			body = arguments
+		}
+		if command, ok := def.Properties["command"]; ok {
+			ty.protoname = command.ClosedEnum[0]
+		}
+		responseName := strings.TrimSuffix(ty.name, "Request") + "Response"
+		responseDef := r.Definitions[responseName]
+		responseTy := responseDef.cppType
+		if responseTy == nil {
+			return fmt.Errorf("Failed to find response type '%v'", responseName)
+		}
+		ty.deps = append(ty.deps, responseTy)
+		ty.typedefs = append(ty.typedefs, cppTypedef{from: "Response", to: responseTy})
+		ty.file = request
+	case "Response":
+		body = def.Properties["body"]
+		ty.file = response
+	case "Event":
+		body = def.Properties["body"]
+		if command, ok := def.Properties["event"]; ok {
+			ty.protoname = command.ClosedEnum[0]
+		}
+		ty.file = event
+	default:
+		body = def
+		ty.file = types
+	}
+	if err != nil {
+		return err
+	}
+
+	if body == nil {
+		return nil
+	}
+	if body.Ref != "" {
+		ref, err := r.getRef(body.Ref)
+		if err != nil {
+			return err
+		}
+		body = ref.def
+	}
+
+	required := make(map[string]bool, len(body.Required))
+	for _, r := range body.Required {
+		required[r] = true
+	}
+
+	if err = body.Properties.foreach(func(propName string, property *definition) error {
+		propTy, err := r.getType(property)
+		if err != nil {
+			return fmt.Errorf("While processing %v.%v: %v", ty.name, propName, err)
+		}
+
+		optional := !required[propName]
+		desc := appendEnumDetails(property.Description, property.OpenEnum, property.ClosedEnum)
+		ty.fields = append(ty.fields, cppField{
+			desc:     desc,
+			ty:       propTy,
+			name:     propName,
+			optional: optional,
+		})
+
+		ty.deps = append(ty.deps, propTy)
+
+		return nil
+	}); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// getType() returns the cppType for the given definition
+func (r *root) getType(def *definition) (builtType cppType, err error) {
+	if def.cppType != nil {
+		return def.cppType, nil
+	}
+	defer func() { def.cppType = builtType }()
+
+	if def.Ref != "" {
+		ref, err := r.getRef(def.Ref)
+		if err != nil {
+			return nil, err
+		}
+		return ref.def.cppType, nil
+	}
+
+	v := reflect.ValueOf(def.Ty)
+
+	if v.Kind() == reflect.Interface {
+		v = v.Elem()
+	}
+
+	var typeof func(reflect.Value) (cppType, error)
+	typeof = func(v reflect.Value) (cppType, error) {
+		if v.Kind() == reflect.Interface {
+			v = v.Elem()
+		}
+		switch v.Kind() {
+		case reflect.String:
+			ty := v.Interface().(string)
+			switch ty {
+			case "string":
+				desc := appendEnumDetails(def.Description, nil, def.ClosedEnum)
+				defaultValue := ""
+				if len(def.ClosedEnum) > 0 {
+					defaultValue = `"` + def.ClosedEnum[0] + `"`
+				}
+				ty := &cppBasicType{
+					name:         ty,
+					defaultValue: defaultValue,
+					desc:         desc,
+				}
+				return ty, nil
+
+			case "object", "boolean", "integer", "number", "null":
+				ty := &cppBasicType{
+					name: ty,
+					desc: def.Description,
+				}
+				return ty, nil
+			case "array":
+				name := "array<any>"
+				deps := []cppType{}
+				if def.Items != nil {
+					elTy, err := r.getType(def.Items)
+					if err != nil {
+						return nil, err
+					}
+					name = fmt.Sprintf("array<%s>", elTy.Name())
+					deps = append(deps, elTy)
+				}
+				return &cppBasicType{
+					name: name,
+					desc: def.Description,
+					deps: deps,
+				}, nil
+			default:
+				return nil, fmt.Errorf("Unhandled property type '%v'", ty)
+			}
+		case reflect.Slice, reflect.Array:
+			args := []string{}
+			deps := []cppType{}
+			for i := 0; i < v.Len(); i++ {
+				elTy, err := typeof(v.Index(i))
+				if err != nil {
+					return nil, err
+				}
+				deps = append(deps, elTy)
+				args = append(args, elTy.Name())
+			}
+			return &cppBasicType{
+				name: "variant<" + strings.Join(args, ", ") + ">",
+				desc: def.Description,
+				deps: deps,
+			}, nil
+		}
+		return nil, fmt.Errorf("Unsupported type '%v' kind: %v", v.Interface(), v.Kind())
+	}
+
+	return typeof(v)
+}
+
+// buildTypes() builds all the reachable types found in the schema, returning
+// all the root, named definition types.
+func (r *root) buildTypes() ([]cppType, error) {
 	ignore := map[string]bool{
 		// These are handled internally.
 		"ProtocolMessage": true,
@@ -369,166 +573,104 @@ func buildStructs(r *root) ([]*cppStruct, error) {
 		"Response":        true,
 	}
 
-	out := []*cppStruct{}
+	// Step 1: Categorize all the named definitions by type.
+	structDefs := []namedDefinition{}
+	enumDefs := []namedDefinition{}
 	for _, entry := range r.definitions() {
-		defName, def := entry.name, entry.def
-		if ignore[defName] {
+		if ignore[entry.name] {
 			continue
 		}
-
-		base := ""
-		if len(def.AllOf) > 1 && def.AllOf[0].Ref != "" {
-			ref, err := r.getRef(def.AllOf[0].Ref)
-			if err != nil {
-				return nil, err
-			}
-			base = ref.name
-			if len(def.AllOf) > 2 {
-				return nil, fmt.Errorf("Cannot handle allOf with more than 2 entries")
-			}
-			def = def.AllOf[1]
-		}
-
-		s := cppStruct{
-			desc: def.Description,
-			name: defName,
-			base: base,
-		}
-
-		var props properties
-		var required []string
-		var err error
-		switch base {
-		case "Request":
-			if arguments, ok := def.Properties["arguments"]; ok {
-				props, required, err = arguments.properties(r)
-			}
-			if command, ok := def.Properties["command"]; ok {
-				s.typename = command.ClosedEnum[0]
-			}
-			response := strings.TrimSuffix(s.name, "Request") + "Response"
-			s.deps = append(s.deps, response)
-			s.typedefs = append(s.typedefs, cppTypedef{"Response", response})
-			s.emit = true
-			s.ty = request
-		case "Response":
-			if body, ok := def.Properties["body"]; ok {
-				props, required, err = body.properties(r)
-			}
-			s.emit = true
-			s.ty = response
-		case "Event":
-			if body, ok := def.Properties["body"]; ok {
-				props, required, err = body.properties(r)
-			}
-			if command, ok := def.Properties["event"]; ok {
-				s.typename = command.ClosedEnum[0]
-			}
-			s.emit = true
-			s.ty = event
+		switch entry.def.Ty {
+		case nil, "object":
+			structDefs = append(structDefs, entry)
+		case "string":
+			enumDefs = append(enumDefs, entry)
 		default:
-			props = def.Properties
-			required = def.Required
-			s.ty = types
+			return nil, fmt.Errorf("Unhandled top-level definition type: %v", entry.def.Ty)
 		}
+	}
+
+	// Step 2: Construct, but do not build all the named object types (yet).
+	// This allows the getType() function to resolve to the cppStruct types,
+	// even if they're not built yet.
+	out := []cppType{}
+	for _, entry := range structDefs {
+		entry.def.cppType = &cppStruct{
+			name: entry.name,
+		}
+		out = append(out, entry.def.cppType)
+	}
+
+	// Step 3: Resolve all the enum types
+	for _, entry := range enumDefs {
+		enumTy, err := r.getType(entry.def)
 		if err != nil {
 			return nil, err
 		}
+		ty := &cppTypedef{
+			from: entry.name,
+			to:   enumTy,
+			desc: enumTy.Description(),
+		}
+		entry.def.cppType = ty
+		out = append(out, entry.def.cppType)
+	}
 
-		if err = props.foreach(func(propName string, property property) error {
-			ty, err := property.typename(r, &s.deps)
-			if err != nil {
-				return fmt.Errorf("While processing %v.%v: %v", defName, propName, err)
-			}
-
-			optional := true
-			for _, r := range required {
-				if propName == r {
-					optional = false
-				}
-			}
-
-			desc := property.Description
-			defaultValue := ""
-
-			if len(property.ClosedEnum) > 0 {
-				desc += "\n\nMust be one of the following enumeration values:\n"
-				for i, enum := range property.ClosedEnum {
-					if i > 0 {
-						desc += ", "
-					}
-					desc += "'" + enum + "'"
-				}
-				defaultValue = `"` + property.ClosedEnum[0] + `"`
-			}
-
-			if len(property.OpenEnum) > 0 {
-				desc += "\n\nMay be one of the following enumeration values:\n"
-				for i, enum := range property.OpenEnum {
-					if i > 0 {
-						desc += ", "
-					}
-					desc += "'" + enum + "'"
-				}
-			}
-
-			s.fields = append(s.fields, cppField{
-				desc:         desc,
-				defaultValue: defaultValue,
-				ty:           ty,
-				name:         propName,
-				optional:     optional,
-			})
-
-			return nil
-		}); err != nil {
+	// Step 4: Resolve all the structure types
+	for _, s := range structDefs {
+		if err := r.buildRootStruct(s.def.cppType.(*cppStruct), s.def); err != nil {
 			return nil, err
 		}
-
-		out = append(out, &s)
 	}
 
 	return out, nil
 }
 
-type structType string
+// cppTargetFile is an enumerator of target files that types should be written
+// to.
+type cppTargetFile string
 
 const (
-	request  = structType("request")
-	response = structType("response")
-	event    = structType("event")
-	types    = structType("types")
+	request  = cppTargetFile("request")  // protocol_request.cpp
+	response = cppTargetFile("response") // protocol_response.cpp
+	event    = cppTargetFile("event")    // protocol_events.cpp
+	types    = cppTargetFile("types")    // protocol_types.cpp
 )
 
-type cppFilePaths map[structType]string
+// cppTargetFilePaths is a map of cppTargetFile to the target file path
+type cppTargetFilePaths map[cppTargetFile]string
 
-type cppFiles map[structType]*os.File
+// cppFiles is a map of cppTargetFile to the open file
+type cppFiles map[cppTargetFile]*os.File
 
+// run() loads and parses the package and protocol JSON files, generates the
+// protocol types from the schema, writes the types to the C++ files, then runs
+// clang-format on each.
 func run() error {
 	pkg := struct {
 		Version string `json:"version"`
 	}{}
 	if err := loadJSONFile(packageURL, &pkg); err != nil {
-		return err
+		return fmt.Errorf("Failed to load JSON file from '%v': %w", packageURL, err)
 	}
 
 	protocol := root{}
 	if err := loadJSONFile(protocolURL, &protocol); err != nil {
-		return err
+		return fmt.Errorf("Failed to load JSON file from '%v': %w", protocolURL, err)
 	}
 
 	hPath, cppPaths := outputPaths()
 	if err := emitFiles(&protocol, hPath, cppPaths, pkg.Version); err != nil {
-		return err
+		return fmt.Errorf("Failed to emit files: %w", err)
 	}
 
 	if clangfmt, err := exec.LookPath("clang-format"); err == nil {
-		if err := exec.Command(clangfmt, "-i", hPath).Run(); err != nil {
-			return err
+		if out, err := exec.Command(clangfmt, "-i", hPath).CombinedOutput(); err != nil {
+			return fmt.Errorf("Failed to run clang-format on '%v':\n%v\n%w", hPath, string(out), err)
 		}
 		for _, p := range cppPaths {
-			if err := exec.Command(clangfmt, "-i", p).Run(); err != nil {
-				return err
+			if out, err := exec.Command(clangfmt, "-i", p).CombinedOutput(); err != nil {
+				return fmt.Errorf("Failed to run clang-format on '%v':\n%v\n%w", p, string(out), err)
 			}
 		}
 	} else {
@@ -538,13 +680,16 @@ func run() error {
 	return nil
 }
 
-func emitFiles(r *root, hPath string, cppPaths map[structType]string, version string) error {
+// emitFiles() opens each of the C++ files, generates the cppType definitions
+// from the schema root, then writes the types to the C++ files in dependency
+// order.
+func emitFiles(r *root, hPath string, cppPaths map[cppTargetFile]string, version string) error {
 	h, err := os.Create(hPath)
 	if err != nil {
 		return err
 	}
 	defer h.Close()
-	cppFiles := map[structType]*os.File{}
+	cppFiles := map[cppTargetFile]*os.File{}
 	for ty, p := range cppPaths {
 		f, err := os.Create(p)
 		if err != nil {
@@ -559,36 +704,42 @@ func emitFiles(r *root, hPath string, cppPaths map[structType]string, version st
 		f.WriteString(strings.ReplaceAll(cppPrologue, versionTag, version))
 	}
 
-	structs, err := buildStructs(r)
+	types, err := r.buildTypes()
 	if err != nil {
 		return err
 	}
 
-	structsByName := map[string]*cppStruct{}
-	for _, s := range structs {
-		structsByName[s.name] = s
+	typesByName := map[string]cppType{}
+	for _, s := range types {
+		typesByName[s.Name()] = s
 	}
 
 	seen := map[string]bool{}
-	var emit func(*cppStruct)
-	emit = func(s *cppStruct) {
-		if seen[s.name] {
-			return
+	var emit func(cppType) error
+	emit = func(ty cppType) error {
+		name := ty.Name()
+		if seen[name] {
+			return nil
 		}
-		seen[s.name] = true
-		for _, dep := range s.deps {
-			emit(structsByName[dep])
+		seen[name] = true
+		for _, dep := range ty.Dependencies() {
+			if err := emit(dep); err != nil {
+				return err
+			}
 		}
-		s.writeHeader(h)
-		s.writeCPP(cppFiles[s.ty])
+		ty.WriteHeader(h)
+		ty.WriteCPP(cppFiles[ty.File()])
+		return nil
 	}
 
 	// emit message types.
-	// Referenced structs will be transitively emitted.
-	for _, s := range structs {
-		switch s.ty {
+	// Referenced types will be transitively emitted.
+	for _, s := range types {
+		switch s.File() {
 		case request, response, event:
-			emit(s)
+			if err := emit(s); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -600,6 +751,8 @@ func emitFiles(r *root, hPath string, cppPaths map[structType]string, version st
 	return nil
 }
 
+// loadJSONFile() loads the JSON file from the given URL using a HTTP GET
+// request.
 func loadJSONFile(url string, obj interface{}) error {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -615,11 +768,12 @@ func loadJSONFile(url string, obj interface{}) error {
 	return nil
 }
 
-func outputPaths() (string, cppFilePaths) {
+// outputPaths() returns a path to the target C++ .h file and .cpp files
+func outputPaths() (string, cppTargetFilePaths) {
 	_, thisFile, _, _ := runtime.Caller(1)
 	thisDir := path.Dir(thisFile)
 	h := path.Join(thisDir, "../../include/dap/protocol.h")
-	cpp := cppFilePaths{
+	cpp := cppTargetFilePaths{
 		request:  path.Join(thisDir, "../../src/protocol_requests.cpp"),
 		response: path.Join(thisDir, "../../src/protocol_response.cpp"),
 		event:    path.Join(thisDir, "../../src/protocol_events.cpp"),
