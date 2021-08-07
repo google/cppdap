@@ -143,15 +143,15 @@ using CompatibleWith = std::integral_constant<
 template <bool CONDITION, typename T = void>
 using EnableIf = typename std::enable_if<CONDITION, T>::type;
 
-// If `BASE` is a base of `T` then EnableIfIsType resolves to type `TRUE`,
+// If `BASE` is a base of `T` then EnableIfIsType resolves to type `TRUE_TY`,
 // otherwise an invalid type.
-template <typename BASE, typename T, typename TRUE = void>
-using EnableIfIsType = EnableIf<IsTypeOrDerived<BASE, T>::value, TRUE>;
+template <typename BASE, typename T, typename TRUE_TY = void>
+using EnableIfIsType = EnableIf<IsTypeOrDerived<BASE, T>::value, TRUE_TY>;
 
 // If the function-like `F` has a matching signature to the function-like `S`
-// then EnableIfHasSignature resolves to type `TRUE`, otherwise an invalid type.
-template <typename F, typename S, typename TRUE = void>
-using EnableIfHasSignature = EnableIf<HasSignature<F, S>::value, TRUE>;
+// then EnableIfHasSignature resolves to type `TRUE_TY`, otherwise an invalid type.
+template <typename F, typename S, typename TRUE_TY = void>
+using EnableIfHasSignature = EnableIf<HasSignature<F, S>::value, TRUE_TY>;
 
 }  // namespace traits
 }  // namespace dap
