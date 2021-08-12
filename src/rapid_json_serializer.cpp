@@ -42,11 +42,20 @@ bool RapidDeserializer::deserialize(dap::boolean* v) const {
 }
 
 bool RapidDeserializer::deserialize(dap::integer* v) const {
-  if (!json()->IsInt()) {
-    return false;
+  if (json()->IsInt()) {
+    *v = json()->GetInt();
+    return true;
+  } else if (json()->IsUint()) {
+    *v = static_cast<int64_t>(json()->GetUint());
+    return true;
+  } else if (json()->IsInt64()) {
+    *v = json()->GetInt64();
+    return true;
+  } else if (json()->IsUint64()) {
+    *v = static_cast<int64_t>(json()->GetUint64());
+    return true;
   }
-  *v = json()->GetInt();
-  return true;
+  return false;
 }
 
 bool RapidDeserializer::deserialize(dap::number* v) const {
@@ -188,7 +197,7 @@ bool RapidSerializer::serialize(const dap::any& v) {
   if (v.is<dap::boolean>()) {
     json()->SetBool((bool)v.get<dap::boolean>());
   } else if (v.is<dap::integer>()) {
-    json()->SetInt((int)v.get<dap::integer>());
+    json()->SetInt64(v.get<dap::integer>());
   } else if (v.is<dap::number>()) {
     json()->SetDouble((double)v.get<dap::number>());
   } else if (v.is<dap::string>()) {

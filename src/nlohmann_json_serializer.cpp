@@ -49,7 +49,7 @@ bool NlohmannDeserializer::deserialize(dap::integer* v) const {
   if (!json->is_number_integer()) {
     return false;
   }
-  *v = json->get<int>();
+  *v = json->get<int64_t>();
   return true;
 }
 
@@ -88,7 +88,7 @@ bool NlohmannDeserializer::deserialize(dap::any* v) const {
   } else if (json->is_number_float()) {
     *v = dap::number(json->get<double>());
   } else if (json->is_number_integer()) {
-    *v = dap::integer(json->get<int>());
+    *v = dap::integer(json->get<int64_t>());
   } else if (json->is_string()) {
     *v = json->get<std::string>();
   } else if (json->is_null()) {
@@ -154,7 +154,7 @@ bool NlohmannSerializer::serialize(dap::boolean v) {
 }
 
 bool NlohmannSerializer::serialize(dap::integer v) {
-  *json = (int)v;
+  *json = (int64_t)v;
   return true;
 }
 
@@ -182,7 +182,7 @@ bool NlohmannSerializer::serialize(const dap::any& v) {
   if (v.is<dap::boolean>()) {
     *json = (bool)v.get<dap::boolean>();
   } else if (v.is<dap::integer>()) {
-    *json = (int)v.get<dap::integer>();
+    *json = (int64_t)v.get<dap::integer>();
   } else if (v.is<dap::number>()) {
     *json = (double)v.get<dap::number>();
   } else if (v.is<dap::string>()) {
