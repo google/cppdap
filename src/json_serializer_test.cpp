@@ -65,7 +65,7 @@ TEST(JSONSerializer, SerializeDeserialize) {
   encoded.b = true;
   encoded.i = 32;
   encoded.n = 123.456;
-  encoded.a = {2, 4, 6, 8};
+  encoded.a = {2, 4, 6, 8, 0x100000000, -2, -4, -6, -8, -0x100000000};
   encoded.o["one"] = dap::integer(1);
   encoded.o["two"] = dap::number(2);
   encoded.s = "hello world";
