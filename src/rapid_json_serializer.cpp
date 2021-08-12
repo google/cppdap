@@ -68,12 +68,12 @@ bool RapidDeserializer::deserialize(dap::string* v) const {
 bool RapidDeserializer::deserialize(dap::object* v) const {
   v->reserve(json()->MemberCount());
   for (auto el = json()->MemberBegin(); el != json()->MemberEnd(); el++) {
-    dap::any val;
+    dap::any el_val;
     RapidDeserializer d(&(el->value));
-    if (!d.deserialize(&val)) {
+    if (!d.deserialize(&el_val)) {
       return false;
     }
-    (*v)[el->name.GetString()] = val;
+    (*v)[el->name.GetString()] = el_val;
   }
   return true;
 }
