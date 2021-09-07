@@ -36,7 +36,6 @@ option_if_not_defined(CPPDAP_ASAN "Build dap with address sanitizer" OFF)
 option_if_not_defined(CPPDAP_MSAN "Build dap with memory sanitizer" OFF)
 option_if_not_defined(CPPDAP_TSAN "Build dap with thread sanitizer" OFF)
 option_if_not_defined(CPPDAP_INSTALL_VSCODE_EXAMPLES "Build and install dap examples into vscode extensions directory" OFF)
-option_if_not_defined(CPPDAP_INSTALL "Create dap install target" OFF)
 
 ###########################################################
 # Directories
@@ -183,30 +182,6 @@ target_include_directories(cppdap PRIVATE "${CPPDAP_JSON_DIR}/include/")
 cppdap_set_target_options(cppdap)
 
 target_link_libraries(cppdap "${CPPDAP_OS_LIBS}")
-
-# install
-if(CPPDAP_INSTALL)
-    include(GNUInstallDirs)
-
-    install(DIRECTORY ${CPPDAP_INCLUDE_DIR}/cppdap
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-        USE_SOURCE_PERMISSIONS
-    )
-
-    install(TARGETS cppdap
-        EXPORT cppdap-targets
-        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    )
-
-    install(EXPORT cppdap-targets
-        FILE cppdap-config.cmake
-        NAMESPACE cppdap::
-        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/cppdap
-    )
-endif(CPPDAP_INSTALL)
 
 # tests
 if(CPPDAP_BUILD_TESTS)
