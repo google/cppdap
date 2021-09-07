@@ -203,63 +203,116 @@ class Session {
   template <typename T, typename = IsEvent<T>>
   void send(const T& event);
 
-  // connect() connects this Session to an endpoint.
-  // connect() can only be called once. Repeated calls will raise an error, but
-  // otherwise will do nothing.
-  virtual void connect(const std::shared_ptr<Reader>&,
-                       const std::shared_ptr<Writer>&) = 0;
-  inline void connect(const std::shared_ptr<ReaderWriter>&);
-
-  // startProcessingMessages() starts a new thread to receive and dispatch
-  // incoming messages.
-  virtual void startProcessingMessages() = 0;
-
   // bind() connects this Session to an endpoint using connect(), and then
   // starts processing incoming messages with startProcessingMessages().
   inline void bind(const std::shared_ptr<Reader>&,
                    const std::shared_ptr<Writer>&);
   inline void bind(const std::shared_ptr<ReaderWriter>&);
 
+  //////////////////////////////////////////////////////////////////////////////
+  // Note:
+  // Methods and members below this point are for advanced usage, and are more
+  // likely to change signature than the methods above.
+  // The methods above this point should be sufficient for most use cases.
+  //////////////////////////////////////////////////////////////////////////////
+
+  // connect() connects this Session to an endpoint.
+  // connect() can only be called once. Repeated calls will raise an error, but
+  // otherwise will do nothing.
+  // Note: This method is used for explicit control over message handling.
+  //       Most users will use bind() instead of calling this method directly.
+  virtual void connect(const std::shared_ptr<Reader>&,
+                       const std::shared_ptr<Writer>&) = 0;
+  inline void connect(const std::shared_ptr<ReaderWriter>&);
+
+  // startProcessingMessages() starts a new thread to receive and dispatch
+  // incoming messages.
+  // Note: This method is used for explicit control over message handling.
+  //       Most users will use bind() instead of calling this method directly.
+  virtual void startProcessingMessages() = 0;
+
   // getPayload() blocks until the next incoming message is received, returning
   // the payload or an empty function if the connection was lost. The returned
   // payload is function that can be called on any thread to dispatch the
   // message to the Session handler.
+  // Note: This method is used for explicit control over message handling.
+  //       Most users will use bind() instead of calling this method directly.
   virtual std::function<void()> getPayload() = 0;
 
- protected:
-  using RequestSuccessCallback =
-      std::function<void(const TypeInfo*, const void*)>;
+  // The callback function type called when a request handler is invoked, and
+  // the request returns a successful result.
+  // 'responseTypeInfo' is the type information of the response data structure.
+  // 'responseData' is a pointer to response payload data.
+  using RequestHandlerSuccessCallback =
+      std::function<void(const TypeInfo* responseTypeInfo,
+                         const void* responseData)>;
 
-  using RequestErrorCallback =
-      std::function<void(const TypeInfo*, const Error& message)>;
+  // The callback function type used to notify when a DAP request fails.
+  // 'responseTypeInfo' is the type information of the response data structure.
+  // 'message' is the error message
+  using RequestHandlerErrorCallback =
+      std::function<void(const TypeInfo* responseTypeInfo,
+                         const Error& message)>;
 
-  using GenericResponseHandler = std::function<void(const void*, const Error*)>;
-
+  // The callback function type used to invoke a request handler.
+  // 'request' is a pointer to the request data structure
+  // 'onSuccess' is the function to call if the request completed succesfully.
+  // 'onError' is the function to call if the request failed.
+  // For each call of the request handler, 'onSuccess' or 'onError' must be
+  // called exactly once.
   using GenericRequestHandler =
-      std::function<void(const void* args,
-                         const RequestSuccessCallback& onSuccess,
-                         const RequestErrorCallback& onError)>;
+      std::function<void(const void* request,
+                         const RequestHandlerSuccessCallback& onSuccess,
+                         const RequestHandlerErrorCallback& onError)>;
 
-  using GenericEventHandler = std::function<void(const void* args)>;
+  // The callback function type used to handle a response to a request.
+  // 'response' is a pointer to the response data structure. May be nullptr.
+  // 'error' is a pointer to the reponse error message. May be nullptr.
+  // One of 'data' or 'error' will be nullptr.
+  using GenericResponseHandler =
+      std::function<void(const void* response, const Error* error)>;
 
+  // The callback function type used to handle an event.
+  // 'event' is a pointer to the event data structure.
+  using GenericEventHandler = std::function<void(const void* event)>;
+
+  // The callback function type used to notify when a response has been sent
+  // from this session endpoint.
+  // 'response' is a pointer to the response data structure.
+  // 'error' is a pointer to the reponse error message. May be nullptr.
   using GenericResponseSentHandler =
       std::function<void(const void* response, const Error* error)>;
 
+  // registerHandler() registers 'handler' as the request handler callback for
+  // requests of the type 'typeinfo'.
   virtual void registerHandler(const TypeInfo* typeinfo,
                                const GenericRequestHandler& handler) = 0;
 
+  // registerHandler() registers 'handler' as the event handler callback for
+  // events of the type 'typeinfo'.
   virtual void registerHandler(const TypeInfo* typeinfo,
                                const GenericEventHandler& handler) = 0;
 
+  // registerHandler() registers 'handler' as the response-sent handler function
+  // which is called whenever a response of the type 'typeinfo' is sent from
+  // this session endpoint.
   virtual void registerHandler(const TypeInfo* typeinfo,
                                const GenericResponseSentHandler& handler) = 0;
 
+  // send() sends a request to the remote endpoint.
+  // 'requestTypeInfo' is the type info of the request data structure.
+  // 'requestTypeInfo' is the type info of the response data structure.
+  // 'request' is a pointer to the request data structure.
+  // 'responseHandler' is the handler function for the response.
   virtual bool send(const dap::TypeInfo* requestTypeInfo,
                     const dap::TypeInfo* responseTypeInfo,
                     const void* request,
                     const GenericResponseHandler& responseHandler) = 0;
 
-  virtual bool send(const TypeInfo*, const void* event) = 0;
+  // send() sends an event to the remote endpoint.
+  // 'eventTypeInfo' is the type info for the event data structure.
+  // 'event' is a pointer to the event data structure.
+  virtual bool send(const TypeInfo* eventTypeInfo, const void* event) = 0;
 };
 
 template <typename F, typename RequestType>
@@ -267,17 +320,18 @@ Session::IsRequestHandlerWithoutCallback<F> Session::registerHandler(
     F&& handler) {
   using ResponseType = typename RequestType::Response;
   const TypeInfo* typeinfo = TypeOf<RequestType>::type();
-  registerHandler(typeinfo, [handler](const void* args,
-                                      const RequestSuccessCallback& onSuccess,
-                                      const RequestErrorCallback& onError) {
-    ResponseOrError<ResponseType> res =
-        handler(*reinterpret_cast<const RequestType*>(args));
-    if (res.error) {
-      onError(TypeOf<ResponseType>::type(), res.error);
-    } else {
-      onSuccess(TypeOf<ResponseType>::type(), &res.response);
-    }
-  });
+  registerHandler(typeinfo,
+                  [handler](const void* args,
+                            const RequestHandlerSuccessCallback& onSuccess,
+                            const RequestHandlerErrorCallback& onError) {
+                    ResponseOrError<ResponseType> res =
+                        handler(*reinterpret_cast<const RequestType*>(args));
+                    if (res.error) {
+                      onError(TypeOf<ResponseType>::type(), res.error);
+                    } else {
+                      onSuccess(TypeOf<ResponseType>::type(), &res.response);
+                    }
+                  });
 }
 
 template <typename F, typename RequestType, typename ResponseType>
@@ -286,8 +340,9 @@ Session::IsRequestHandlerWithCallback<F, ResponseType> Session::registerHandler(
   using CallbackType = ParamType<F, 1>;
   registerHandler(
       TypeOf<RequestType>::type(),
-      [handler](const void* args, const RequestSuccessCallback& onSuccess,
-                const RequestErrorCallback&) {
+      [handler](const void* args,
+                const RequestHandlerSuccessCallback& onSuccess,
+                const RequestHandlerErrorCallback&) {
         CallbackType responseCallback = [onSuccess](const ResponseType& res) {
           onSuccess(TypeOf<ResponseType>::type(), &res);
         };
@@ -301,8 +356,9 @@ Session::registerHandler(F&& handler) {
   using CallbackType = ParamType<F, 1>;
   registerHandler(
       TypeOf<RequestType>::type(),
-      [handler](const void* args, const RequestSuccessCallback& onSuccess,
-                const RequestErrorCallback& onError) {
+      [handler](const void* args,
+                const RequestHandlerSuccessCallback& onSuccess,
+                const RequestHandlerErrorCallback& onError) {
         CallbackType responseCallback =
             [onError, onSuccess](const ResponseOrError<ResponseType>& res) {
               if (res.error) {
