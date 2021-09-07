@@ -16,6 +16,7 @@
 
 #include "socket.h"
 
+#include <atomic>
 #include <mutex>
 #include <string>
 #include <thread>
@@ -24,7 +25,7 @@ namespace {
 
 class Impl : public dap::net::Server {
  public:
-  Impl() {}
+  Impl() : stopped{true} {}
 
   ~Impl() { stop(); }
 
@@ -41,17 +42,18 @@ class Impl : public dap::net::Server {
       return false;
     }
 
-    running = true;
+    stopped = false;
     thread = std::thread([=] {
-      do {
+      while (true) {
         if (auto rw = socket->accept()) {
           onConnect(rw);
           continue;
         }
-        if (!isRunning()) {
+        if (!stopped) {
           onError("Failed to accept connection");
         }
-      } while (false);
+        break;
+      };
     });
 
     return true;
@@ -63,23 +65,19 @@ class Impl : public dap::net::Server {
   }
 
  private:
-  bool isRunning() {
-    std::unique_lock<std::mutex> lock(mutex);
-    return running;
-  }
+  bool isRunning() { return !stopped; }
 
   void stopWithLock() {
-    if (running) {
+    if (!stopped.exchange(true)) {
       socket->close();
       thread.join();
-      running = false;
     }
   }
 
   std::mutex mutex;
   std::thread thread;
   std::unique_ptr<dap::Socket> socket;
-  bool running = false;
+  std::atomic<bool> stopped;
   OnError errorHandler;
 };
 
