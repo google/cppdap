@@ -174,7 +174,17 @@ class dap::Socket::Shared : public dap::ReaderWriter {
       if (s != InvalidSocket) {
 #if defined(_WIN32)
         closesocket(s);
+#elif __APPLE__
+        // ::shutdown() *should* be sufficient to unblock ::accept(), but
+        // apparently on macos it can return ENOTCONN and ::accept() continues
+        // to block indefinitely.
+        // Note: There is a race here. Calling ::close() frees the socket ID,
+        // which may be reused before `s` is assigned InvalidSocket.
+        ::shutdown(s, SHUT_RDWR);
+        ::close(s);
 #else
+        // ::shutdown() to unblock ::accept(). We'll actually close the socket
+        // under lock below.
         ::shutdown(s, SHUT_RDWR);
 #endif
       }
@@ -182,7 +192,7 @@ class dap::Socket::Shared : public dap::ReaderWriter {
 
     WLock l(mutex);
     if (s != InvalidSocket) {
-#if !defined(_WIN32)
+#if !defined(_WIN32) && !defined(__APPLE__)
       ::close(s);
 #endif
       s = InvalidSocket;
@@ -240,10 +250,13 @@ std::shared_ptr<ReaderWriter> Socket::accept() const {
   std::shared_ptr<Shared> out;
   if (shared) {
     shared->lock([&](SOCKET socket, const addrinfo*) {
-      if (socket != InvalidSocket) {
+      if (socket != InvalidSocket && !errored(socket)) {
         init();
-        out = std::make_shared<Shared>(::accept(socket, 0, 0));
-        out->setOptions();
+        auto accepted = ::accept(socket, 0, 0);
+        if (accepted != InvalidSocket) {
+          out = std::make_shared<Shared>(accepted);
+          out->setOptions();
+        }
       }
     });
   }
