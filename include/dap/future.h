@@ -93,7 +93,7 @@ future<T>::future(const std::shared_ptr<State>& s) : state(s) {}
 
 template <typename T>
 bool future<T>::valid() const {
-  return state;
+  return static_cast<bool>(state);
 }
 
 template <typename T>
