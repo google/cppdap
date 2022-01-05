@@ -286,5 +286,6 @@ if(CPPDAP_BUILD_EXAMPLES)
     endfunction(build_example)
 
     build_example(hello_debugger)
+    build_example(simple_net_client_server)
 
 endif(CPPDAP_BUILD_EXAMPLES)
