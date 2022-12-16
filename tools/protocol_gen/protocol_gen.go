@@ -488,19 +488,18 @@ func (r *root) getType(def *definition) (builtType cppType, err error) {
 	}
 
 	if len(def.OneOf) != 0 {
-		args := []string{}
-		deps := []cppType{}
-		for i := 0; i < len(def.OneOf); i++ {
-			if def.OneOf[i] == nil {
+		args := make([]string, len(def.OneOf))
+		deps := make([]cppType, len(def.OneOf))
+		for i, oneOf := range def.OneOf {
+			if oneOf == nil {
 				return nil, fmt.Errorf("Item %d in oneOf is nil", i)
 			}
-
-			elTy, err := r.getType(def.OneOf[i])
+			elTy, err := r.getType(oneOf)
 			if err != nil {
 				return nil, err
 			}
-			deps = append(deps, elTy)
-			args = append(args, elTy.Name())
+			deps[i] = elTy
+			args[i] = elTy.Name()
 		}
 		return &cppBasicType{
 			name: "variant<" + strings.Join(args, ", ") + ">",
