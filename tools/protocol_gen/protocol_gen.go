@@ -152,6 +152,7 @@ type definition struct {
 	Description string        `json:"description"`
 	Properties  properties    `json:"properties"`
 	Required    []string      `json:"required"`
+	OneOf       []*definition `json:"oneOf"`
 	AllOf       []*definition `json:"allOf"`
 	Ref         string        `json:"$ref"`
 	OpenEnum    []string      `json:"_enum"`
@@ -484,6 +485,28 @@ func (r *root) getType(def *definition) (builtType cppType, err error) {
 			return nil, err
 		}
 		return ref.def.cppType, nil
+	}
+
+	if len(def.OneOf) != 0 {
+		args := []string{}
+		deps := []cppType{}
+		for i := 0; i < len(def.OneOf); i++ {
+			if def.OneOf[i] == nil {
+				return nil, fmt.Errorf("Item %d in oneOf is nil", i)
+			}
+
+			elTy, err := r.getType(def.OneOf[i])
+			if err != nil {
+				return nil, err
+			}
+			deps = append(deps, elTy)
+			args = append(args, elTy.Name())
+		}
+		return &cppBasicType{
+			name: "variant<" + strings.Join(args, ", ") + ">",
+			desc: def.Description,
+			deps: deps,
+		}, nil
 	}
 
 	v := reflect.ValueOf(def.Ty)
