@@ -22,6 +22,9 @@ set -x # Display commands being run.
 
 cd github/cppdap
 
+# Silence "fatal: unsafe repository" errors
+git config --global --add safe.directory '*'
+
 git submodule update --init
 
 if [ "$BUILD_SYSTEM" == "cmake" ]; then
