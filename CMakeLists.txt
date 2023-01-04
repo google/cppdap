@@ -12,12 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if (CMAKE_VERSION VERSION_LESS 3.0)
+    project(cppdap CXX C)
+else()
+    cmake_policy(SET CMP0048 NEW)
+    project(cppdap VERSION 1.46.0 LANGUAGES CXX C)
+endif()
 
 cmake_minimum_required(VERSION 2.8)
 
 set (CMAKE_CXX_STANDARD 11)
 
-project(cppdap C CXX)
+include(GNUInstallDirs)
 
 ###########################################################
 # Options
@@ -165,8 +171,12 @@ function(cppdap_set_target_options target)
     # if(NOT MSVC)
     #     target_compile_options(${target} PRIVATE "-Wl,--no-undefined")
     # endif()
-
-    target_include_directories(${target} PUBLIC ${CPPDAP_INCLUDE_DIR})
+    target_include_directories(
+	"${target}"
+	PUBLIC
+		"$<BUILD_INTERFACE:${CPPDAP_INCLUDE_DIR}>"
+		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
+    )
 endfunction(cppdap_set_target_options)
 
 ###########################################################
@@ -182,6 +192,45 @@ target_include_directories(cppdap PRIVATE "${CPPDAP_JSON_DIR}/include/")
 cppdap_set_target_options(cppdap)
 
 target_link_libraries(cppdap "${CPPDAP_OS_LIBS}")
+
+set(CPPDAP_TARGET_NAME               ${PROJECT_NAME})
+set(CPPDAP_CONFIG_INSTALL_DIR        "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}" CACHE INTERNAL "")
+set(CPPDAP_INCLUDE_INSTALL_DIR       "${CMAKE_INSTALL_INCLUDEDIR}")
+set(CPPDAP_TARGETS_EXPORT_NAME       "${PROJECT_NAME}-targets")
+set(CPPDAP_CMAKE_CONFIG_TEMPLATE     "cmake/Config.cmake.in")
+set(CPPDAP_CMAKE_CONFIG_DIR          "${CMAKE_CURRENT_BINARY_DIR}")
+set(CPPDAP_CMAKE_VERSION_CONFIG_FILE "${CPPDAP_CMAKE_CONFIG_DIR}/${PROJECT_NAME}ConfigVersion.cmake")
+set(CPPDAP_CMAKE_PROJECT_CONFIG_FILE "${CPPDAP_CMAKE_CONFIG_DIR}/${PROJECT_NAME}Config.cmake")
+set(CPPDAP_CMAKE_PROJECT_TARGETS_FILE "${CPPDAP_CMAKE_CONFIG_DIR}/${PROJECT_NAME}-targets.cmake")
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+    ${CPPDAP_CMAKE_VERSION_CONFIG_FILE} COMPATIBILITY SameMajorVersion
+)
+configure_package_config_file(
+  ${CPPDAP_CMAKE_CONFIG_TEMPLATE}
+  "${CPPDAP_CMAKE_PROJECT_CONFIG_FILE}" 
+  INSTALL_DESTINATION ${CPPDAP_CONFIG_INSTALL_DIR}
+)
+
+install(
+	TARGETS "${CPPDAP_TARGET_NAME}"
+	EXPORT "${CPPDAP_TARGETS_EXPORT_NAME}"
+)
+
+install(
+	EXPORT "${CPPDAP_TARGETS_EXPORT_NAME}"
+	NAMESPACE "${CPPDAP_TARGET_NAME}::"
+	DESTINATION "${CPPDAP_CONFIG_INSTALL_DIR}"
+)
+
+install(
+	DIRECTORY
+		"include/dap"
+	DESTINATION "${CPPDAP_INCLUDE_INSTALL_DIR}"
+)
+install(FILES ${CPPDAP_CMAKE_VERSION_CONFIG_FILE} ${CPPDAP_CMAKE_PROJECT_CONFIG_FILE}
+DESTINATION ${CPPDAP_CONFIG_INSTALL_DIR})
 
 # tests
 if(CPPDAP_BUILD_TESTS)
