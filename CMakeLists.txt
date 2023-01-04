@@ -205,7 +205,7 @@ set(CPPDAP_CMAKE_PROJECT_TARGETS_FILE "${CPPDAP_CMAKE_CONFIG_DIR}/${PROJECT_NAME
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
-    ${CPPDAP_CMAKE_VERSION_CONFIG_FILE} COMPATIBILITY SameMajorVersion
+    ${CPPDAP_CMAKE_VERSION_CONFIG_FILE} COMPATIBILITY SameMinorVersion
 )
 configure_package_config_file(
   ${CPPDAP_CMAKE_CONFIG_TEMPLATE}
