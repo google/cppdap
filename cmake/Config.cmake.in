@@ -1,0 +1,6 @@
+@PACKAGE_INIT@
+include(CMakeFindDependencyMacro)
+
+include("${CMAKE_CURRENT_LIST_DIR}/@CPPDAP_TARGETS_EXPORT_NAME@.cmake")
+check_required_components("@CPPDAP_TARGET_NAME@")
+find_dependency(nlohmann_json CONFIG)
