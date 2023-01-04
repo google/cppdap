@@ -16,7 +16,7 @@ if (CMAKE_VERSION VERSION_LESS 3.0)
     project(cppdap CXX C)
 else()
     cmake_policy(SET CMP0048 NEW)
-    project(cppdap VERSION 1.46.0 LANGUAGES CXX C)
+    project(cppdap VERSION 1.58.0 LANGUAGES CXX C)
 endif()
 
 cmake_minimum_required(VERSION 2.8)
