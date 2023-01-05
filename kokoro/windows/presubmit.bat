@@ -17,7 +17,7 @@ REM limitations under the License.
 SETLOCAL ENABLEDELAYEDEXPANSION
 
 SET BUILD_ROOT=%cd%
-SET PATH=C:\python36;C:\Program Files\cmake\bin;%PATH%
+SET PATH=C:\python36;C:\Program Files\cmake-3.23.1-windows-x86_64\bin;%PATH%
 SET SRC=%cd%\github\cppdap
 
 cd %SRC%
