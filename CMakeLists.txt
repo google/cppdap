@@ -12,14 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-if (CMAKE_VERSION VERSION_LESS 3.0)
-    project(cppdap CXX C)
-else()
-    cmake_policy(SET CMP0048 NEW)
-    project(cppdap VERSION 1.58.0 LANGUAGES CXX C)
-endif()
+cmake_policy(SET CMP0048 NEW)
+project(cppdap VERSION 1.58.0 LANGUAGES CXX C)
 
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.11)
 
 set (CMAKE_CXX_STANDARD 11)
 
