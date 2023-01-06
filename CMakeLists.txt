@@ -139,8 +139,8 @@ function(cppdap_set_target_options target)
     endif()
 
     # Add define for JSON library in use
-    set_target_properties(${target} PROPERTIES
-        COMPILE_DEFINITIONS "CPPDAP_JSON_${CPPDAP_JSON_LIBRARY_UPPER}=1"
+    target_compile_definitions(${target}
+        PUBLIC "CPPDAP_JSON_${CPPDAP_JSON_LIBRARY_UPPER}=1"
     )
 
     # Treat all warnings as errors
