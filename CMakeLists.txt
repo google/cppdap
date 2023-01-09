@@ -39,7 +39,7 @@ option_if_not_defined(CPPDAP_MSAN "Build dap with memory sanitizer" OFF)
 option_if_not_defined(CPPDAP_TSAN "Build dap with thread sanitizer" OFF)
 option_if_not_defined(CPPDAP_INSTALL_VSCODE_EXAMPLES "Build and install dap examples into vscode extensions directory" OFF)
 option_if_not_defined(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE "Use nlohmann_json with find_package() instead of building internal submodule" OFF)
-option_if_not_defined(CPPDAP_USE_EXTERNAL_RAPID_JSON_PACKAGE "Use RapidJSON with find_package()" OFF)
+option_if_not_defined(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE "Use RapidJSON with find_package()" OFF)
 
 ###########################################################
 # Directories
@@ -71,14 +71,14 @@ endif(CPPDAP_BUILD_TESTS)
 # JSON library
 ###########################################################
 
-if(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE AND CPPDAP_USE_EXTERNAL_RAPID_JSON_PACKAGE)
-    message(FATAL_ERROR "Don't set both CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE and CPPDAP_USE_EXTERNAL_RAPID_JSON_PACKAGE")
-elseif(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE OR CPPDAP_USE_EXTERNAL_RAPID_JSON_PACKAGE)
+if(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE AND CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
+    message(FATAL_ERROR "Don't set both CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE and CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE")
+elseif(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE OR CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
     set(USING_EXTERNAL_JSON true)
     if(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
         find_package(nlohmann_json CONFIG REQUIRED)
         set(CPPDAP_JSON_LIBRARY "nlohmann")
-    elseif(CPPDAP_USE_EXTERNAL_RAPID_JSON_PACKAGE)
+    elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
         find_package(RapidJSON CONFIG REQUIRED)
         set(CPPDAP_JSON_LIBRARY "rapid")
     endif()
@@ -204,7 +204,7 @@ set_target_properties(cppdap PROPERTIES POSITION_INDEPENDENT_CODE 1)
 if (CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
     target_link_libraries(cppdap PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
 elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
-    target_link_libraries(cppdap PRIVATE RapidJSON rapidjson::rapidjson)
+    target_link_libraries(cppdap PRIVATE rapidjson)
 else()
     target_include_directories(cppdap PRIVATE "${CPPDAP_JSON_DIR}/include/")
 endif()
@@ -290,7 +290,7 @@ if(CPPDAP_BUILD_TESTS)
     if (CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
         target_link_libraries(cppdap-unittests PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
     elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
-        target_link_libraries(cppdap-unittests PRIVATE RapidJSON rapidjson::rapidjson)
+        target_link_libraries(cppdap-unittests PRIVATE rapidjson)
     endif()
     set_target_properties(cppdap-unittests PROPERTIES
         INCLUDE_DIRECTORIES "${DAP_TEST_INCLUDE_DIR}"
@@ -330,12 +330,22 @@ if(CPPDAP_BUILD_FUZZER)
         target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer")
         target_link_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer")
     endif()
-    target_include_directories(cppdap-fuzzer PUBLIC
+    set(DAP_FUZZ_INCLUDE_DIRS
         ${CPPDAP_INCLUDE_DIR}
         ${CPPDAP_SRC_DIR}
-        ${CPPDAP_JSON_DIR}/include/
     )
-    target_link_libraries(cppdap-fuzzer cppdap "${CPPDAP_OS_LIBS}")
+    if (NOT USING_EXTERNAL_JSON)
+        list(APPEND DAP_FUZZ_INCLUDE_DIRS ${CPPDAP_JSON_DIR}/include/)
+    elseif(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
+        target_link_libraries(cppdap-fuzzer PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
+    elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
+        target_link_libraries(cppdap-fuzzer PRIVATE rapidjson)
+    endif()
+    target_include_directories(cppdap-fuzzer PUBLIC
+        ${DAP_FUZZ_INCLUDE_DIRS}
+    )
+    target_link_libraries(cppdap-fuzzer PRIVATE cppdap "${CPPDAP_OS_LIBS}")
+
 endif(CPPDAP_BUILD_FUZZER)
 
 # examples

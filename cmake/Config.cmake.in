@@ -20,6 +20,6 @@ check_required_components("@CPPDAP_TARGET_NAME@")
 
 if ( @CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE@ )
     find_dependency(nlohmann_json CONFIG)
-elseif( @CPPDAP_USE_EXTERNAL_RAPID_JSON_PACKAGE@ )
+elseif( @CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE@ )
     find_dependency(RapidJSON CONFIG)
 endif()
