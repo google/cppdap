@@ -97,7 +97,7 @@ if(NOT DEFINED CPPDAP_JSON_LIBRARY)
     elseif(EXISTS "${CPPDAP_JSON_DIR}/include/rapidjson")
         set(CPPDAP_JSON_LIBRARY "rapid")
     else()
-        message(FATAL_ERROR "Could not determine JSON library from ${CPPDAP_JSON_LIBRARY}")
+        message(FATAL_ERROR "Could not determine JSON library from ${CPPDAP_JSON_DIR}")
     endif()
 endif()
 string(TOUPPER ${CPPDAP_JSON_LIBRARY} CPPDAP_JSON_LIBRARY_UPPER)
@@ -138,6 +138,17 @@ endif()
 ###########################################################
 # Functions
 ###########################################################
+
+function(cppdap_set_json_links target)
+    if (CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
+        target_link_libraries(cppdap PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
+    elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
+        target_link_libraries(cppdap PRIVATE rapidjson)
+    else()
+        target_include_directories(cppdap PRIVATE "${CPPDAP_JSON_DIR}/include/")
+    endif()    
+endfunction(cppdap_set_json_links)
+
 function(cppdap_set_target_options target)
     # Enable all warnings
     if(MSVC)
@@ -191,6 +202,8 @@ function(cppdap_set_target_options target)
 		"$<BUILD_INTERFACE:${CPPDAP_INCLUDE_DIR}>"
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
     )
+    cppdap_set_json_links(${target})
+    target_link_libraries(cppdap PRIVATE ${CPPDAP_OS_LIBS})
 endfunction(cppdap_set_target_options)
 
 ###########################################################
@@ -201,18 +214,7 @@ endfunction(cppdap_set_target_options)
 add_library(cppdap STATIC ${CPPDAP_LIST})
 set_target_properties(cppdap PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
-if (CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
-    target_link_libraries(cppdap PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
-elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
-    target_link_libraries(cppdap PRIVATE rapidjson)
-else()
-    target_include_directories(cppdap PRIVATE "${CPPDAP_JSON_DIR}/include/")
-endif()
-
-
 cppdap_set_target_options(cppdap)
-
-target_link_libraries(cppdap PRIVATE ${CPPDAP_OS_LIBS})
 
 set(CPPDAP_TARGET_NAME               ${PROJECT_NAME})
 set(CPPDAP_CONFIG_INSTALL_DIR        "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}" CACHE INTERNAL "")
@@ -281,19 +283,10 @@ if(CPPDAP_BUILD_TESTS)
         ${CPPDAP_GOOGLETEST_DIR}/googletest/include/
     )
 
-    if (NOT USING_EXTERNAL_JSON)
-        list(APPEND DAP_TEST_INCLUDE_DIR ${CPPDAP_JSON_DIR}/include/)
-    endif()
-
     add_executable(cppdap-unittests ${DAP_TEST_LIST})
 
-    if (CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
-        target_link_libraries(cppdap-unittests PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
-    elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
-        target_link_libraries(cppdap-unittests PRIVATE rapidjson)
-    endif()
+    target_include_directories(cppdap-unittests PUBLIC ${DAP_TEST_INCLUDE_DIR} )
     set_target_properties(cppdap-unittests PROPERTIES
-        INCLUDE_DIRECTORIES "${DAP_TEST_INCLUDE_DIR}"
         FOLDER "Tests"
     )
 
@@ -303,8 +296,7 @@ if(CPPDAP_BUILD_TESTS)
     endif()
 
     cppdap_set_target_options(cppdap-unittests)
-
-    target_link_libraries(cppdap-unittests PRIVATE cppdap ${CPPDAP_OS_LIBS})
+    target_link_libraries(cppdap-unittests PRIVATE cppdap)
 endif(CPPDAP_BUILD_TESTS)
 
 # fuzzer
@@ -330,20 +322,11 @@ if(CPPDAP_BUILD_FUZZER)
         target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer")
         target_link_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer")
     endif()
-    set(DAP_FUZZ_INCLUDE_DIRS
+    target_include_directories(cppdap-fuzzer PUBLIC
         ${CPPDAP_INCLUDE_DIR}
         ${CPPDAP_SRC_DIR}
     )
-    if (NOT USING_EXTERNAL_JSON)
-        list(APPEND DAP_FUZZ_INCLUDE_DIRS ${CPPDAP_JSON_DIR}/include/)
-    elseif(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
-        target_link_libraries(cppdap-fuzzer PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
-    elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
-        target_link_libraries(cppdap-fuzzer PRIVATE rapidjson)
-    endif()
-    target_include_directories(cppdap-fuzzer PUBLIC
-        ${DAP_FUZZ_INCLUDE_DIRS}
-    )
+    cppdap_set_json_links(cppdap-fuzzer)
     target_link_libraries(cppdap-fuzzer PRIVATE cppdap "${CPPDAP_OS_LIBS}")
 
 endif(CPPDAP_BUILD_FUZZER)
