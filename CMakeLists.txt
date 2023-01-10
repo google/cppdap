@@ -15,7 +15,7 @@
 cmake_policy(SET CMP0048 NEW)
 project(cppdap VERSION 1.58.0 LANGUAGES CXX C)
 
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.13)
 
 set (CMAKE_CXX_STANDARD 11)
 
@@ -38,6 +38,8 @@ option_if_not_defined(CPPDAP_ASAN "Build dap with address sanitizer" OFF)
 option_if_not_defined(CPPDAP_MSAN "Build dap with memory sanitizer" OFF)
 option_if_not_defined(CPPDAP_TSAN "Build dap with thread sanitizer" OFF)
 option_if_not_defined(CPPDAP_INSTALL_VSCODE_EXAMPLES "Build and install dap examples into vscode extensions directory" OFF)
+option_if_not_defined(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE "Use nlohmann_json with find_package() instead of building internal submodule" OFF)
+option_if_not_defined(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE "Use RapidJSON with find_package()" OFF)
 
 ###########################################################
 # Directories
@@ -68,6 +70,17 @@ endif(CPPDAP_BUILD_TESTS)
 ###########################################################
 # JSON library
 ###########################################################
+
+if(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE AND CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
+    message(FATAL_ERROR "Don't set both CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE and CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE")
+elseif(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
+    find_package(nlohmann_json CONFIG REQUIRED)
+    set(CPPDAP_JSON_LIBRARY "nlohmann")
+elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
+    find_package(RapidJSON CONFIG REQUIRED)
+    set(CPPDAP_JSON_LIBRARY "rapid")
+endif()
+
 if(NOT DEFINED CPPDAP_JSON_LIBRARY)
     # Attempt to detect JSON library from CPPDAP_JSON_DIR
     if(NOT EXISTS "${CPPDAP_JSON_DIR}")
@@ -79,7 +92,7 @@ if(NOT DEFINED CPPDAP_JSON_LIBRARY)
     elseif(EXISTS "${CPPDAP_JSON_DIR}/include/rapidjson")
         set(CPPDAP_JSON_LIBRARY "rapid")
     else()
-        message(FATAL_ERROR "Could not determine JSON library from ${CPPDAP_JSON_LIBRARY}")
+        message(FATAL_ERROR "Could not determine JSON library from ${CPPDAP_JSON_DIR}")
     endif()
 endif()
 string(TOUPPER ${CPPDAP_JSON_LIBRARY} CPPDAP_JSON_LIBRARY_UPPER)
@@ -120,6 +133,17 @@ endif()
 ###########################################################
 # Functions
 ###########################################################
+
+function(cppdap_set_json_links target)
+    if (CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
+        target_link_libraries(${target} PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
+    elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
+        target_link_libraries(${target} PRIVATE rapidjson)
+    else()
+        target_include_directories(${target} PRIVATE "${CPPDAP_JSON_DIR}/include/")
+    endif()    
+endfunction(cppdap_set_json_links)
+
 function(cppdap_set_target_options target)
     # Enable all warnings
     if(MSVC)
@@ -139,8 +163,8 @@ function(cppdap_set_target_options target)
     endif()
 
     # Add define for JSON library in use
-    set_target_properties(${target} PROPERTIES
-        COMPILE_DEFINITIONS "CPPDAP_JSON_${CPPDAP_JSON_LIBRARY_UPPER}=1"
+    target_compile_definitions(${target}
+        PUBLIC "CPPDAP_JSON_${CPPDAP_JSON_LIBRARY_UPPER}=1"
     )
 
     # Treat all warnings as errors
@@ -154,13 +178,13 @@ function(cppdap_set_target_options target)
 
     if(CPPDAP_ASAN)
         target_compile_options(${target} PUBLIC "-fsanitize=address")
-        target_link_libraries(${target} "-fsanitize=address")
+        target_link_options(${target} PUBLIC "-fsanitize=address")
     elseif(CPPDAP_MSAN)
         target_compile_options(${target} PUBLIC "-fsanitize=memory")
-        target_link_libraries(${target} "-fsanitize=memory")
+        target_link_options(${target} PUBLIC "-fsanitize=memory")
     elseif(CPPDAP_TSAN)
         target_compile_options(${target} PUBLIC "-fsanitize=thread")
-        target_link_libraries(${target} "-fsanitize=thread")
+        target_link_options(${target} PUBLIC "-fsanitize=thread")
     endif()
 
     # Error on undefined symbols
@@ -173,6 +197,8 @@ function(cppdap_set_target_options target)
 		"$<BUILD_INTERFACE:${CPPDAP_INCLUDE_DIR}>"
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
     )
+    cppdap_set_json_links(${target})
+    target_link_libraries(cppdap PRIVATE ${CPPDAP_OS_LIBS})
 endfunction(cppdap_set_target_options)
 
 ###########################################################
@@ -183,11 +209,7 @@ endfunction(cppdap_set_target_options)
 add_library(cppdap STATIC ${CPPDAP_LIST})
 set_target_properties(cppdap PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
-target_include_directories(cppdap PRIVATE "${CPPDAP_JSON_DIR}/include/")
-
 cppdap_set_target_options(cppdap)
-
-target_link_libraries(cppdap "${CPPDAP_OS_LIBS}")
 
 set(CPPDAP_TARGET_NAME               ${PROJECT_NAME})
 set(CPPDAP_CONFIG_INSTALL_DIR        "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}" CACHE INTERNAL "")
@@ -254,13 +276,12 @@ if(CPPDAP_BUILD_TESTS)
         ${CPPDAP_GOOGLETEST_DIR}/googlemock/include/
         ${CPPDAP_GOOGLETEST_DIR}/googletest/
         ${CPPDAP_GOOGLETEST_DIR}/googletest/include/
-        ${CPPDAP_JSON_DIR}/include/
     )
 
     add_executable(cppdap-unittests ${DAP_TEST_LIST})
 
+    target_include_directories(cppdap-unittests PUBLIC ${DAP_TEST_INCLUDE_DIR} )
     set_target_properties(cppdap-unittests PROPERTIES
-        INCLUDE_DIRECTORIES "${DAP_TEST_INCLUDE_DIR}"
         FOLDER "Tests"
     )
 
@@ -270,8 +291,7 @@ if(CPPDAP_BUILD_TESTS)
     endif()
 
     cppdap_set_target_options(cppdap-unittests)
-
-    target_link_libraries(cppdap-unittests cppdap "${CPPDAP_OS_LIBS}")
+    target_link_libraries(cppdap-unittests PRIVATE cppdap)
 endif(CPPDAP_BUILD_TESTS)
 
 # fuzzer
@@ -286,23 +306,24 @@ if(CPPDAP_BUILD_FUZZER)
     add_executable(cppdap-fuzzer ${DAP_FUZZER_LIST})
     if(CPPDAP_ASAN)
         target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,address")
-        target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer,address")
+        target_link_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,address")
     elseif(CPPDAP_MSAN)
         target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,memory")
-        target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer,memory")
+        target_link_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,memory")
     elseif(CPPDAP_TSAN)
         target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,thread")
-        target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer,thread")
+        target_link_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer,thread")
     else()
         target_compile_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer")
-        target_link_libraries(cppdap-fuzzer "-fsanitize=fuzzer")
+        target_link_options(cppdap-fuzzer PUBLIC "-fsanitize=fuzzer")
     endif()
     target_include_directories(cppdap-fuzzer PUBLIC
         ${CPPDAP_INCLUDE_DIR}
         ${CPPDAP_SRC_DIR}
-        ${CPPDAP_JSON_DIR}/include/
     )
-    target_link_libraries(cppdap-fuzzer cppdap "${CPPDAP_OS_LIBS}")
+    cppdap_set_json_links(cppdap-fuzzer)
+    target_link_libraries(cppdap-fuzzer PRIVATE cppdap "${CPPDAP_OS_LIBS}")
+
 endif(CPPDAP_BUILD_FUZZER)
 
 # examples
