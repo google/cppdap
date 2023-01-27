@@ -51,6 +51,18 @@ struct AttachRequest : public Request {
   // The client should leave the data intact.
   optional<variant<array<any>, boolean, integer, null, number, object, string>>
       restart;
+
+  AttachRequest() = default;
+  /**
+   * @param restart (optional) Arbitrary data from the previous, restarted
+session. The data is sent as the `restart` attribute of the `terminated` event.
+The client should leave the data intact.
+   */
+  AttachRequest(
+      const optional<
+          variant<array<any>, boolean, integer, null, number, object, string>>&
+          restart)
+      : restart(restart) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(AttachRequest);
@@ -67,6 +79,15 @@ struct Checksum {
   ChecksumAlgorithm algorithm = "MD5";
   // Value of the checksum, encoded as a hexadecimal value.
   string checksum;
+
+  Checksum() = default;
+  /**
+   * @param checksum Value of the checksum, encoded as a hexadecimal value.
+   * @param algorithm The algorithm used to calculate this checksum. (default:
+   * "MD5")
+   */
+  Checksum(const string& checksum, const ChecksumAlgorithm& algorithm = "MD5")
+      : checksum(checksum), algorithm(algorithm) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Checksum);
@@ -108,6 +129,52 @@ struct Source {
   // A list of sources that are related to this source. These may be the source
   // that generated this source.
   optional<array<Source>> sources;
+
+  Source() = default;
+  /**
+   * @param adapterData (optional) Additional data that a debug adapter might
+want to loop through the client. The client should leave the data intact and
+persist it across sessions. The client should not interpret the data.
+   * @param checksums (optional) The checksums associated with this file.
+   * @param name (optional) The short name of the source. Every source returned
+from the debug adapter has a name. When sending a source to the debug adapter
+this name is optional.
+   * @param origin (optional) The origin of this source. For example, 'internal
+module', 'inlined content from source map', etc.
+   * @param path (optional) The path of the source to be shown in the UI.
+It is only used to locate and load the content of the source if no
+`sourceReference` is specified (or its value is 0).
+   * @param presentationHint (optional) A hint for how to present the source in
+the UI. A value of `deemphasize` can be used to indicate that the source is not
+available or that it is skipped on stepping. Must be one of the following
+enumeration values: 'normal', 'emphasize', 'deemphasize'
+   * @param sourceReference (optional) If the value > 0 the contents of the
+source must be retrieved through the `source` request (even if a path is
+specified). Since a `sourceReference` is only valid for a session, it can not be
+used to persist a source. The value should be less than or equal to 2147483647
+(2^31-1).
+   * @param sources (optional) A list of sources that are related to this
+source. These may be the source that generated this source.
+   */
+  Source(
+      const optional<
+          variant<array<any>, boolean, integer, null, number, object, string>>&
+          adapterData,
+      const optional<array<Checksum>>& checksums = optional<array<Checksum>>(),
+      const optional<string>& name = optional<string>(),
+      const optional<string>& origin = optional<string>(),
+      const optional<string>& path = optional<string>(),
+      const optional<string>& presentationHint = optional<string>(),
+      const optional<integer>& sourceReference = optional<integer>(),
+      const optional<array<Source>>& sources = optional<array<Source>>())
+      : adapterData(adapterData),
+        checksums(checksums),
+        name(name),
+        origin(origin),
+        path(path),
+        presentationHint(presentationHint),
+        sourceReference(sourceReference),
+        sources(sources) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Source);
@@ -146,6 +213,53 @@ struct Breakpoint {
   // If true, the breakpoint could be set (but not necessarily at the desired
   // location).
   boolean verified;
+
+  Breakpoint() = default;
+  /**
+   * @param verified If true, the breakpoint could be set (but not necessarily
+at the desired location).
+   * @param column (optional) Start position of the source range covered by the
+breakpoint. It is measured in UTF-16 code units and the client capability
+`columnsStartAt1` determines whether it is 0- or 1-based.
+   * @param endColumn (optional) End position of the source range covered by the
+breakpoint. It is measured in UTF-16 code units and the client capability
+`columnsStartAt1` determines whether it is 0- or 1-based. If no end line is
+given, then the end column is assumed to be in the start line.
+   * @param endLine (optional) The end line of the actual range covered by the
+breakpoint.
+   * @param id (optional) The identifier for the breakpoint. It is needed if
+breakpoint events are used to update or remove breakpoints.
+   * @param instructionReference (optional) A memory reference to where the
+breakpoint is set.
+   * @param line (optional) The start line of the actual range covered by the
+breakpoint.
+   * @param message (optional) A message about the state of the breakpoint.
+This is shown to the user and can be used to explain why a breakpoint could not
+be verified.
+   * @param offset (optional) The offset from the instruction reference.
+This can be negative.
+   * @param source (optional) The source where the breakpoint is located.
+   */
+  Breakpoint(const boolean& verified,
+             const optional<integer>& column = optional<integer>(),
+             const optional<integer>& endColumn = optional<integer>(),
+             const optional<integer>& endLine = optional<integer>(),
+             const optional<integer>& id = optional<integer>(),
+             const optional<string>& instructionReference = optional<string>(),
+             const optional<integer>& line = optional<integer>(),
+             const optional<string>& message = optional<string>(),
+             const optional<integer>& offset = optional<integer>(),
+             const optional<Source>& source = optional<Source>())
+      : verified(verified),
+        column(column),
+        endColumn(endColumn),
+        endLine(endLine),
+        id(id),
+        instructionReference(instructionReference),
+        line(line),
+        message(message),
+        offset(offset),
+        source(source) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Breakpoint);
@@ -160,6 +274,17 @@ struct BreakpointEvent : public Event {
   // May be one of the following enumeration values:
   // 'changed', 'new', 'removed'
   string reason;
+
+  BreakpointEvent() = default;
+  /**
+   * @param breakpoint The `id` attribute is used to find the target breakpoint,
+the other attributes are used as the new values.
+   * @param reason The reason for the event.
+May be one of the following enumeration values:
+'changed', 'new', 'removed'
+   */
+  BreakpointEvent(const Breakpoint& breakpoint, const string& reason)
+      : breakpoint(breakpoint), reason(reason) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(BreakpointEvent);
@@ -179,6 +304,25 @@ struct BreakpointLocation {
   optional<integer> endLine;
   // Start line of breakpoint location.
   integer line;
+
+  BreakpointLocation() = default;
+  /**
+   * @param line Start line of breakpoint location.
+   * @param column (optional) The start position of a breakpoint location.
+   * Position is measured in UTF-16 code units and the client capability
+   * `columnsStartAt1` determines whether it is 0- or 1-based.
+   * @param endColumn (optional) The end position of a breakpoint location (if
+   * the location covers a range). Position is measured in UTF-16 code units and
+   * the client capability `columnsStartAt1` determines whether it is 0- or
+   * 1-based.
+   * @param endLine (optional) The end line of breakpoint location if the
+   * location covers a range.
+   */
+  BreakpointLocation(const integer& line,
+                     const optional<integer>& column = optional<integer>(),
+                     const optional<integer>& endColumn = optional<integer>(),
+                     const optional<integer>& endLine = optional<integer>())
+      : line(line), column(column), endColumn(endColumn), endLine(endLine) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(BreakpointLocation);
@@ -188,6 +332,13 @@ DAP_DECLARE_STRUCT_TYPEINFO(BreakpointLocation);
 struct BreakpointLocationsResponse : public Response {
   // Sorted set of possible breakpoint locations.
   array<BreakpointLocation> breakpoints;
+
+  BreakpointLocationsResponse() = default;
+  /**
+   * @param breakpoints Sorted set of possible breakpoint locations.
+   */
+  BreakpointLocationsResponse(const array<BreakpointLocation>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(BreakpointLocationsResponse);
@@ -216,6 +367,38 @@ struct BreakpointLocationsRequest : public Request {
   // The source location of the breakpoints; either `source.path` or
   // `source.reference` must be specified.
   Source source;
+
+  BreakpointLocationsRequest() = default;
+  /**
+   * @param line Start line of range to search possible breakpoint locations in.
+   * If only the line is specified, the request returns all possible locations
+   * in that line.
+   * @param source The source location of the breakpoints; either `source.path`
+   * or `source.reference` must be specified.
+   * @param column (optional) Start position within `line` to search possible
+   * breakpoint locations in. It is measured in UTF-16 code units and the client
+   * capability `columnsStartAt1` determines whether it is 0- or 1-based. If no
+   * column is given, the first position in the start line is assumed.
+   * @param endColumn (optional) End position within `endLine` to search
+   * possible breakpoint locations in. It is measured in UTF-16 code units and
+   * the client capability `columnsStartAt1` determines whether it is 0- or
+   * 1-based. If no end column is given, the last position in the end line is
+   * assumed.
+   * @param endLine (optional) End line of range to search possible breakpoint
+   * locations in. If no end line is given, then the end line is assumed to be
+   * the start line.
+   */
+  BreakpointLocationsRequest(
+      const integer& line,
+      const Source& source,
+      const optional<integer>& column = optional<integer>(),
+      const optional<integer>& endColumn = optional<integer>(),
+      const optional<integer>& endLine = optional<integer>())
+      : line(line),
+        source(source),
+        column(column),
+        endColumn(endColumn),
+        endLine(endLine) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(BreakpointLocationsRequest);
@@ -253,6 +436,19 @@ struct CancelRequest : public Request {
   // cancelled. Both a `requestId` and a `progressId` can be specified in one
   // request.
   optional<integer> requestId;
+
+  CancelRequest() = default;
+  /**
+   * @param progressId (optional) The ID (attribute `progressId`) of the
+progress to cancel. If missing no progress is cancelled. Both a `requestId` and
+a `progressId` can be specified in one request.
+   * @param requestId (optional) The ID (attribute `seq`) of the request to
+cancel. If missing no request is cancelled. Both a `requestId` and a
+`progressId` can be specified in one request.
+   */
+  CancelRequest(const optional<string>& progressId,
+                const optional<integer>& requestId = optional<integer>())
+      : progressId(progressId), requestId(requestId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(CancelRequest);
@@ -276,6 +472,28 @@ struct ColumnDescriptor {
   optional<string> type;
   // Width of this column in characters (hint only).
   optional<integer> width;
+
+  ColumnDescriptor() = default;
+  /**
+   * @param attributeName Name of the attribute rendered in this column.
+   * @param label Header UI label of column.
+   * @param format (optional) Format to use for the rendered values in this
+column. TBD how the format strings looks like.
+   * @param type (optional) Datatype of values in this column. Defaults to
+`string` if not specified. Must be one of the following enumeration values:
+'string', 'number', 'boolean', 'unixTimestampUTC'
+   * @param width (optional) Width of this column in characters (hint only).
+   */
+  ColumnDescriptor(const string& attributeName,
+                   const string& label,
+                   const optional<string>& format = optional<string>(),
+                   const optional<string>& type = optional<string>(),
+                   const optional<integer>& width = optional<integer>())
+      : attributeName(attributeName),
+        label(label),
+        format(format),
+        type(type),
+        width(width) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ColumnDescriptor);
@@ -300,6 +518,37 @@ struct ExceptionBreakpointsFilter {
   // Controls whether a condition can be specified for this filter option. If
   // false or missing, a condition can not be set.
   optional<boolean> supportsCondition;
+
+  ExceptionBreakpointsFilter() = default;
+  /**
+   * @param filter The internal ID of the filter option. This value is passed to
+   * the `setExceptionBreakpoints` request.
+   * @param label The name of the filter option. This is shown in the UI.
+   * @param conditionDescription (optional) A help text providing information
+   * about the condition. This string is shown as the placeholder text for a
+   * text box and can be translated.
+   * @param def (optional) Initial value of the filter option. If not specified
+   * a value false is assumed.
+   * @param description (optional) A help text providing additional information
+   * about the exception filter. This string is typically shown as a hover and
+   * can be translated.
+   * @param supportsCondition (optional) Controls whether a condition can be
+   * specified for this filter option. If false or missing, a condition can not
+   * be set.
+   */
+  ExceptionBreakpointsFilter(
+      const string& filter,
+      const string& label,
+      const optional<string>& conditionDescription = optional<string>(),
+      const optional<boolean>& def = optional<boolean>(),
+      const optional<string>& description = optional<string>(),
+      const optional<boolean>& supportsCondition = optional<boolean>())
+      : filter(filter),
+        label(label),
+        conditionDescription(conditionDescription),
+        def(def),
+        description(description),
+        supportsCondition(supportsCondition) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionBreakpointsFilter);
@@ -404,6 +653,194 @@ struct Capabilities {
   optional<boolean> supportsValueFormattingOptions;
   // The debug adapter supports the `writeMemory` request.
   optional<boolean> supportsWriteMemoryRequest;
+
+  Capabilities() = default;
+  /**
+   * @param additionalModuleColumns (optional) The set of additional module
+   * information exposed by the debug adapter.
+   * @param completionTriggerCharacters (optional) The set of characters that
+   * should trigger completion in a REPL. If not specified, the UI should assume
+   * the `.` character.
+   * @param exceptionBreakpointFilters (optional) Available exception filter
+   * options for the `setExceptionBreakpoints` request.
+   * @param supportSuspendDebuggee (optional) The debug adapter supports the
+   * `suspendDebuggee` attribute on the `disconnect` request.
+   * @param supportTerminateDebuggee (optional) The debug adapter supports the
+   * `terminateDebuggee` attribute on the `disconnect` request.
+   * @param supportedChecksumAlgorithms (optional) Checksum algorithms supported
+   * by the debug adapter.
+   * @param supportsBreakpointLocationsRequest (optional) The debug adapter
+   * supports the `breakpointLocations` request.
+   * @param supportsCancelRequest (optional) The debug adapter supports the
+   * `cancel` request.
+   * @param supportsClipboardContext (optional) The debug adapter supports the
+   * `clipboard` context value in the `evaluate` request.
+   * @param supportsCompletionsRequest (optional) The debug adapter supports the
+   * `completions` request.
+   * @param supportsConditionalBreakpoints (optional) The debug adapter supports
+   * conditional breakpoints.
+   * @param supportsConfigurationDoneRequest (optional) The debug adapter
+   * supports the `configurationDone` request.
+   * @param supportsDataBreakpoints (optional) The debug adapter supports data
+   * breakpoints.
+   * @param supportsDelayedStackTraceLoading (optional) The debug adapter
+   * supports the delayed loading of parts of the stack, which requires that
+   * both the `startFrame` and `levels` arguments and the `totalFrames` result
+   * of the `stackTrace` request are supported.
+   * @param supportsDisassembleRequest (optional) The debug adapter supports the
+   * `disassemble` request.
+   * @param supportsEvaluateForHovers (optional) The debug adapter supports a
+   * (side effect free) `evaluate` request for data hovers.
+   * @param supportsExceptionFilterOptions (optional) The debug adapter supports
+   * `filterOptions` as an argument on the `setExceptionBreakpoints` request.
+   * @param supportsExceptionInfoRequest (optional) The debug adapter supports
+   * the `exceptionInfo` request.
+   * @param supportsExceptionOptions (optional) The debug adapter supports
+   * `exceptionOptions` on the `setExceptionBreakpoints` request.
+   * @param supportsFunctionBreakpoints (optional) The debug adapter supports
+   * function breakpoints.
+   * @param supportsGotoTargetsRequest (optional) The debug adapter supports the
+   * `gotoTargets` request.
+   * @param supportsHitConditionalBreakpoints (optional) The debug adapter
+   * supports breakpoints that break execution after a specified number of hits.
+   * @param supportsInstructionBreakpoints (optional) The debug adapter supports
+   * adding breakpoints based on instruction references.
+   * @param supportsLoadedSourcesRequest (optional) The debug adapter supports
+   * the `loadedSources` request.
+   * @param supportsLogPoints (optional) The debug adapter supports log points
+   * by interpreting the `logMessage` attribute of the `SourceBreakpoint`.
+   * @param supportsModulesRequest (optional) The debug adapter supports the
+   * `modules` request.
+   * @param supportsReadMemoryRequest (optional) The debug adapter supports the
+   * `readMemory` request.
+   * @param supportsRestartFrame (optional) The debug adapter supports
+   * restarting a frame.
+   * @param supportsRestartRequest (optional) The debug adapter supports the
+   * `restart` request. In this case a client should not implement `restart` by
+   * terminating and relaunching the adapter but by calling the `restart`
+   * request.
+   * @param supportsSetExpression (optional) The debug adapter supports the
+   * `setExpression` request.
+   * @param supportsSetVariable (optional) The debug adapter supports setting a
+   * variable to a value.
+   * @param supportsSingleThreadExecutionRequests (optional) The debug adapter
+   * supports the `singleThread` property on the execution requests (`continue`,
+   * `next`, `stepIn`, `stepOut`, `reverseContinue`, `stepBack`).
+   * @param supportsStepBack (optional) The debug adapter supports stepping back
+   * via the `stepBack` and `reverseContinue` requests.
+   * @param supportsStepInTargetsRequest (optional) The debug adapter supports
+   * the `stepInTargets` request.
+   * @param supportsSteppingGranularity (optional) The debug adapter supports
+   * stepping granularities (argument `granularity`) for the stepping requests.
+   * @param supportsTerminateRequest (optional) The debug adapter supports the
+   * `terminate` request.
+   * @param supportsTerminateThreadsRequest (optional) The debug adapter
+   * supports the `terminateThreads` request.
+   * @param supportsValueFormattingOptions (optional) The debug adapter supports
+   * a `format` attribute on the `stackTrace`, `variables`, and `evaluate`
+   * requests.
+   * @param supportsWriteMemoryRequest (optional) The debug adapter supports the
+   * `writeMemory` request.
+   */
+  Capabilities(
+      const optional<array<ColumnDescriptor>>& additionalModuleColumns,
+      const optional<array<string>>& completionTriggerCharacters =
+          optional<array<string>>(),
+      const optional<array<ExceptionBreakpointsFilter>>&
+          exceptionBreakpointFilters =
+              optional<array<ExceptionBreakpointsFilter>>(),
+      const optional<boolean>& supportSuspendDebuggee = optional<boolean>(),
+      const optional<boolean>& supportTerminateDebuggee = optional<boolean>(),
+      const optional<array<ChecksumAlgorithm>>& supportedChecksumAlgorithms =
+          optional<array<ChecksumAlgorithm>>(),
+      const optional<boolean>& supportsBreakpointLocationsRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsCancelRequest = optional<boolean>(),
+      const optional<boolean>& supportsClipboardContext = optional<boolean>(),
+      const optional<boolean>& supportsCompletionsRequest = optional<boolean>(),
+      const optional<boolean>& supportsConditionalBreakpoints =
+          optional<boolean>(),
+      const optional<boolean>& supportsConfigurationDoneRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsDataBreakpoints = optional<boolean>(),
+      const optional<boolean>& supportsDelayedStackTraceLoading =
+          optional<boolean>(),
+      const optional<boolean>& supportsDisassembleRequest = optional<boolean>(),
+      const optional<boolean>& supportsEvaluateForHovers = optional<boolean>(),
+      const optional<boolean>& supportsExceptionFilterOptions =
+          optional<boolean>(),
+      const optional<boolean>& supportsExceptionInfoRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsExceptionOptions = optional<boolean>(),
+      const optional<boolean>& supportsFunctionBreakpoints =
+          optional<boolean>(),
+      const optional<boolean>& supportsGotoTargetsRequest = optional<boolean>(),
+      const optional<boolean>& supportsHitConditionalBreakpoints =
+          optional<boolean>(),
+      const optional<boolean>& supportsInstructionBreakpoints =
+          optional<boolean>(),
+      const optional<boolean>& supportsLoadedSourcesRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsLogPoints = optional<boolean>(),
+      const optional<boolean>& supportsModulesRequest = optional<boolean>(),
+      const optional<boolean>& supportsReadMemoryRequest = optional<boolean>(),
+      const optional<boolean>& supportsRestartFrame = optional<boolean>(),
+      const optional<boolean>& supportsRestartRequest = optional<boolean>(),
+      const optional<boolean>& supportsSetExpression = optional<boolean>(),
+      const optional<boolean>& supportsSetVariable = optional<boolean>(),
+      const optional<boolean>& supportsSingleThreadExecutionRequests =
+          optional<boolean>(),
+      const optional<boolean>& supportsStepBack = optional<boolean>(),
+      const optional<boolean>& supportsStepInTargetsRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsSteppingGranularity =
+          optional<boolean>(),
+      const optional<boolean>& supportsTerminateRequest = optional<boolean>(),
+      const optional<boolean>& supportsTerminateThreadsRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsValueFormattingOptions =
+          optional<boolean>(),
+      const optional<boolean>& supportsWriteMemoryRequest = optional<boolean>())
+      : additionalModuleColumns(additionalModuleColumns),
+        completionTriggerCharacters(completionTriggerCharacters),
+        exceptionBreakpointFilters(exceptionBreakpointFilters),
+        supportSuspendDebuggee(supportSuspendDebuggee),
+        supportTerminateDebuggee(supportTerminateDebuggee),
+        supportedChecksumAlgorithms(supportedChecksumAlgorithms),
+        supportsBreakpointLocationsRequest(supportsBreakpointLocationsRequest),
+        supportsCancelRequest(supportsCancelRequest),
+        supportsClipboardContext(supportsClipboardContext),
+        supportsCompletionsRequest(supportsCompletionsRequest),
+        supportsConditionalBreakpoints(supportsConditionalBreakpoints),
+        supportsConfigurationDoneRequest(supportsConfigurationDoneRequest),
+        supportsDataBreakpoints(supportsDataBreakpoints),
+        supportsDelayedStackTraceLoading(supportsDelayedStackTraceLoading),
+        supportsDisassembleRequest(supportsDisassembleRequest),
+        supportsEvaluateForHovers(supportsEvaluateForHovers),
+        supportsExceptionFilterOptions(supportsExceptionFilterOptions),
+        supportsExceptionInfoRequest(supportsExceptionInfoRequest),
+        supportsExceptionOptions(supportsExceptionOptions),
+        supportsFunctionBreakpoints(supportsFunctionBreakpoints),
+        supportsGotoTargetsRequest(supportsGotoTargetsRequest),
+        supportsHitConditionalBreakpoints(supportsHitConditionalBreakpoints),
+        supportsInstructionBreakpoints(supportsInstructionBreakpoints),
+        supportsLoadedSourcesRequest(supportsLoadedSourcesRequest),
+        supportsLogPoints(supportsLogPoints),
+        supportsModulesRequest(supportsModulesRequest),
+        supportsReadMemoryRequest(supportsReadMemoryRequest),
+        supportsRestartFrame(supportsRestartFrame),
+        supportsRestartRequest(supportsRestartRequest),
+        supportsSetExpression(supportsSetExpression),
+        supportsSetVariable(supportsSetVariable),
+        supportsSingleThreadExecutionRequests(
+            supportsSingleThreadExecutionRequests),
+        supportsStepBack(supportsStepBack),
+        supportsStepInTargetsRequest(supportsStepInTargetsRequest),
+        supportsSteppingGranularity(supportsSteppingGranularity),
+        supportsTerminateRequest(supportsTerminateRequest),
+        supportsTerminateThreadsRequest(supportsTerminateThreadsRequest),
+        supportsValueFormattingOptions(supportsValueFormattingOptions),
+        supportsWriteMemoryRequest(supportsWriteMemoryRequest) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Capabilities);
@@ -418,6 +855,13 @@ DAP_DECLARE_STRUCT_TYPEINFO(Capabilities);
 struct CapabilitiesEvent : public Event {
   // The set of updated capabilities.
   Capabilities capabilities;
+
+  CapabilitiesEvent() = default;
+  /**
+   * @param capabilities The set of updated capabilities.
+   */
+  CapabilitiesEvent(const Capabilities& capabilities)
+      : capabilities(capabilities) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(CapabilitiesEvent);
@@ -469,6 +913,59 @@ struct CompletionItem {
   // The item's type. Typically the client uses this information to render the
   // item in the UI with an icon.
   optional<CompletionItemType> type;
+
+  CompletionItem() = default;
+  /**
+   * @param label The label of this completion item. By default this is also the
+   * text that is inserted when selecting this completion.
+   * @param detail (optional) A human-readable string with additional
+   * information about this item, like type or symbol information.
+   * @param length (optional) Length determines how many characters are
+   * overwritten by the completion text and it is measured in UTF-16 code units.
+   * If missing the value 0 is assumed which results in the completion text
+   * being inserted.
+   * @param selectionLength (optional) Determines the length of the new
+   * selection after the text has been inserted (or replaced) and it is measured
+   * in UTF-16 code units. The selection can not extend beyond the bounds of the
+   * completion text. If omitted the length is assumed to be 0.
+   * @param selectionStart (optional) Determines the start of the new selection
+   * after the text has been inserted (or replaced). `selectionStart` is
+   * measured in UTF-16 code units and must be in the range 0 and length of the
+   * completion text. If omitted the selection starts at the end of the
+   * completion text.
+   * @param sortText (optional) A string that should be used when comparing this
+   * item with other items. If not returned or an empty string, the `label` is
+   * used instead.
+   * @param start (optional) Start position (within the `text` attribute of the
+   * `completions` request) where the completion text is added. The position is
+   * measured in UTF-16 code units and the client capability `columnsStartAt1`
+   * determines whether it is 0- or 1-based. If the start position is omitted
+   * the text is added at the location specified by the `column` attribute of
+   * the `completions` request.
+   * @param text (optional) If text is returned and not an empty string, then it
+   * is inserted instead of the label.
+   * @param type (optional) The item's type. Typically the client uses this
+   * information to render the item in the UI with an icon.
+   */
+  CompletionItem(
+      const string& label,
+      const optional<string>& detail = optional<string>(),
+      const optional<integer>& length = optional<integer>(),
+      const optional<integer>& selectionLength = optional<integer>(),
+      const optional<integer>& selectionStart = optional<integer>(),
+      const optional<string>& sortText = optional<string>(),
+      const optional<integer>& start = optional<integer>(),
+      const optional<string>& text = optional<string>(),
+      const optional<CompletionItemType>& type = optional<CompletionItemType>())
+      : label(label),
+        detail(detail),
+        length(length),
+        selectionLength(selectionLength),
+        selectionStart(selectionStart),
+        sortText(sortText),
+        start(start),
+        text(text),
+        type(type) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(CompletionItem);
@@ -477,6 +974,13 @@ DAP_DECLARE_STRUCT_TYPEINFO(CompletionItem);
 struct CompletionsResponse : public Response {
   // The possible completions for .
   array<CompletionItem> targets;
+
+  CompletionsResponse() = default;
+  /**
+   * @param targets The possible completions for .
+   */
+  CompletionsResponse(const array<CompletionItem>& targets)
+      : targets(targets) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(CompletionsResponse);
@@ -499,6 +1003,24 @@ struct CompletionsRequest : public Request {
   // One or more source lines. Typically this is the text users have typed into
   // the debug console before they asked for completion.
   string text;
+
+  CompletionsRequest() = default;
+  /**
+   * @param column The position within `text` for which to determine the
+   * completion proposals. It is measured in UTF-16 code units and the client
+   * capability `columnsStartAt1` determines whether it is 0- or 1-based.
+   * @param text One or more source lines. Typically this is the text users have
+   * typed into the debug console before they asked for completion.
+   * @param frameId (optional) Returns completions in the scope of this stack
+   * frame. If not specified, the completions are returned for the global scope.
+   * @param line (optional) A line for which to determine the completion
+   * proposals. If missing the first line of the text is assumed.
+   */
+  CompletionsRequest(const integer& column,
+                     const string& text,
+                     const optional<integer>& frameId = optional<integer>(),
+                     const optional<integer>& line = optional<integer>())
+      : column(column), text(text), frameId(frameId), line(line) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(CompletionsRequest);
@@ -526,6 +1048,15 @@ struct ContinueResponse : public Response {
   // threads have been resumed. The value false indicates that not all threads
   // were resumed.
   optional<boolean> allThreadsContinued;
+
+  ContinueResponse() = default;
+  /**
+   * @param allThreadsContinued (optional) The value true (or a missing
+   * property) signals to the client that all threads have been resumed. The
+   * value false indicates that not all threads were resumed.
+   */
+  ContinueResponse(const optional<boolean>& allThreadsContinued)
+      : allThreadsContinued(allThreadsContinued) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ContinueResponse);
@@ -544,6 +1075,19 @@ struct ContinueRequest : public Request {
   // execution (see `supportsSingleThreadExecutionRequests`) and the argument
   // `singleThread` is true, only the thread with this ID is resumed.
   integer threadId;
+
+  ContinueRequest() = default;
+  /**
+   * @param threadId Specifies the active thread. If the debug adapter supports
+   * single thread execution (see `supportsSingleThreadExecutionRequests`) and
+   * the argument `singleThread` is true, only the thread with this ID is
+   * resumed.
+   * @param singleThread (optional) If this flag is true, execution is resumed
+   * only for the thread with given `threadId`.
+   */
+  ContinueRequest(const integer& threadId,
+                  const optional<boolean>& singleThread = optional<boolean>())
+      : threadId(threadId), singleThread(singleThread) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ContinueRequest);
@@ -559,6 +1103,17 @@ struct ContinuedEvent : public Event {
   optional<boolean> allThreadsContinued;
   // The thread which was continued.
   integer threadId;
+
+  ContinuedEvent() = default;
+  /**
+   * @param threadId The thread which was continued.
+   * @param allThreadsContinued (optional) If `allThreadsContinued` is true, a
+   * debug adapter can announce that all threads have continued.
+   */
+  ContinuedEvent(
+      const integer& threadId,
+      const optional<boolean>& allThreadsContinued = optional<boolean>())
+      : threadId(threadId), allThreadsContinued(allThreadsContinued) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ContinuedEvent);
@@ -584,6 +1139,30 @@ struct DataBreakpointInfoResponse : public Response {
   // UI string that describes on what data the breakpoint is set on or why a
   // data breakpoint is not available.
   string description;
+
+  DataBreakpointInfoResponse() = default;
+  /**
+   * @param dataId An identifier for the data on which a data breakpoint can be
+   * registered with the `setDataBreakpoints` request or null if no data
+   * breakpoint is available.
+   * @param description UI string that describes on what data the breakpoint is
+   * set on or why a data breakpoint is not available.
+   * @param accessTypes (optional) Attribute lists the available access types
+   * for a potential data breakpoint. A UI client could surface this
+   * information.
+   * @param canPersist (optional) Attribute indicates that a potential data
+   * breakpoint could be persisted across sessions.
+   */
+  DataBreakpointInfoResponse(
+      const variant<string, null>& dataId,
+      const string& description,
+      const optional<array<DataBreakpointAccessType>>& accessTypes =
+          optional<array<DataBreakpointAccessType>>(),
+      const optional<boolean>& canPersist = optional<boolean>())
+      : dataId(dataId),
+        description(description),
+        accessTypes(accessTypes),
+        canPersist(canPersist) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpointInfoResponse);
@@ -599,6 +1178,19 @@ struct DataBreakpointInfoRequest : public Request {
   // Reference to the variable container if the data breakpoint is requested for
   // a child of the container.
   optional<integer> variablesReference;
+
+  DataBreakpointInfoRequest() = default;
+  /**
+   * @param name The name of the variable's child to obtain data breakpoint
+information for. If `variablesReference` isn't specified, this can be an
+expression.
+   * @param variablesReference (optional) Reference to the variable container if
+the data breakpoint is requested for a child of the container.
+   */
+  DataBreakpointInfoRequest(
+      const string& name,
+      const optional<integer>& variablesReference = optional<integer>())
+      : name(name), variablesReference(variablesReference) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpointInfoRequest);
@@ -631,6 +1223,49 @@ struct DisassembledInstruction {
   // Name of the symbol that corresponds with the location of this instruction,
   // if any.
   optional<string> symbol;
+
+  DisassembledInstruction() = default;
+  /**
+   * @param address The address of the instruction. Treated as a hex value if
+prefixed with `0x`, or as a decimal value otherwise.
+   * @param instruction Text representing the instruction and its operands, in
+an implementation-defined format.
+   * @param column (optional) The column within the line that corresponds to
+this instruction, if any.
+   * @param endColumn (optional) The end column of the range that corresponds to
+this instruction, if any.
+   * @param endLine (optional) The end line of the range that corresponds to
+this instruction, if any.
+   * @param instructionBytes (optional) Raw bytes representing the instruction
+and its operands, in an implementation-defined format.
+   * @param line (optional) The line within the source location that corresponds
+to this instruction, if any.
+   * @param location (optional) Source location that corresponds to this
+instruction, if any. Should always be set (if available) on the first
+instruction returned, but can be omitted afterwards if this instruction maps to
+the same source file as the previous instruction.
+   * @param symbol (optional) Name of the symbol that corresponds with the
+location of this instruction, if any.
+   */
+  DisassembledInstruction(
+      const string& address,
+      const string& instruction,
+      const optional<integer>& column = optional<integer>(),
+      const optional<integer>& endColumn = optional<integer>(),
+      const optional<integer>& endLine = optional<integer>(),
+      const optional<string>& instructionBytes = optional<string>(),
+      const optional<integer>& line = optional<integer>(),
+      const optional<Source>& location = optional<Source>(),
+      const optional<string>& symbol = optional<string>())
+      : address(address),
+        instruction(instruction),
+        column(column),
+        endColumn(endColumn),
+        endLine(endLine),
+        instructionBytes(instructionBytes),
+        line(line),
+        location(location),
+        symbol(symbol) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(DisassembledInstruction);
@@ -639,6 +1274,13 @@ DAP_DECLARE_STRUCT_TYPEINFO(DisassembledInstruction);
 struct DisassembleResponse : public Response {
   // The list of disassembled instructions.
   array<DisassembledInstruction> instructions;
+
+  DisassembleResponse() = default;
+  /**
+   * @param instructions The list of disassembled instructions.
+   */
+  DisassembleResponse(const array<DisassembledInstruction>& instructions)
+      : instructions(instructions) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(DisassembleResponse);
@@ -665,6 +1307,33 @@ struct DisassembleRequest : public Request {
   // If true, the adapter should attempt to resolve memory addresses and other
   // values to symbolic names.
   optional<boolean> resolveSymbols;
+
+  DisassembleRequest() = default;
+  /**
+   * @param instructionCount Number of instructions to disassemble starting at
+the specified location and offset. An adapter must return exactly this number of
+instructions - any unavailable instructions should be replaced with an
+implementation-defined 'invalid instruction' value.
+   * @param memoryReference Memory reference to the base location containing the
+instructions to disassemble.
+   * @param instructionOffset (optional) Offset (in instructions) to be applied
+after the byte offset (if any) before disassembling. Can be negative.
+   * @param offset (optional) Offset (in bytes) to be applied to the reference
+location before disassembling. Can be negative.
+   * @param resolveSymbols (optional) If true, the adapter should attempt to
+resolve memory addresses and other values to symbolic names.
+   */
+  DisassembleRequest(
+      const integer& instructionCount,
+      const string& memoryReference,
+      const optional<integer>& instructionOffset = optional<integer>(),
+      const optional<integer>& offset = optional<integer>(),
+      const optional<boolean>& resolveSymbols = optional<boolean>())
+      : instructionCount(instructionCount),
+        memoryReference(memoryReference),
+        instructionOffset(instructionOffset),
+        offset(offset),
+        resolveSymbols(resolveSymbols) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(DisassembleRequest);
@@ -699,6 +1368,28 @@ struct DisconnectRequest : public Request {
   // thinks is best. The attribute is only honored by a debug adapter if the
   // corresponding capability `supportTerminateDebuggee` is true.
   optional<boolean> terminateDebuggee;
+
+  DisconnectRequest() = default;
+  /**
+   * @param restart (optional) A value of true indicates that this `disconnect`
+request is part of a restart sequence.
+   * @param suspendDebuggee (optional) Indicates whether the debuggee should
+stay suspended when the debugger is disconnected. If unspecified, the debuggee
+should resume execution. The attribute is only honored by a debug adapter if the
+corresponding capability `supportSuspendDebuggee` is true.
+   * @param terminateDebuggee (optional) Indicates whether the debuggee should
+be terminated when the debugger is disconnected. If unspecified, the debug
+adapter is free to do whatever it thinks is best. The attribute is only honored
+by a debug adapter if the corresponding capability `supportTerminateDebuggee` is
+true.
+   */
+  DisconnectRequest(
+      const optional<boolean>& restart,
+      const optional<boolean>& suspendDebuggee = optional<boolean>(),
+      const optional<boolean>& terminateDebuggee = optional<boolean>())
+      : restart(restart),
+        suspendDebuggee(suspendDebuggee),
+        terminateDebuggee(terminateDebuggee) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(DisconnectRequest);
@@ -722,6 +1413,37 @@ struct Message {
   // An object used as a dictionary for looking up the variables in the format
   // string.
   optional<object> variables;
+
+  Message() = default;
+  /**
+   * @param format A format string for the message. Embedded variables have the
+form `{name}`. If variable name starts with an underscore character, the
+variable does not contain user data (PII) and can be safely used for telemetry
+purposes.
+   * @param id Unique identifier for the message.
+   * @param sendTelemetry (optional) If true send to telemetry.
+   * @param showUser (optional) If true show user.
+   * @param url (optional) A url where additional information about this message
+can be found.
+   * @param urlLabel (optional) A label that is presented to the user as the UI
+for opening the url.
+   * @param variables (optional) An object used as a dictionary for looking up
+the variables in the format string.
+   */
+  Message(const string& format,
+          const integer& id,
+          const optional<boolean>& sendTelemetry = optional<boolean>(),
+          const optional<boolean>& showUser = optional<boolean>(),
+          const optional<string>& url = optional<string>(),
+          const optional<string>& urlLabel = optional<string>(),
+          const optional<object>& variables = optional<object>())
+      : format(format),
+        id(id),
+        sendTelemetry(sendTelemetry),
+        showUser(showUser),
+        url(url),
+        urlLabel(urlLabel),
+        variables(variables) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Message);
@@ -730,6 +1452,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(Message);
 struct ErrorResponse : public Response {
   // A structured error message.
   optional<Message> error;
+
+  ErrorResponse() = default;
+  /**
+   * @param error (optional) A structured error message.
+   */
+  ErrorResponse(const optional<Message>& error) : error(error) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ErrorResponse);
@@ -762,6 +1490,36 @@ struct VariablePresentationHint {
   // May be one of the following enumeration values:
   // 'public', 'private', 'protected', 'internal', 'final'
   optional<string> visibility;
+
+  VariablePresentationHint() = default;
+  /**
+   * @param attributes (optional) Set of attributes represented as an array of
+strings. Before introducing additional values, try to use the listed values.
+   * @param kind (optional) The kind of variable. Before introducing additional
+values, try to use the listed values. May be one of the following enumeration
+values: 'property', 'method', 'class', 'data', 'event', 'baseClass',
+'innerClass', 'interface', 'mostDerivedClass', 'virtual', 'dataBreakpoint'
+   * @param lazy (optional) If true, clients can present the variable with a UI
+that supports a specific gesture to trigger its evaluation. This mechanism can
+be used for properties that require executing code when retrieving their value
+and where the code execution can be expensive and/or produce side-effects. A
+typical example are properties based on a getter function. Please note that in
+addition to the `lazy` flag, the variable's `variablesReference` is expected to
+refer to a variable that will provide the value through another `variable`
+request.
+   * @param visibility (optional) Visibility of variable. Before introducing
+additional values, try to use the listed values. May be one of the following
+enumeration values: 'public', 'private', 'protected', 'internal', 'final'
+   */
+  VariablePresentationHint(
+      const optional<array<string>>& attributes,
+      const optional<string>& kind = optional<string>(),
+      const optional<boolean>& lazy = optional<boolean>(),
+      const optional<string>& visibility = optional<string>())
+      : attributes(attributes),
+        kind(kind),
+        lazy(lazy),
+        visibility(visibility) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(VariablePresentationHint);
@@ -798,6 +1556,49 @@ struct EvaluateResponse : public Response {
   // `variables` request. The value should be less than or equal to 2147483647
   // (2^31-1).
   integer variablesReference;
+
+  EvaluateResponse() = default;
+  /**
+   * @param result The result of the evaluate request.
+   * @param variablesReference If `variablesReference` is > 0, the evaluate
+result is structured and its children can be retrieved by passing
+`variablesReference` to the `variables` request. The value should be less than
+or equal to 2147483647 (2^31-1).
+   * @param indexedVariables (optional) The number of indexed child variables.
+The client can use this information to present the variables in a paged UI and
+fetch them in chunks. The value should be less than or equal to 2147483647
+(2^31-1).
+   * @param memoryReference (optional) A memory reference to a location
+appropriate for this result. For pointer type eval results, this is generally a
+reference to the memory address contained in the pointer. This attribute should
+be returned by a debug adapter if corresponding capability
+`supportsMemoryReferences` is true.
+   * @param namedVariables (optional) The number of named child variables.
+The client can use this information to present the variables in a paged UI and
+fetch them in chunks. The value should be less than or equal to 2147483647
+(2^31-1).
+   * @param presentationHint (optional) Properties of an evaluate result that
+can be used to determine how to render the result in the UI.
+   * @param type (optional) The type of the evaluate result.
+This attribute should only be returned by a debug adapter if the corresponding
+capability `supportsVariableType` is true.
+   */
+  EvaluateResponse(
+      const string& result,
+      const integer& variablesReference,
+      const optional<integer>& indexedVariables = optional<integer>(),
+      const optional<string>& memoryReference = optional<string>(),
+      const optional<integer>& namedVariables = optional<integer>(),
+      const optional<VariablePresentationHint>& presentationHint =
+          optional<VariablePresentationHint>(),
+      const optional<string>& type = optional<string>())
+      : result(result),
+        variablesReference(variablesReference),
+        indexedVariables(indexedVariables),
+        memoryReference(memoryReference),
+        namedVariables(namedVariables),
+        presentationHint(presentationHint),
+        type(type) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(EvaluateResponse);
@@ -806,6 +1607,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(EvaluateResponse);
 struct ValueFormat {
   // Display the value in hex.
   optional<boolean> hex;
+
+  ValueFormat() = default;
+  /**
+   * @param hex (optional) Display the value in hex.
+   */
+  ValueFormat(const optional<boolean>& hex) : hex(hex) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ValueFormat);
@@ -828,6 +1635,27 @@ struct EvaluateRequest : public Request {
   // Evaluate the expression in the scope of this stack frame. If not specified,
   // the expression is evaluated in the global scope.
   optional<integer> frameId;
+
+  EvaluateRequest() = default;
+  /**
+   * @param expression The expression to evaluate.
+   * @param context (optional) The context in which the evaluate request is
+used. May be one of the following enumeration values: 'variables', 'watch',
+'repl', 'hover', 'clipboard'
+   * @param format (optional) Specifies details on how to format the result.
+The attribute is only honored by a debug adapter if the corresponding capability
+`supportsValueFormattingOptions` is true.
+   * @param frameId (optional) Evaluate the expression in the scope of this
+stack frame. If not specified, the expression is evaluated in the global scope.
+   */
+  EvaluateRequest(const string& expression,
+                  const optional<string>& context = optional<string>(),
+                  const optional<ValueFormat>& format = optional<ValueFormat>(),
+                  const optional<integer>& frameId = optional<integer>())
+      : expression(expression),
+        context(context),
+        format(format),
+        frameId(frameId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(EvaluateRequest);
@@ -856,6 +1684,33 @@ struct ExceptionDetails {
   optional<string> stackTrace;
   // Short type name of the exception object.
   optional<string> typeName;
+
+  ExceptionDetails() = default;
+  /**
+   * @param evaluateName (optional) An expression that can be evaluated in the
+   * current scope to obtain the exception object.
+   * @param fullTypeName (optional) Fully-qualified type name of the exception
+   * object.
+   * @param innerException (optional) Details of the exception contained by this
+   * exception, if any.
+   * @param message (optional) Message contained in the exception.
+   * @param stackTrace (optional) Stack trace at the time the exception was
+   * thrown.
+   * @param typeName (optional) Short type name of the exception object.
+   */
+  ExceptionDetails(const optional<string>& evaluateName,
+                   const optional<string>& fullTypeName = optional<string>(),
+                   const optional<array<ExceptionDetails>>& innerException =
+                       optional<array<ExceptionDetails>>(),
+                   const optional<string>& message = optional<string>(),
+                   const optional<string>& stackTrace = optional<string>(),
+                   const optional<string>& typeName = optional<string>())
+      : evaluateName(evaluateName),
+        fullTypeName(fullTypeName),
+        innerException(innerException),
+        message(message),
+        stackTrace(stackTrace),
+        typeName(typeName) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionDetails);
@@ -870,6 +1725,24 @@ struct ExceptionInfoResponse : public Response {
   optional<ExceptionDetails> details;
   // ID of the exception that was thrown.
   string exceptionId;
+
+  ExceptionInfoResponse() = default;
+  /**
+   * @param exceptionId ID of the exception that was thrown.
+   * @param breakMode Mode that caused the exception notification to be raised.
+   * (default: "never")
+   * @param description (optional) Descriptive text for the exception.
+   * @param details (optional) Detailed information about the exception.
+   */
+  ExceptionInfoResponse(
+      const string& exceptionId,
+      const ExceptionBreakMode& breakMode = "never",
+      const optional<string>& description = optional<string>(),
+      const optional<ExceptionDetails>& details = optional<ExceptionDetails>())
+      : exceptionId(exceptionId),
+        breakMode(breakMode),
+        description(description),
+        details(details) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionInfoResponse);
@@ -881,6 +1754,12 @@ struct ExceptionInfoRequest : public Request {
   using Response = ExceptionInfoResponse;
   // Thread for which exception information should be retrieved.
   integer threadId;
+
+  ExceptionInfoRequest() = default;
+  /**
+   * @param threadId Thread for which exception information should be retrieved.
+   */
+  ExceptionInfoRequest(const integer& threadId) : threadId(threadId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionInfoRequest);
@@ -889,6 +1768,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(ExceptionInfoRequest);
 struct ExitedEvent : public Event {
   // The exit code returned from the debuggee.
   integer exitCode;
+
+  ExitedEvent() = default;
+  /**
+   * @param exitCode The exit code returned from the debuggee.
+   */
+  ExitedEvent(const integer& exitCode) : exitCode(exitCode) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExitedEvent);
@@ -912,6 +1797,14 @@ struct GotoRequest : public Request {
   integer targetId;
   // Set the goto target for this thread.
   integer threadId;
+
+  GotoRequest() = default;
+  /**
+   * @param targetId The location where the debuggee will continue to run.
+   * @param threadId Set the goto target for this thread.
+   */
+  GotoRequest(const integer& targetId, const integer& threadId)
+      : targetId(targetId), threadId(threadId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(GotoRequest);
@@ -935,6 +1828,36 @@ struct GotoTarget {
   string label;
   // The line of the goto target.
   integer line;
+
+  GotoTarget() = default;
+  /**
+   * @param id Unique identifier for a goto target. This is used in the `goto`
+   * request.
+   * @param label The name of the goto target (shown in the UI).
+   * @param line The line of the goto target.
+   * @param column (optional) The column of the goto target.
+   * @param endColumn (optional) The end column of the range covered by the goto
+   * target.
+   * @param endLine (optional) The end line of the range covered by the goto
+   * target.
+   * @param instructionPointerReference (optional) A memory reference for the
+   * instruction pointer value represented by this target.
+   */
+  GotoTarget(
+      const integer& id,
+      const string& label,
+      const integer& line,
+      const optional<integer>& column = optional<integer>(),
+      const optional<integer>& endColumn = optional<integer>(),
+      const optional<integer>& endLine = optional<integer>(),
+      const optional<string>& instructionPointerReference = optional<string>())
+      : id(id),
+        label(label),
+        line(line),
+        column(column),
+        endColumn(endColumn),
+        endLine(endLine),
+        instructionPointerReference(instructionPointerReference) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(GotoTarget);
@@ -943,6 +1866,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(GotoTarget);
 struct GotoTargetsResponse : public Response {
   // The possible goto targets of the specified location.
   array<GotoTarget> targets;
+
+  GotoTargetsResponse() = default;
+  /**
+   * @param targets The possible goto targets of the specified location.
+   */
+  GotoTargetsResponse(const array<GotoTarget>& targets) : targets(targets) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(GotoTargetsResponse);
@@ -961,6 +1890,20 @@ struct GotoTargetsRequest : public Request {
   integer line;
   // The source location for which the goto targets are determined.
   Source source;
+
+  GotoTargetsRequest() = default;
+  /**
+   * @param line The line location for which the goto targets are determined.
+   * @param source The source location for which the goto targets are
+   * determined.
+   * @param column (optional) The position within `line` for which the goto
+   * targets are determined. It is measured in UTF-16 code units and the client
+   * capability `columnsStartAt1` determines whether it is 0- or 1-based.
+   */
+  GotoTargetsRequest(const integer& line,
+                     const Source& source,
+                     const optional<integer>& column = optional<integer>())
+      : line(line), source(source), column(column) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(GotoTargetsRequest);
@@ -1065,6 +2008,194 @@ struct InitializeResponse : public Response {
   optional<boolean> supportsValueFormattingOptions;
   // The debug adapter supports the `writeMemory` request.
   optional<boolean> supportsWriteMemoryRequest;
+
+  InitializeResponse() = default;
+  /**
+   * @param additionalModuleColumns (optional) The set of additional module
+   * information exposed by the debug adapter.
+   * @param completionTriggerCharacters (optional) The set of characters that
+   * should trigger completion in a REPL. If not specified, the UI should assume
+   * the `.` character.
+   * @param exceptionBreakpointFilters (optional) Available exception filter
+   * options for the `setExceptionBreakpoints` request.
+   * @param supportSuspendDebuggee (optional) The debug adapter supports the
+   * `suspendDebuggee` attribute on the `disconnect` request.
+   * @param supportTerminateDebuggee (optional) The debug adapter supports the
+   * `terminateDebuggee` attribute on the `disconnect` request.
+   * @param supportedChecksumAlgorithms (optional) Checksum algorithms supported
+   * by the debug adapter.
+   * @param supportsBreakpointLocationsRequest (optional) The debug adapter
+   * supports the `breakpointLocations` request.
+   * @param supportsCancelRequest (optional) The debug adapter supports the
+   * `cancel` request.
+   * @param supportsClipboardContext (optional) The debug adapter supports the
+   * `clipboard` context value in the `evaluate` request.
+   * @param supportsCompletionsRequest (optional) The debug adapter supports the
+   * `completions` request.
+   * @param supportsConditionalBreakpoints (optional) The debug adapter supports
+   * conditional breakpoints.
+   * @param supportsConfigurationDoneRequest (optional) The debug adapter
+   * supports the `configurationDone` request.
+   * @param supportsDataBreakpoints (optional) The debug adapter supports data
+   * breakpoints.
+   * @param supportsDelayedStackTraceLoading (optional) The debug adapter
+   * supports the delayed loading of parts of the stack, which requires that
+   * both the `startFrame` and `levels` arguments and the `totalFrames` result
+   * of the `stackTrace` request are supported.
+   * @param supportsDisassembleRequest (optional) The debug adapter supports the
+   * `disassemble` request.
+   * @param supportsEvaluateForHovers (optional) The debug adapter supports a
+   * (side effect free) `evaluate` request for data hovers.
+   * @param supportsExceptionFilterOptions (optional) The debug adapter supports
+   * `filterOptions` as an argument on the `setExceptionBreakpoints` request.
+   * @param supportsExceptionInfoRequest (optional) The debug adapter supports
+   * the `exceptionInfo` request.
+   * @param supportsExceptionOptions (optional) The debug adapter supports
+   * `exceptionOptions` on the `setExceptionBreakpoints` request.
+   * @param supportsFunctionBreakpoints (optional) The debug adapter supports
+   * function breakpoints.
+   * @param supportsGotoTargetsRequest (optional) The debug adapter supports the
+   * `gotoTargets` request.
+   * @param supportsHitConditionalBreakpoints (optional) The debug adapter
+   * supports breakpoints that break execution after a specified number of hits.
+   * @param supportsInstructionBreakpoints (optional) The debug adapter supports
+   * adding breakpoints based on instruction references.
+   * @param supportsLoadedSourcesRequest (optional) The debug adapter supports
+   * the `loadedSources` request.
+   * @param supportsLogPoints (optional) The debug adapter supports log points
+   * by interpreting the `logMessage` attribute of the `SourceBreakpoint`.
+   * @param supportsModulesRequest (optional) The debug adapter supports the
+   * `modules` request.
+   * @param supportsReadMemoryRequest (optional) The debug adapter supports the
+   * `readMemory` request.
+   * @param supportsRestartFrame (optional) The debug adapter supports
+   * restarting a frame.
+   * @param supportsRestartRequest (optional) The debug adapter supports the
+   * `restart` request. In this case a client should not implement `restart` by
+   * terminating and relaunching the adapter but by calling the `restart`
+   * request.
+   * @param supportsSetExpression (optional) The debug adapter supports the
+   * `setExpression` request.
+   * @param supportsSetVariable (optional) The debug adapter supports setting a
+   * variable to a value.
+   * @param supportsSingleThreadExecutionRequests (optional) The debug adapter
+   * supports the `singleThread` property on the execution requests (`continue`,
+   * `next`, `stepIn`, `stepOut`, `reverseContinue`, `stepBack`).
+   * @param supportsStepBack (optional) The debug adapter supports stepping back
+   * via the `stepBack` and `reverseContinue` requests.
+   * @param supportsStepInTargetsRequest (optional) The debug adapter supports
+   * the `stepInTargets` request.
+   * @param supportsSteppingGranularity (optional) The debug adapter supports
+   * stepping granularities (argument `granularity`) for the stepping requests.
+   * @param supportsTerminateRequest (optional) The debug adapter supports the
+   * `terminate` request.
+   * @param supportsTerminateThreadsRequest (optional) The debug adapter
+   * supports the `terminateThreads` request.
+   * @param supportsValueFormattingOptions (optional) The debug adapter supports
+   * a `format` attribute on the `stackTrace`, `variables`, and `evaluate`
+   * requests.
+   * @param supportsWriteMemoryRequest (optional) The debug adapter supports the
+   * `writeMemory` request.
+   */
+  InitializeResponse(
+      const optional<array<ColumnDescriptor>>& additionalModuleColumns,
+      const optional<array<string>>& completionTriggerCharacters =
+          optional<array<string>>(),
+      const optional<array<ExceptionBreakpointsFilter>>&
+          exceptionBreakpointFilters =
+              optional<array<ExceptionBreakpointsFilter>>(),
+      const optional<boolean>& supportSuspendDebuggee = optional<boolean>(),
+      const optional<boolean>& supportTerminateDebuggee = optional<boolean>(),
+      const optional<array<ChecksumAlgorithm>>& supportedChecksumAlgorithms =
+          optional<array<ChecksumAlgorithm>>(),
+      const optional<boolean>& supportsBreakpointLocationsRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsCancelRequest = optional<boolean>(),
+      const optional<boolean>& supportsClipboardContext = optional<boolean>(),
+      const optional<boolean>& supportsCompletionsRequest = optional<boolean>(),
+      const optional<boolean>& supportsConditionalBreakpoints =
+          optional<boolean>(),
+      const optional<boolean>& supportsConfigurationDoneRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsDataBreakpoints = optional<boolean>(),
+      const optional<boolean>& supportsDelayedStackTraceLoading =
+          optional<boolean>(),
+      const optional<boolean>& supportsDisassembleRequest = optional<boolean>(),
+      const optional<boolean>& supportsEvaluateForHovers = optional<boolean>(),
+      const optional<boolean>& supportsExceptionFilterOptions =
+          optional<boolean>(),
+      const optional<boolean>& supportsExceptionInfoRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsExceptionOptions = optional<boolean>(),
+      const optional<boolean>& supportsFunctionBreakpoints =
+          optional<boolean>(),
+      const optional<boolean>& supportsGotoTargetsRequest = optional<boolean>(),
+      const optional<boolean>& supportsHitConditionalBreakpoints =
+          optional<boolean>(),
+      const optional<boolean>& supportsInstructionBreakpoints =
+          optional<boolean>(),
+      const optional<boolean>& supportsLoadedSourcesRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsLogPoints = optional<boolean>(),
+      const optional<boolean>& supportsModulesRequest = optional<boolean>(),
+      const optional<boolean>& supportsReadMemoryRequest = optional<boolean>(),
+      const optional<boolean>& supportsRestartFrame = optional<boolean>(),
+      const optional<boolean>& supportsRestartRequest = optional<boolean>(),
+      const optional<boolean>& supportsSetExpression = optional<boolean>(),
+      const optional<boolean>& supportsSetVariable = optional<boolean>(),
+      const optional<boolean>& supportsSingleThreadExecutionRequests =
+          optional<boolean>(),
+      const optional<boolean>& supportsStepBack = optional<boolean>(),
+      const optional<boolean>& supportsStepInTargetsRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsSteppingGranularity =
+          optional<boolean>(),
+      const optional<boolean>& supportsTerminateRequest = optional<boolean>(),
+      const optional<boolean>& supportsTerminateThreadsRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsValueFormattingOptions =
+          optional<boolean>(),
+      const optional<boolean>& supportsWriteMemoryRequest = optional<boolean>())
+      : additionalModuleColumns(additionalModuleColumns),
+        completionTriggerCharacters(completionTriggerCharacters),
+        exceptionBreakpointFilters(exceptionBreakpointFilters),
+        supportSuspendDebuggee(supportSuspendDebuggee),
+        supportTerminateDebuggee(supportTerminateDebuggee),
+        supportedChecksumAlgorithms(supportedChecksumAlgorithms),
+        supportsBreakpointLocationsRequest(supportsBreakpointLocationsRequest),
+        supportsCancelRequest(supportsCancelRequest),
+        supportsClipboardContext(supportsClipboardContext),
+        supportsCompletionsRequest(supportsCompletionsRequest),
+        supportsConditionalBreakpoints(supportsConditionalBreakpoints),
+        supportsConfigurationDoneRequest(supportsConfigurationDoneRequest),
+        supportsDataBreakpoints(supportsDataBreakpoints),
+        supportsDelayedStackTraceLoading(supportsDelayedStackTraceLoading),
+        supportsDisassembleRequest(supportsDisassembleRequest),
+        supportsEvaluateForHovers(supportsEvaluateForHovers),
+        supportsExceptionFilterOptions(supportsExceptionFilterOptions),
+        supportsExceptionInfoRequest(supportsExceptionInfoRequest),
+        supportsExceptionOptions(supportsExceptionOptions),
+        supportsFunctionBreakpoints(supportsFunctionBreakpoints),
+        supportsGotoTargetsRequest(supportsGotoTargetsRequest),
+        supportsHitConditionalBreakpoints(supportsHitConditionalBreakpoints),
+        supportsInstructionBreakpoints(supportsInstructionBreakpoints),
+        supportsLoadedSourcesRequest(supportsLoadedSourcesRequest),
+        supportsLogPoints(supportsLogPoints),
+        supportsModulesRequest(supportsModulesRequest),
+        supportsReadMemoryRequest(supportsReadMemoryRequest),
+        supportsRestartFrame(supportsRestartFrame),
+        supportsRestartRequest(supportsRestartRequest),
+        supportsSetExpression(supportsSetExpression),
+        supportsSetVariable(supportsSetVariable),
+        supportsSingleThreadExecutionRequests(
+            supportsSingleThreadExecutionRequests),
+        supportsStepBack(supportsStepBack),
+        supportsStepInTargetsRequest(supportsStepInTargetsRequest),
+        supportsSteppingGranularity(supportsSteppingGranularity),
+        supportsTerminateRequest(supportsTerminateRequest),
+        supportsTerminateThreadsRequest(supportsTerminateThreadsRequest),
+        supportsValueFormattingOptions(supportsValueFormattingOptions),
+        supportsWriteMemoryRequest(supportsWriteMemoryRequest) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(InitializeResponse);
@@ -1116,6 +2247,77 @@ struct InitializeRequest : public Request {
   optional<boolean> supportsVariablePaging;
   // Client supports the `type` attribute for variables.
   optional<boolean> supportsVariableType;
+
+  InitializeRequest() = default;
+  /**
+   * @param adapterID The ID of the debug adapter.
+   * @param clientID (optional) The ID of the client using this adapter.
+   * @param clientName (optional) The human-readable name of the client using
+this adapter.
+   * @param columnsStartAt1 (optional) If true all column numbers are 1-based
+(default).
+   * @param linesStartAt1 (optional) If true all line numbers are 1-based
+(default).
+   * @param locale (optional) The ISO-639 locale of the client using this
+adapter, e.g. en-US or de-CH.
+   * @param pathFormat (optional) Determines in what format paths are specified.
+The default is `path`, which is the native format. May be one of the following
+enumeration values: 'path', 'uri'
+   * @param supportsArgsCanBeInterpretedByShell (optional) Client supports the
+`argsCanBeInterpretedByShell` attribute on the `runInTerminal` request.
+   * @param supportsInvalidatedEvent (optional) Client supports the
+`invalidated` event.
+   * @param supportsMemoryEvent (optional) Client supports the `memory` event.
+   * @param supportsMemoryReferences (optional) Client supports memory
+references.
+   * @param supportsProgressReporting (optional) Client supports progress
+reporting.
+   * @param supportsRunInTerminalRequest (optional) Client supports the
+`runInTerminal` request.
+   * @param supportsStartDebuggingRequest (optional) Client supports the
+`startDebugging` request.
+   * @param supportsVariablePaging (optional) Client supports the paging of
+variables.
+   * @param supportsVariableType (optional) Client supports the `type` attribute
+for variables.
+   */
+  InitializeRequest(
+      const string& adapterID,
+      const optional<string>& clientID = optional<string>(),
+      const optional<string>& clientName = optional<string>(),
+      const optional<boolean>& columnsStartAt1 = optional<boolean>(),
+      const optional<boolean>& linesStartAt1 = optional<boolean>(),
+      const optional<string>& locale = optional<string>(),
+      const optional<string>& pathFormat = optional<string>(),
+      const optional<boolean>& supportsArgsCanBeInterpretedByShell =
+          optional<boolean>(),
+      const optional<boolean>& supportsInvalidatedEvent = optional<boolean>(),
+      const optional<boolean>& supportsMemoryEvent = optional<boolean>(),
+      const optional<boolean>& supportsMemoryReferences = optional<boolean>(),
+      const optional<boolean>& supportsProgressReporting = optional<boolean>(),
+      const optional<boolean>& supportsRunInTerminalRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsStartDebuggingRequest =
+          optional<boolean>(),
+      const optional<boolean>& supportsVariablePaging = optional<boolean>(),
+      const optional<boolean>& supportsVariableType = optional<boolean>())
+      : adapterID(adapterID),
+        clientID(clientID),
+        clientName(clientName),
+        columnsStartAt1(columnsStartAt1),
+        linesStartAt1(linesStartAt1),
+        locale(locale),
+        pathFormat(pathFormat),
+        supportsArgsCanBeInterpretedByShell(
+            supportsArgsCanBeInterpretedByShell),
+        supportsInvalidatedEvent(supportsInvalidatedEvent),
+        supportsMemoryEvent(supportsMemoryEvent),
+        supportsMemoryReferences(supportsMemoryReferences),
+        supportsProgressReporting(supportsProgressReporting),
+        supportsRunInTerminalRequest(supportsRunInTerminalRequest),
+        supportsStartDebuggingRequest(supportsStartDebuggingRequest),
+        supportsVariablePaging(supportsVariablePaging),
+        supportsVariableType(supportsVariableType) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(InitializeRequest);
@@ -1163,6 +2365,23 @@ struct InvalidatedEvent : public Event {
   optional<integer> stackFrameId;
   // If specified, the client only needs to refetch data related to this thread.
   optional<integer> threadId;
+
+  InvalidatedEvent() = default;
+  /**
+   * @param areas (optional) Set of logical areas that got invalidated. This
+   * property has a hint characteristic: a client can only be expected to make a
+   * 'best effort' in honoring the areas but there are no guarantees. If this
+   * property is missing, empty, or if values are not understood, the client
+   * should assume a single value `all`.
+   * @param stackFrameId (optional) If specified, the client only needs to
+   * refetch data related to this stack frame (and the `threadId` is ignored).
+   * @param threadId (optional) If specified, the client only needs to refetch
+   * data related to this thread.
+   */
+  InvalidatedEvent(const optional<array<InvalidatedAreas>>& areas,
+                   const optional<integer>& stackFrameId = optional<integer>(),
+                   const optional<integer>& threadId = optional<integer>())
+      : areas(areas), stackFrameId(stackFrameId), threadId(threadId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(InvalidatedEvent);
@@ -1187,6 +2406,21 @@ struct LaunchRequest : public Request {
   // If true, the launch request should launch the program without enabling
   // debugging.
   optional<boolean> noDebug;
+
+  LaunchRequest() = default;
+  /**
+   * @param restart (optional) Arbitrary data from the previous, restarted
+session. The data is sent as the `restart` attribute of the `terminated` event.
+The client should leave the data intact.
+   * @param noDebug (optional) If true, the launch request should launch the
+program without enabling debugging.
+   */
+  LaunchRequest(
+      const optional<
+          variant<array<any>, boolean, integer, null, number, object, string>>&
+          restart,
+      const optional<boolean>& noDebug = optional<boolean>())
+      : restart(restart), noDebug(noDebug) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(LaunchRequest);
@@ -1201,6 +2435,16 @@ struct LoadedSourceEvent : public Event {
   string reason = "new";
   // The new, changed, or removed source.
   Source source;
+
+  LoadedSourceEvent() = default;
+  /**
+   * @param source The new, changed, or removed source.
+   * @param reason The reason for the event.
+Must be one of the following enumeration values:
+'new', 'changed', 'removed' (default: "new")
+   */
+  LoadedSourceEvent(const Source& source, const string& reason = "new")
+      : source(source), reason(reason) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(LoadedSourceEvent);
@@ -1209,6 +2453,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(LoadedSourceEvent);
 struct LoadedSourcesResponse : public Response {
   // Set of loaded sources.
   array<Source> sources;
+
+  LoadedSourcesResponse() = default;
+  /**
+   * @param sources Set of loaded sources.
+   */
+  LoadedSourcesResponse(const array<Source>& sources) : sources(sources) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(LoadedSourcesResponse);
@@ -1242,6 +2492,19 @@ struct MemoryEvent : public Event {
   string memoryReference;
   // Starting offset in bytes where memory has been updated. Can be negative.
   integer offset;
+
+  MemoryEvent() = default;
+  /**
+   * @param count Number of bytes updated.
+   * @param memoryReference Memory reference of a memory range that has been
+   * updated.
+   * @param offset Starting offset in bytes where memory has been updated. Can
+   * be negative.
+   */
+  MemoryEvent(const integer& count,
+              const string& memoryReference,
+              const integer& offset)
+      : count(count), memoryReference(memoryReference), offset(offset) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(MemoryEvent);
@@ -1284,6 +2547,47 @@ struct Module {
   optional<string> symbolStatus;
   // Version of Module.
   optional<string> version;
+
+  Module() = default;
+  /**
+   * @param id Unique identifier for the module.
+   * @param name A name of the module.
+   * @param addressRange (optional) Address range covered by this module.
+   * @param dateTimeStamp (optional) Module created or modified, encoded as a
+   * RFC 3339 timestamp.
+   * @param isOptimized (optional) True if the module is optimized.
+   * @param isUserCode (optional) True if the module is considered 'user code'
+   * by a debugger that supports 'Just My Code'.
+   * @param path (optional) Logical full path to the module. The exact
+   * definition is implementation defined, but usually this would be a full path
+   * to the on-disk file for the module.
+   * @param symbolFilePath (optional) Logical full path to the symbol file. The
+   * exact definition is implementation defined.
+   * @param symbolStatus (optional) User-understandable description of if
+   * symbols were found for the module (ex: 'Symbols Loaded', 'Symbols not
+   * found', etc.)
+   * @param version (optional) Version of Module.
+   */
+  Module(const variant<integer, string>& id,
+         const string& name,
+         const optional<string>& addressRange = optional<string>(),
+         const optional<string>& dateTimeStamp = optional<string>(),
+         const optional<boolean>& isOptimized = optional<boolean>(),
+         const optional<boolean>& isUserCode = optional<boolean>(),
+         const optional<string>& path = optional<string>(),
+         const optional<string>& symbolFilePath = optional<string>(),
+         const optional<string>& symbolStatus = optional<string>(),
+         const optional<string>& version = optional<string>())
+      : id(id),
+        name(name),
+        addressRange(addressRange),
+        dateTimeStamp(dateTimeStamp),
+        isOptimized(isOptimized),
+        isUserCode(isUserCode),
+        path(path),
+        symbolFilePath(symbolFilePath),
+        symbolStatus(symbolStatus),
+        version(version) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Module);
@@ -1298,6 +2602,17 @@ struct ModuleEvent : public Event {
   // Must be one of the following enumeration values:
   // 'new', 'changed', 'removed'
   string reason = "new";
+
+  ModuleEvent() = default;
+  /**
+   * @param module The new, changed, or removed module. In case of `removed`
+only the module id is used.
+   * @param reason The reason for the event.
+Must be one of the following enumeration values:
+'new', 'changed', 'removed' (default: "new")
+   */
+  ModuleEvent(const Module& module, const string& reason = "new")
+      : module(module), reason(reason) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ModuleEvent);
@@ -1308,6 +2623,15 @@ struct ModulesResponse : public Response {
   array<Module> modules;
   // The total number of modules available.
   optional<integer> totalModules;
+
+  ModulesResponse() = default;
+  /**
+   * @param modules All modules or range of modules.
+   * @param totalModules (optional) The total number of modules available.
+   */
+  ModulesResponse(const array<Module>& modules,
+                  const optional<integer>& totalModules = optional<integer>())
+      : modules(modules), totalModules(totalModules) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ModulesResponse);
@@ -1323,6 +2647,17 @@ struct ModulesRequest : public Request {
   optional<integer> moduleCount;
   // The index of the first module to return; if omitted modules start at 0.
   optional<integer> startModule;
+
+  ModulesRequest() = default;
+  /**
+   * @param moduleCount (optional) The number of modules to return. If
+   * `moduleCount` is not specified or 0, all modules are returned.
+   * @param startModule (optional) The index of the first module to return; if
+   * omitted modules start at 0.
+   */
+  ModulesRequest(const optional<integer>& moduleCount,
+                 const optional<integer>& startModule = optional<integer>())
+      : moduleCount(moduleCount), startModule(startModule) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ModulesRequest);
@@ -1357,6 +2692,23 @@ struct NextRequest : public Request {
   // Specifies the thread for which to resume execution for one step (of the
   // given granularity).
   integer threadId;
+
+  NextRequest() = default;
+  /**
+   * @param threadId Specifies the thread for which to resume execution for one
+   * step (of the given granularity).
+   * @param granularity (optional) Stepping granularity. If no granularity is
+   * specified, a granularity of `statement` is assumed.
+   * @param singleThread (optional) If this flag is true, all other suspended
+   * threads are not resumed.
+   */
+  NextRequest(const integer& threadId,
+              const optional<SteppingGranularity>& granularity =
+                  optional<SteppingGranularity>(),
+              const optional<boolean>& singleThread = optional<boolean>())
+      : threadId(threadId),
+        granularity(granularity),
+        singleThread(singleThread) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(NextRequest);
@@ -1393,6 +2745,56 @@ struct OutputEvent : public Event {
   // `variablesReference` to the `variables` request. The value should be less
   // than or equal to 2147483647 (2^31-1).
   optional<integer> variablesReference;
+
+  OutputEvent() = default;
+  /**
+   * @param output The output to report.
+   * @param category (optional) The output category. If not specified or if the
+category is not understood by the client, `console` is assumed. May be one of
+the following enumeration values: 'console', 'important', 'stdout', 'stderr',
+'telemetry'
+   * @param column (optional) The position in `line` where the output was
+produced. It is measured in UTF-16 code units and the client capability
+`columnsStartAt1` determines whether it is 0- or 1-based.
+   * @param data (optional) Additional data to report. For the `telemetry`
+category the data is sent to telemetry, for the other categories the data is
+shown in JSON format.
+   * @param group (optional) Support for keeping an output log organized by
+grouping related messages. Must be one of the following enumeration values:
+'start', 'startCollapsed', 'end'
+   * @param line (optional) The source location's line where the output was
+produced.
+   * @param source (optional) The source location where the output was produced.
+   * @param variablesReference (optional) If an attribute `variablesReference`
+exists and its value is > 0, the output contains objects which can be retrieved
+by passing `variablesReference` to the `variables` request. The value should be
+less than or equal to 2147483647 (2^31-1).
+   */
+  OutputEvent(
+      const string& output,
+      const optional<string>& category = optional<string>(),
+      const optional<integer>& column = optional<integer>(),
+      const optional<
+          variant<array<any>, boolean, integer, null, number, object, string>>&
+          data = optional<variant<array<any>,
+                                  boolean,
+                                  integer,
+                                  null,
+                                  number,
+                                  object,
+                                  string>>(),
+      const optional<string>& group = optional<string>(),
+      const optional<integer>& line = optional<integer>(),
+      const optional<Source>& source = optional<Source>(),
+      const optional<integer>& variablesReference = optional<integer>())
+      : output(output),
+        category(category),
+        column(column),
+        data(data),
+        group(group),
+        line(line),
+        source(source),
+        variablesReference(variablesReference) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(OutputEvent);
@@ -1410,6 +2812,12 @@ struct PauseRequest : public Request {
   using Response = PauseResponse;
   // Pause execution for this thread.
   integer threadId;
+
+  PauseRequest() = default;
+  /**
+   * @param threadId Pause execution for this thread.
+   */
+  PauseRequest(const integer& threadId) : threadId(threadId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(PauseRequest);
@@ -1433,6 +2841,32 @@ struct ProcessEvent : public Event {
   // The system process id of the debugged process. This property is missing for
   // non-system processes.
   optional<integer> systemProcessId;
+
+  ProcessEvent() = default;
+  /**
+   * @param name The logical name of the process. This is usually the full path
+to process's executable file. Example: /home/example/myproj/program.js.
+   * @param isLocalProcess (optional) If true, the process is running on the
+same computer as the debug adapter.
+   * @param pointerSize (optional) The size of a pointer or address for this
+process, in bits. This value may be used by clients when formatting addresses
+for display.
+   * @param startMethod (optional) Describes how the debug engine started
+debugging this process. Must be one of the following enumeration values:
+'launch', 'attach', 'attachForSuspendedLaunch'
+   * @param systemProcessId (optional) The system process id of the debugged
+process. This property is missing for non-system processes.
+   */
+  ProcessEvent(const string& name,
+               const optional<boolean>& isLocalProcess = optional<boolean>(),
+               const optional<integer>& pointerSize = optional<integer>(),
+               const optional<string>& startMethod = optional<string>(),
+               const optional<integer>& systemProcessId = optional<integer>())
+      : name(name),
+        isLocalProcess(isLocalProcess),
+        pointerSize(pointerSize),
+        startMethod(startMethod),
+        systemProcessId(systemProcessId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ProcessEvent);
@@ -1446,6 +2880,17 @@ struct ProgressEndEvent : public Event {
   optional<string> message;
   // The ID that was introduced in the initial `ProgressStartEvent`.
   string progressId;
+
+  ProgressEndEvent() = default;
+  /**
+   * @param progressId The ID that was introduced in the initial
+   * `ProgressStartEvent`.
+   * @param message (optional) More detailed progress message. If omitted, the
+   * previous message (if any) is used.
+   */
+  ProgressEndEvent(const string& progressId,
+                   const optional<string>& message = optional<string>())
+      : progressId(progressId), message(message) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ProgressEndEvent);
@@ -1479,6 +2924,39 @@ struct ProgressStartEvent : public Event {
   // Short title of the progress reporting. Shown in the UI to describe the long
   // running operation.
   string title;
+
+  ProgressStartEvent() = default;
+  /**
+   * @param progressId An ID that can be used in subsequent `progressUpdate` and
+`progressEnd` events to make them refer to the same progress reporting. IDs must
+be unique within a debug session.
+   * @param title Short title of the progress reporting. Shown in the UI to
+describe the long running operation.
+   * @param cancellable (optional) If true, the request that reports progress
+may be cancelled with a `cancel` request. So this property basically controls
+whether the client should use UX that supports cancellation. Clients that don't
+support cancellation are allowed to ignore the setting.
+   * @param message (optional) More detailed progress message.
+   * @param percentage (optional) Progress percentage to display (value range: 0
+to 100). If omitted no percentage is shown.
+   * @param requestId (optional) The request ID that this progress report is
+related to. If specified a debug adapter is expected to emit progress events for
+the long running request until the request has been either completed or
+cancelled. If the request ID is omitted, the progress report is assumed to be
+related to some general activity of the debug adapter.
+   */
+  ProgressStartEvent(const string& progressId,
+                     const string& title,
+                     const optional<boolean>& cancellable = optional<boolean>(),
+                     const optional<string>& message = optional<string>(),
+                     const optional<number>& percentage = optional<number>(),
+                     const optional<integer>& requestId = optional<integer>())
+      : progressId(progressId),
+        title(title),
+        cancellable(cancellable),
+        message(message),
+        percentage(percentage),
+        requestId(requestId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ProgressStartEvent);
@@ -1497,6 +2975,20 @@ struct ProgressUpdateEvent : public Event {
   optional<number> percentage;
   // The ID that was introduced in the initial `progressStart` event.
   string progressId;
+
+  ProgressUpdateEvent() = default;
+  /**
+   * @param progressId The ID that was introduced in the initial `progressStart`
+   * event.
+   * @param message (optional) More detailed progress message. If omitted, the
+   * previous message (if any) is used.
+   * @param percentage (optional) Progress percentage to display (value range: 0
+   * to 100). If omitted no percentage is shown.
+   */
+  ProgressUpdateEvent(const string& progressId,
+                      const optional<string>& message = optional<string>(),
+                      const optional<number>& percentage = optional<number>())
+      : progressId(progressId), message(message), percentage(percentage) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ProgressUpdateEvent);
@@ -1513,6 +3005,22 @@ struct ReadMemoryResponse : public Response {
   // byte. This can be used to determine the number of bytes that should be
   // skipped before a subsequent `readMemory` request succeeds.
   optional<integer> unreadableBytes;
+
+  ReadMemoryResponse() = default;
+  /**
+   * @param address The address of the first byte of data returned.
+Treated as a hex value if prefixed with `0x`, or as a decimal value otherwise.
+   * @param data (optional) The bytes read from memory, encoded using base64.
+   * @param unreadableBytes (optional) The number of unreadable bytes
+encountered after the last successfully read byte. This can be used to determine
+the number of bytes that should be skipped before a subsequent `readMemory`
+request succeeds.
+   */
+  ReadMemoryResponse(
+      const string& address,
+      const optional<string>& data = optional<string>(),
+      const optional<integer>& unreadableBytes = optional<integer>())
+      : address(address), data(data), unreadableBytes(unreadableBytes) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ReadMemoryResponse);
@@ -1529,6 +3037,19 @@ struct ReadMemoryRequest : public Request {
   // Offset (in bytes) to be applied to the reference location before reading
   // data. Can be negative.
   optional<integer> offset;
+
+  ReadMemoryRequest() = default;
+  /**
+   * @param count Number of bytes to read at the specified location and offset.
+   * @param memoryReference Memory reference to the base location from which
+   * data should be read.
+   * @param offset (optional) Offset (in bytes) to be applied to the reference
+   * location before reading data. Can be negative.
+   */
+  ReadMemoryRequest(const integer& count,
+                    const string& memoryReference,
+                    const optional<integer>& offset = optional<integer>())
+      : count(count), memoryReference(memoryReference), offset(offset) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ReadMemoryRequest);
@@ -1547,6 +3068,12 @@ struct RestartFrameRequest : public Request {
   using Response = RestartFrameResponse;
   // Restart this stackframe.
   integer frameId;
+
+  RestartFrameRequest() = default;
+  /**
+   * @param frameId Restart this stackframe.
+   */
+  RestartFrameRequest(const integer& frameId) : frameId(frameId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(RestartFrameRequest);
@@ -1568,6 +3095,21 @@ struct LaunchRequestArguments {
   // If true, the launch request should launch the program without enabling
   // debugging.
   optional<boolean> noDebug;
+
+  LaunchRequestArguments() = default;
+  /**
+   * @param restart (optional) Arbitrary data from the previous, restarted
+session. The data is sent as the `restart` attribute of the `terminated` event.
+The client should leave the data intact.
+   * @param noDebug (optional) If true, the launch request should launch the
+program without enabling debugging.
+   */
+  LaunchRequestArguments(
+      const optional<
+          variant<array<any>, boolean, integer, null, number, object, string>>&
+          restart,
+      const optional<boolean>& noDebug = optional<boolean>())
+      : restart(restart), noDebug(noDebug) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(LaunchRequestArguments);
@@ -1580,6 +3122,18 @@ struct AttachRequestArguments {
   // The client should leave the data intact.
   optional<variant<array<any>, boolean, integer, null, number, object, string>>
       restart;
+
+  AttachRequestArguments() = default;
+  /**
+   * @param restart (optional) Arbitrary data from the previous, restarted
+session. The data is sent as the `restart` attribute of the `terminated` event.
+The client should leave the data intact.
+   */
+  AttachRequestArguments(
+      const optional<
+          variant<array<any>, boolean, integer, null, number, object, string>>&
+          restart)
+      : restart(restart) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(AttachRequestArguments);
@@ -1592,6 +3146,16 @@ struct RestartRequest : public Request {
   using Response = RestartResponse;
   // The latest version of the `launch` or `attach` configuration.
   optional<variant<LaunchRequestArguments, AttachRequestArguments>> arguments;
+
+  RestartRequest() = default;
+  /**
+   * @param arguments (optional) The latest version of the `launch` or `attach`
+   * configuration.
+   */
+  RestartRequest(
+      const optional<variant<LaunchRequestArguments, AttachRequestArguments>>&
+          arguments)
+      : arguments(arguments) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(RestartRequest);
@@ -1618,6 +3182,20 @@ struct ReverseContinueRequest : public Request {
   // execution (see `supportsSingleThreadExecutionRequests`) and the
   // `singleThread` argument is true, only the thread with this ID is resumed.
   integer threadId;
+
+  ReverseContinueRequest() = default;
+  /**
+   * @param threadId Specifies the active thread. If the debug adapter supports
+   * single thread execution (see `supportsSingleThreadExecutionRequests`) and
+   * the `singleThread` argument is true, only the thread with this ID is
+   * resumed.
+   * @param singleThread (optional) If this flag is true, backward execution is
+   * resumed only for the thread with given `threadId`.
+   */
+  ReverseContinueRequest(
+      const integer& threadId,
+      const optional<boolean>& singleThread = optional<boolean>())
+      : threadId(threadId), singleThread(singleThread) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ReverseContinueRequest);
@@ -1630,6 +3208,18 @@ struct RunInTerminalResponse : public Response {
   // The process ID of the terminal shell. The value should be less than or
   // equal to 2147483647 (2^31-1).
   optional<integer> shellProcessId;
+
+  RunInTerminalResponse() = default;
+  /**
+   * @param processId (optional) The process ID. The value should be less than
+   * or equal to 2147483647 (2^31-1).
+   * @param shellProcessId (optional) The process ID of the terminal shell. The
+   * value should be less than or equal to 2147483647 (2^31-1).
+   */
+  RunInTerminalResponse(
+      const optional<integer>& processId,
+      const optional<integer>& shellProcessId = optional<integer>())
+      : processId(processId), shellProcessId(shellProcessId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(RunInTerminalResponse);
@@ -1673,6 +3263,38 @@ struct RunInTerminalRequest : public Request {
   optional<string> kind;
   // Title of the terminal.
   optional<string> title;
+
+  RunInTerminalRequest() = default;
+  /**
+   * @param args List of arguments. The first argument is the command to run.
+   * @param cwd Working directory for the command. For non-empty, valid paths
+this typically results in execution of a change directory command.
+   * @param argsCanBeInterpretedByShell (optional) This property should only be
+set if the corresponding capability `supportsArgsCanBeInterpretedByShell` is
+true. If the client uses an intermediary shell to launch the application, then
+the client must not attempt to escape characters with special meanings for the
+shell. The user is fully responsible for escaping as needed and that arguments
+using special characters may not be portable across shells.
+   * @param env (optional) Environment key-value pairs that are added to or
+removed from the default environment.
+   * @param kind (optional) What kind of terminal to launch.
+Must be one of the following enumeration values:
+'integrated', 'external'
+   * @param title (optional) Title of the terminal.
+   */
+  RunInTerminalRequest(const array<string>& args,
+                       const string& cwd,
+                       const optional<boolean>& argsCanBeInterpretedByShell =
+                           optional<boolean>(),
+                       const optional<object>& env = optional<object>(),
+                       const optional<string>& kind = optional<string>(),
+                       const optional<string>& title = optional<string>())
+      : args(args),
+        cwd(cwd),
+        argsCanBeInterpretedByShell(argsCanBeInterpretedByShell),
+        env(env),
+        kind(kind),
+        title(title) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(RunInTerminalRequest);
@@ -1717,6 +3339,56 @@ struct Scope {
   // The variables of this scope can be retrieved by passing the value of
   // `variablesReference` to the `variables` request.
   integer variablesReference;
+
+  Scope() = default;
+  /**
+   * @param expensive If true, the number of variables in this scope is large or
+expensive to retrieve.
+   * @param name Name of the scope such as 'Arguments', 'Locals', or
+'Registers'. This string is shown in the UI as is and can be translated.
+   * @param variablesReference The variables of this scope can be retrieved by
+passing the value of `variablesReference` to the `variables` request.
+   * @param column (optional) Start position of the range covered by the scope.
+It is measured in UTF-16 code units and the client capability `columnsStartAt1`
+determines whether it is 0- or 1-based.
+   * @param endColumn (optional) End position of the range covered by the scope.
+It is measured in UTF-16 code units and the client capability `columnsStartAt1`
+determines whether it is 0- or 1-based.
+   * @param endLine (optional) The end line of the range covered by this scope.
+   * @param indexedVariables (optional) The number of indexed variables in this
+scope. The client can use this information to present the variables in a paged
+UI and fetch them in chunks.
+   * @param line (optional) The start line of the range covered by this scope.
+   * @param namedVariables (optional) The number of named variables in this
+scope. The client can use this information to present the variables in a paged
+UI and fetch them in chunks.
+   * @param presentationHint (optional) A hint for how to present this scope in
+the UI. If this attribute is missing, the scope is shown with a generic UI. May
+be one of the following enumeration values: 'arguments', 'locals', 'registers'
+   * @param source (optional) The source for this scope.
+   */
+  Scope(const boolean& expensive,
+        const string& name,
+        const integer& variablesReference,
+        const optional<integer>& column = optional<integer>(),
+        const optional<integer>& endColumn = optional<integer>(),
+        const optional<integer>& endLine = optional<integer>(),
+        const optional<integer>& indexedVariables = optional<integer>(),
+        const optional<integer>& line = optional<integer>(),
+        const optional<integer>& namedVariables = optional<integer>(),
+        const optional<string>& presentationHint = optional<string>(),
+        const optional<Source>& source = optional<Source>())
+      : expensive(expensive),
+        name(name),
+        variablesReference(variablesReference),
+        column(column),
+        endColumn(endColumn),
+        endLine(endLine),
+        indexedVariables(indexedVariables),
+        line(line),
+        namedVariables(namedVariables),
+        presentationHint(presentationHint),
+        source(source) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Scope);
@@ -1726,6 +3398,14 @@ struct ScopesResponse : public Response {
   // The scopes of the stackframe. If the array has length zero, there are no
   // scopes available.
   array<Scope> scopes;
+
+  ScopesResponse() = default;
+  /**
+   * @param scopes The scopes of the stackframe. If the array has length zero,
+   * there are no scopes available.
+   */
+  ScopesResponse(const array<Scope>& scopes)
+      : scopes(scopes) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ScopesResponse);
@@ -1735,6 +3415,12 @@ struct ScopesRequest : public Request {
   using Response = ScopesResponse;
   // Retrieve the scopes for this stackframe.
   integer frameId;
+
+  ScopesRequest() = default;
+  /**
+   * @param frameId Retrieve the scopes for this stackframe.
+   */
+  ScopesRequest(const integer& frameId) : frameId(frameId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ScopesRequest);
@@ -1749,6 +3435,15 @@ struct SetBreakpointsResponse : public Response {
   // The array elements are in the same order as the elements of the
   // `breakpoints` (or the deprecated `lines`) array in the arguments.
   array<Breakpoint> breakpoints;
+
+  SetBreakpointsResponse() = default;
+  /**
+   * @param breakpoints Information about the breakpoints.
+The array elements are in the same order as the elements of the `breakpoints`
+(or the deprecated `lines`) array in the arguments.
+   */
+  SetBreakpointsResponse(const array<Breakpoint>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetBreakpointsResponse);
@@ -1776,6 +3471,35 @@ struct SourceBreakpoint {
   // interpolated. The attribute is only honored by a debug adapter if the
   // corresponding capability `supportsLogPoints` is true.
   optional<string> logMessage;
+
+  SourceBreakpoint() = default;
+  /**
+   * @param line The source line of the breakpoint or logpoint.
+   * @param column (optional) Start position within source line of the
+breakpoint or logpoint. It is measured in UTF-16 code units and the client
+capability `columnsStartAt1` determines whether it is 0- or 1-based.
+   * @param condition (optional) The expression for conditional breakpoints.
+It is only honored by a debug adapter if the corresponding capability
+`supportsConditionalBreakpoints` is true.
+   * @param hitCondition (optional) The expression that controls how many hits
+of the breakpoint are ignored. The debug adapter is expected to interpret the
+expression as needed. The attribute is only honored by a debug adapter if the
+corresponding capability `supportsHitConditionalBreakpoints` is true.
+   * @param logMessage (optional) If this attribute exists and is non-empty, the
+debug adapter must not 'break' (stop) but log the message instead. Expressions
+within `{}` are interpolated. The attribute is only honored by a debug adapter
+if the corresponding capability `supportsLogPoints` is true.
+   */
+  SourceBreakpoint(const integer& line,
+                   const optional<integer>& column = optional<integer>(),
+                   const optional<string>& condition = optional<string>(),
+                   const optional<string>& hitCondition = optional<string>(),
+                   const optional<string>& logMessage = optional<string>())
+      : line(line),
+        column(column),
+        condition(condition),
+        hitCondition(hitCondition),
+        logMessage(logMessage) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SourceBreakpoint);
@@ -1796,6 +3520,27 @@ struct SetBreakpointsRequest : public Request {
   // A value of true indicates that the underlying source has been modified
   // which results in new breakpoint locations.
   optional<boolean> sourceModified;
+
+  SetBreakpointsRequest() = default;
+  /**
+   * @param source The source location of the breakpoints; either `source.path`
+   * or `source.sourceReference` must be specified.
+   * @param breakpoints (optional) The code locations of the breakpoints.
+   * @param lines (optional) Deprecated: The code locations of the breakpoints.
+   * @param sourceModified (optional) A value of true indicates that the
+   * underlying source has been modified which results in new breakpoint
+   * locations.
+   */
+  SetBreakpointsRequest(
+      const Source& source,
+      const optional<array<SourceBreakpoint>>& breakpoints =
+          optional<array<SourceBreakpoint>>(),
+      const optional<array<integer>>& lines = optional<array<integer>>(),
+      const optional<boolean>& sourceModified = optional<boolean>())
+      : source(source),
+        breakpoints(breakpoints),
+        lines(lines),
+        sourceModified(sourceModified) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetBreakpointsRequest);
@@ -1806,6 +3551,15 @@ struct SetDataBreakpointsResponse : public Response {
   // Information about the data breakpoints. The array elements correspond to
   // the elements of the input argument `breakpoints` array.
   array<Breakpoint> breakpoints;
+
+  SetDataBreakpointsResponse() = default;
+  /**
+   * @param breakpoints Information about the data breakpoints. The array
+   * elements correspond to the elements of the input argument `breakpoints`
+   * array.
+   */
+  SetDataBreakpointsResponse(const array<Breakpoint>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetDataBreakpointsResponse);
@@ -1822,6 +3576,26 @@ struct DataBreakpoint {
   // An expression that controls how many hits of the breakpoint are ignored.
   // The debug adapter is expected to interpret the expression as needed.
   optional<string> hitCondition;
+
+  DataBreakpoint() = default;
+  /**
+   * @param dataId An id representing the data. This id is returned from the
+`dataBreakpointInfo` request.
+   * @param accessType (optional) The access type of the data.
+   * @param condition (optional) An expression for conditional breakpoints.
+   * @param hitCondition (optional) An expression that controls how many hits of
+the breakpoint are ignored. The debug adapter is expected to interpret the
+expression as needed.
+   */
+  DataBreakpoint(const string& dataId,
+                 const optional<DataBreakpointAccessType>& accessType =
+                     optional<DataBreakpointAccessType>(),
+                 const optional<string>& condition = optional<string>(),
+                 const optional<string>& hitCondition = optional<string>())
+      : dataId(dataId),
+        accessType(accessType),
+        condition(condition),
+        hitCondition(hitCondition) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(DataBreakpoint);
@@ -1836,6 +3610,14 @@ struct SetDataBreakpointsRequest : public Request {
   // The contents of this array replaces all existing data breakpoints. An empty
   // array clears all data breakpoints.
   array<DataBreakpoint> breakpoints;
+
+  SetDataBreakpointsRequest() = default;
+  /**
+   * @param breakpoints The contents of this array replaces all existing data
+   * breakpoints. An empty array clears all data breakpoints.
+   */
+  SetDataBreakpointsRequest(const array<DataBreakpoint>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetDataBreakpointsRequest);
@@ -1862,6 +3644,18 @@ struct SetExceptionBreakpointsResponse : public Response {
   // both `filters` and `filterOptions` are given, the returned array must start
   // with `filters` information first, followed by `filterOptions` information.
   optional<array<Breakpoint>> breakpoints;
+
+  SetExceptionBreakpointsResponse() = default;
+  /**
+   * @param breakpoints (optional) Information about the exception breakpoints
+or filters. The breakpoints returned are in the same order as the elements of
+the `filters`, `filterOptions`, `exceptionOptions` arrays in the arguments. If
+both `filters` and `filterOptions` are given, the returned array must start with
+`filters` information first, followed by `filterOptions` information.
+   */
+  SetExceptionBreakpointsResponse(
+      const optional<array<Breakpoint>>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetExceptionBreakpointsResponse);
@@ -1877,6 +3671,17 @@ struct ExceptionPathSegment {
   // If false or missing this segment matches the names provided, otherwise it
   // matches anything except the names provided.
   optional<boolean> negate;
+
+  ExceptionPathSegment() = default;
+  /**
+   * @param names Depending on the value of `negate` the names that should match
+   * or not match.
+   * @param negate (optional) If false or missing this segment matches the names
+   * provided, otherwise it matches anything except the names provided.
+   */
+  ExceptionPathSegment(const array<string>& names,
+                       const optional<boolean>& negate = optional<boolean>())
+      : names(names), negate(negate) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionPathSegment);
@@ -1889,6 +3694,20 @@ struct ExceptionOptions {
   // missing, the whole tree is selected. By convention the first segment of the
   // path is a category that is used to group exceptions in the UI.
   optional<array<ExceptionPathSegment>> path;
+
+  ExceptionOptions() = default;
+  /**
+   * @param breakMode Condition when a thrown exception should result in a
+break. (default: "never")
+   * @param path (optional) A path that selects a single or multiple exceptions
+in a tree. If `path` is missing, the whole tree is selected. By convention the
+first segment of the path is a category that is used to group exceptions in the
+UI.
+   */
+  ExceptionOptions(const ExceptionBreakMode& breakMode,
+                   const optional<array<ExceptionPathSegment>>& path =
+                       optional<array<ExceptionPathSegment>>())
+      : breakMode(breakMode), path(path) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionOptions);
@@ -1903,6 +3722,17 @@ struct ExceptionFilterOptions {
   // ID of an exception filter returned by the `exceptionBreakpointFilters`
   // capability.
   string filterId;
+
+  ExceptionFilterOptions() = default;
+  /**
+   * @param filterId ID of an exception filter returned by the
+`exceptionBreakpointFilters` capability.
+   * @param condition (optional) An expression for conditional exceptions.
+The exception breaks into the debugger if the result of the condition is true.
+   */
+  ExceptionFilterOptions(const string& filterId,
+                         const optional<string>& condition = optional<string>())
+      : filterId(filterId), condition(condition) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ExceptionFilterOptions);
@@ -1928,6 +3758,30 @@ struct SetExceptionBreakpointsRequest : public Request {
   // exception filters is defined by the `exceptionBreakpointFilters`
   // capability. The `filter` and `filterOptions` sets are additive.
   array<string> filters;
+
+  SetExceptionBreakpointsRequest() = default;
+  /**
+   * @param filters Set of exception filters specified by their ID. The set of
+all possible exception filters is defined by the `exceptionBreakpointFilters`
+capability. The `filter` and `filterOptions` sets are additive.
+   * @param exceptionOptions (optional) Configuration options for selected
+exceptions. The attribute is only honored by a debug adapter if the
+corresponding capability `supportsExceptionOptions` is true.
+   * @param filterOptions (optional) Set of exception filters and their options.
+The set of all possible exception filters is defined by the
+`exceptionBreakpointFilters` capability. This attribute is only honored by a
+debug adapter if the corresponding capability `supportsExceptionFilterOptions`
+is true. The `filter` and `filterOptions` sets are additive.
+   */
+  SetExceptionBreakpointsRequest(
+      const array<string>& filters,
+      const optional<array<ExceptionOptions>>& exceptionOptions =
+          optional<array<ExceptionOptions>>(),
+      const optional<array<ExceptionFilterOptions>>& filterOptions =
+          optional<array<ExceptionFilterOptions>>())
+      : filters(filters),
+        exceptionOptions(exceptionOptions),
+        filterOptions(filterOptions) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetExceptionBreakpointsRequest);
@@ -1957,6 +3811,42 @@ struct SetExpressionResponse : public Response {
   // can be retrieved by passing `variablesReference` to the `variables`
   // request. The value should be less than or equal to 2147483647 (2^31-1).
   optional<integer> variablesReference;
+
+  SetExpressionResponse() = default;
+  /**
+   * @param value The new value of the expression.
+   * @param indexedVariables (optional) The number of indexed child variables.
+The client can use this information to present the variables in a paged UI and
+fetch them in chunks. The value should be less than or equal to 2147483647
+(2^31-1).
+   * @param namedVariables (optional) The number of named child variables.
+The client can use this information to present the variables in a paged UI and
+fetch them in chunks. The value should be less than or equal to 2147483647
+(2^31-1).
+   * @param presentationHint (optional) Properties of a value that can be used
+to determine how to render the result in the UI.
+   * @param type (optional) The type of the value.
+This attribute should only be returned by a debug adapter if the corresponding
+capability `supportsVariableType` is true.
+   * @param variablesReference (optional) If `variablesReference` is > 0, the
+value is structured and its children can be retrieved by passing
+`variablesReference` to the `variables` request. The value should be less than
+or equal to 2147483647 (2^31-1).
+   */
+  SetExpressionResponse(
+      const string& value,
+      const optional<integer>& indexedVariables = optional<integer>(),
+      const optional<integer>& namedVariables = optional<integer>(),
+      const optional<VariablePresentationHint>& presentationHint =
+          optional<VariablePresentationHint>(),
+      const optional<string>& type = optional<string>(),
+      const optional<integer>& variablesReference = optional<integer>())
+      : value(value),
+        indexedVariables(indexedVariables),
+        namedVariables(namedVariables),
+        presentationHint(presentationHint),
+        type(type),
+        variablesReference(variablesReference) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetExpressionResponse);
@@ -1979,6 +3869,26 @@ struct SetExpressionRequest : public Request {
   optional<integer> frameId;
   // The value expression to assign to the l-value expression.
   string value;
+
+  SetExpressionRequest() = default;
+  /**
+   * @param expression The l-value expression to assign to.
+   * @param value The value expression to assign to the l-value expression.
+   * @param format (optional) Specifies how the resulting value should be
+   * formatted.
+   * @param frameId (optional) Evaluate the expressions in the scope of this
+   * stack frame. If not specified, the expressions are evaluated in the global
+   * scope.
+   */
+  SetExpressionRequest(
+      const string& expression,
+      const string& value,
+      const optional<ValueFormat>& format = optional<ValueFormat>(),
+      const optional<integer>& frameId = optional<integer>())
+      : expression(expression),
+        value(value),
+        format(format),
+        frameId(frameId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetExpressionRequest);
@@ -1989,6 +3899,14 @@ struct SetFunctionBreakpointsResponse : public Response {
   // Information about the breakpoints. The array elements correspond to the
   // elements of the `breakpoints` array.
   array<Breakpoint> breakpoints;
+
+  SetFunctionBreakpointsResponse() = default;
+  /**
+   * @param breakpoints Information about the breakpoints. The array elements
+   * correspond to the elements of the `breakpoints` array.
+   */
+  SetFunctionBreakpointsResponse(const array<Breakpoint>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetFunctionBreakpointsResponse);
@@ -2006,6 +3924,22 @@ struct FunctionBreakpoint {
   optional<string> hitCondition;
   // The name of the function.
   string name;
+
+  FunctionBreakpoint() = default;
+  /**
+   * @param name The name of the function.
+   * @param condition (optional) An expression for conditional breakpoints.
+It is only honored by a debug adapter if the corresponding capability
+`supportsConditionalBreakpoints` is true.
+   * @param hitCondition (optional) An expression that controls how many hits of
+the breakpoint are ignored. The debug adapter is expected to interpret the
+expression as needed. The attribute is only honored by a debug adapter if the
+corresponding capability `supportsHitConditionalBreakpoints` is true.
+   */
+  FunctionBreakpoint(const string& name,
+                     const optional<string>& condition = optional<string>(),
+                     const optional<string>& hitCondition = optional<string>())
+      : name(name), condition(condition), hitCondition(hitCondition) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(FunctionBreakpoint);
@@ -2019,6 +3953,13 @@ struct SetFunctionBreakpointsRequest : public Request {
   using Response = SetFunctionBreakpointsResponse;
   // The function names of the breakpoints.
   array<FunctionBreakpoint> breakpoints;
+
+  SetFunctionBreakpointsRequest() = default;
+  /**
+   * @param breakpoints The function names of the breakpoints.
+   */
+  SetFunctionBreakpointsRequest(const array<FunctionBreakpoint>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetFunctionBreakpointsRequest);
@@ -2028,6 +3969,14 @@ struct SetInstructionBreakpointsResponse : public Response {
   // Information about the breakpoints. The array elements correspond to the
   // elements of the `breakpoints` array.
   array<Breakpoint> breakpoints;
+
+  SetInstructionBreakpointsResponse() = default;
+  /**
+   * @param breakpoints Information about the breakpoints. The array elements
+   * correspond to the elements of the `breakpoints` array.
+   */
+  SetInstructionBreakpointsResponse(const array<Breakpoint>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetInstructionBreakpointsResponse);
@@ -2051,6 +4000,31 @@ struct InstructionBreakpoint {
   // The offset from the instruction reference.
   // This can be negative.
   optional<integer> offset;
+
+  InstructionBreakpoint() = default;
+  /**
+   * @param instructionReference The instruction reference of the breakpoint.
+This should be a memory or instruction pointer reference from an
+`EvaluateResponse`, `Variable`, `StackFrame`, `GotoTarget`, or `Breakpoint`.
+   * @param condition (optional) An expression for conditional breakpoints.
+It is only honored by a debug adapter if the corresponding capability
+`supportsConditionalBreakpoints` is true.
+   * @param hitCondition (optional) An expression that controls how many hits of
+the breakpoint are ignored. The debug adapter is expected to interpret the
+expression as needed. The attribute is only honored by a debug adapter if the
+corresponding capability `supportsHitConditionalBreakpoints` is true.
+   * @param offset (optional) The offset from the instruction reference.
+This can be negative.
+   */
+  InstructionBreakpoint(
+      const string& instructionReference,
+      const optional<string>& condition = optional<string>(),
+      const optional<string>& hitCondition = optional<string>(),
+      const optional<integer>& offset = optional<integer>())
+      : instructionReference(instructionReference),
+        condition(condition),
+        hitCondition(hitCondition),
+        offset(offset) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(InstructionBreakpoint);
@@ -2065,6 +4039,14 @@ struct SetInstructionBreakpointsRequest : public Request {
   using Response = SetInstructionBreakpointsResponse;
   // The instruction references of the breakpoints
   array<InstructionBreakpoint> breakpoints;
+
+  SetInstructionBreakpointsRequest() = default;
+  /**
+   * @param breakpoints The instruction references of the breakpoints
+   */
+  SetInstructionBreakpointsRequest(
+      const array<InstructionBreakpoint>& breakpoints)
+      : breakpoints(breakpoints) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetInstructionBreakpointsRequest);
@@ -2091,6 +4073,36 @@ struct SetVariableResponse : public Response {
   // `variables` request. The value should be less than or equal to 2147483647
   // (2^31-1).
   optional<integer> variablesReference;
+
+  SetVariableResponse() = default;
+  /**
+   * @param value The new value of the variable.
+   * @param indexedVariables (optional) The number of indexed child variables.
+The client can use this information to present the variables in a paged UI and
+fetch them in chunks. The value should be less than or equal to 2147483647
+(2^31-1).
+   * @param namedVariables (optional) The number of named child variables.
+The client can use this information to present the variables in a paged UI and
+fetch them in chunks. The value should be less than or equal to 2147483647
+(2^31-1).
+   * @param type (optional) The type of the new value. Typically shown in the UI
+when hovering over the value.
+   * @param variablesReference (optional) If `variablesReference` is > 0, the
+new value is structured and its children can be retrieved by passing
+`variablesReference` to the `variables` request. The value should be less than
+or equal to 2147483647 (2^31-1).
+   */
+  SetVariableResponse(
+      const string& value,
+      const optional<integer>& indexedVariables = optional<integer>(),
+      const optional<integer>& namedVariables = optional<integer>(),
+      const optional<string>& type = optional<string>(),
+      const optional<integer>& variablesReference = optional<integer>())
+      : value(value),
+        indexedVariables(indexedVariables),
+        namedVariables(namedVariables),
+        type(type),
+        variablesReference(variablesReference) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetVariableResponse);
@@ -2110,6 +4122,24 @@ struct SetVariableRequest : public Request {
   string value;
   // The reference of the variable container.
   integer variablesReference;
+
+  SetVariableRequest() = default;
+  /**
+   * @param name The name of the variable in the container.
+   * @param value The value of the variable.
+   * @param variablesReference The reference of the variable container.
+   * @param format (optional) Specifies details on how to format the response
+   * value.
+   */
+  SetVariableRequest(
+      const string& name,
+      const string& value,
+      const integer& variablesReference,
+      const optional<ValueFormat>& format = optional<ValueFormat>())
+      : name(name),
+        value(value),
+        variablesReference(variablesReference),
+        format(format) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SetVariableRequest);
@@ -2120,6 +4150,15 @@ struct SourceResponse : public Response {
   string content;
   // Content type (MIME type) of the source.
   optional<string> mimeType;
+
+  SourceResponse() = default;
+  /**
+   * @param content Content of the source reference.
+   * @param mimeType (optional) Content type (MIME type) of the source.
+   */
+  SourceResponse(const string& content,
+                 const optional<string>& mimeType = optional<string>())
+      : content(content), mimeType(mimeType) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SourceResponse);
@@ -2134,6 +4173,18 @@ struct SourceRequest : public Request {
   // This is provided for backward compatibility since old clients do not
   // understand the `source` attribute.
   integer sourceReference;
+
+  SourceRequest() = default;
+  /**
+   * @param sourceReference The reference to the source. This is the same as
+`source.sourceReference`. This is provided for backward compatibility since old
+clients do not understand the `source` attribute.
+   * @param source (optional) Specifies the source content to load. Either
+`source.path` or `source.sourceReference` must be specified.
+   */
+  SourceRequest(const integer& sourceReference,
+                const optional<Source>& source = optional<Source>())
+      : sourceReference(sourceReference), source(source) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(SourceRequest);
@@ -2178,6 +4229,63 @@ struct StackFrame {
   optional<string> presentationHint;
   // The source of the frame.
   optional<Source> source;
+
+  StackFrame() = default;
+  /**
+   * @param column Start position of the range covered by the stack frame. It is
+measured in UTF-16 code units and the client capability `columnsStartAt1`
+determines whether it is 0- or 1-based. If attribute `source` is missing or
+doesn't exist, `column` is 0 and should be ignored by the client.
+   * @param id An identifier for the stack frame. It must be unique across all
+threads. This id can be used to retrieve the scopes of the frame with the
+`scopes` request or to restart the execution of a stackframe.
+   * @param line The line within the source of the frame. If the source
+attribute is missing or doesn't exist, `line` is 0 and should be ignored by the
+client.
+   * @param name The name of the stack frame, typically a method name.
+   * @param canRestart (optional) Indicates whether this frame can be restarted
+with the `restart` request. Clients should only use this if the debug adapter
+supports the `restart` request and the corresponding capability
+`supportsRestartRequest` is true.
+   * @param endColumn (optional) End position of the range covered by the stack
+frame. It is measured in UTF-16 code units and the client capability
+`columnsStartAt1` determines whether it is 0- or 1-based.
+   * @param endLine (optional) The end line of the range covered by the stack
+frame.
+   * @param instructionPointerReference (optional) A memory reference for the
+current instruction pointer in this frame.
+   * @param moduleId (optional) The module associated with this frame, if any.
+   * @param presentationHint (optional) A hint for how to present this frame in
+the UI. A value of `label` can be used to indicate that the frame is an
+artificial frame that is used as a visual label or separator. A value of
+`subtle` can be used to change the appearance of a frame in a 'subtle' way. Must
+be one of the following enumeration values: 'normal', 'label', 'subtle'
+   * @param source (optional) The source of the frame.
+   */
+  StackFrame(
+      const integer& column,
+      const integer& id,
+      const integer& line,
+      const string& name,
+      const optional<boolean>& canRestart = optional<boolean>(),
+      const optional<integer>& endColumn = optional<integer>(),
+      const optional<integer>& endLine = optional<integer>(),
+      const optional<string>& instructionPointerReference = optional<string>(),
+      const optional<variant<integer, string>>& moduleId =
+          optional<variant<integer, string>>(),
+      const optional<string>& presentationHint = optional<string>(),
+      const optional<Source>& source = optional<Source>())
+      : column(column),
+        id(id),
+        line(line),
+        name(name),
+        canRestart(canRestart),
+        endColumn(endColumn),
+        endLine(endLine),
+        instructionPointerReference(instructionPointerReference),
+        moduleId(moduleId),
+        presentationHint(presentationHint),
+        source(source) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StackFrame);
@@ -2195,6 +4303,22 @@ struct StackTraceResponse : public Response {
   // `totalFrames` values for subsequent requests can be used to enforce paging
   // in the client.
   optional<integer> totalFrames;
+
+  StackTraceResponse() = default;
+  /**
+   * @param stackFrames The frames of the stackframe. If the array has length
+zero, there are no stackframes available. This means that there is no location
+information available.
+   * @param totalFrames (optional) The total number of frames available in the
+stack. If omitted or if `totalFrames` is larger than the available frames, a
+client is expected to request frames until a request returns less frames than
+requested (which indicates the end of the stack). Returning monotonically
+increasing `totalFrames` values for subsequent requests can be used to enforce
+paging in the client.
+   */
+  StackTraceResponse(const array<StackFrame>& stackFrames,
+                     const optional<integer>& totalFrames = optional<integer>())
+      : stackFrames(stackFrames), totalFrames(totalFrames) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StackTraceResponse);
@@ -2216,6 +4340,36 @@ struct StackFrameFormat : public ValueFormat {
   optional<boolean> parameterValues;
   // Displays parameters for the stack frame.
   optional<boolean> parameters;
+
+  StackFrameFormat() = default;
+  /**
+   * @param includeAll (optional) Includes all stack frames, including those the
+   * debug adapter might otherwise hide.
+   * @param line (optional) Displays the line number of the stack frame.
+   * @param module (optional) Displays the module of the stack frame.
+   * @param parameterNames (optional) Displays the names of parameters for the
+   * stack frame.
+   * @param parameterTypes (optional) Displays the types of parameters for the
+   * stack frame.
+   * @param parameterValues (optional) Displays the values of parameters for the
+   * stack frame.
+   * @param parameters (optional) Displays parameters for the stack frame.
+   */
+  StackFrameFormat(
+      const optional<boolean>& includeAll,
+      const optional<boolean>& line = optional<boolean>(),
+      const optional<boolean>& module = optional<boolean>(),
+      const optional<boolean>& parameterNames = optional<boolean>(),
+      const optional<boolean>& parameterTypes = optional<boolean>(),
+      const optional<boolean>& parameterValues = optional<boolean>(),
+      const optional<boolean>& parameters = optional<boolean>())
+      : includeAll(includeAll),
+        line(line),
+        module(module),
+        parameterNames(parameterNames),
+        parameterTypes(parameterTypes),
+        parameterValues(parameterValues),
+        parameters(parameters) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StackFrameFormat);
@@ -2244,6 +4398,27 @@ struct StackTraceRequest : public Request {
   optional<integer> startFrame;
   // Retrieve the stacktrace for this thread.
   integer threadId;
+
+  StackTraceRequest() = default;
+  /**
+   * @param threadId Retrieve the stacktrace for this thread.
+   * @param format (optional) Specifies details on how to format the stack
+frames. The attribute is only honored by a debug adapter if the corresponding
+capability `supportsValueFormattingOptions` is true.
+   * @param levels (optional) The maximum number of frames to return. If levels
+is not specified or 0, all frames are returned.
+   * @param startFrame (optional) The index of the first frame to return; if
+omitted frames start at 0.
+   */
+  StackTraceRequest(
+      const integer& threadId,
+      const optional<StackFrameFormat>& format = optional<StackFrameFormat>(),
+      const optional<integer>& levels = optional<integer>(),
+      const optional<integer>& startFrame = optional<integer>())
+      : threadId(threadId),
+        format(format),
+        levels(levels),
+        startFrame(startFrame) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StackTraceRequest);
@@ -2274,6 +4449,21 @@ struct StartDebuggingRequest : public Request {
   // Must be one of the following enumeration values:
   // 'launch', 'attach'
   string request = "launch";
+
+  StartDebuggingRequest() = default;
+  /**
+   * @param configuration Arguments passed to the new debug session. The
+arguments must only contain properties understood by the `launch` or `attach`
+requests of the debug adapter and they must not contain any client-specific
+properties (e.g. `type`) or client-specific features (e.g. substitutable
+'variables').
+   * @param request Indicates whether the new debug session should be started
+with a `launch` or `attach` request. Must be one of the following enumeration
+values: 'launch', 'attach' (default: "launch")
+   */
+  StartDebuggingRequest(const object& configuration,
+                        const string& request = "launch")
+      : configuration(configuration), request(request) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StartDebuggingRequest);
@@ -2302,6 +4492,23 @@ struct StepBackRequest : public Request {
   // Specifies the thread for which to resume execution for one step backwards
   // (of the given granularity).
   integer threadId;
+
+  StepBackRequest() = default;
+  /**
+   * @param threadId Specifies the thread for which to resume execution for one
+   * step backwards (of the given granularity).
+   * @param granularity (optional) Stepping granularity to step. If no
+   * granularity is specified, a granularity of `statement` is assumed.
+   * @param singleThread (optional) If this flag is true, all other suspended
+   * threads are not resumed.
+   */
+  StepBackRequest(const integer& threadId,
+                  const optional<SteppingGranularity>& granularity =
+                      optional<SteppingGranularity>(),
+                  const optional<boolean>& singleThread = optional<boolean>())
+      : threadId(threadId),
+        granularity(granularity),
+        singleThread(singleThread) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepBackRequest);
@@ -2336,6 +4543,26 @@ struct StepInRequest : public Request {
   // Specifies the thread for which to resume execution for one step-into (of
   // the given granularity).
   integer threadId;
+
+  StepInRequest() = default;
+  /**
+   * @param threadId Specifies the thread for which to resume execution for one
+   * step-into (of the given granularity).
+   * @param granularity (optional) Stepping granularity. If no granularity is
+   * specified, a granularity of `statement` is assumed.
+   * @param singleThread (optional) If this flag is true, all other suspended
+   * threads are not resumed.
+   * @param targetId (optional) Id of the target to step into.
+   */
+  StepInRequest(const integer& threadId,
+                const optional<SteppingGranularity>& granularity =
+                    optional<SteppingGranularity>(),
+                const optional<boolean>& singleThread = optional<boolean>(),
+                const optional<integer>& targetId = optional<integer>())
+      : threadId(threadId),
+        granularity(granularity),
+        singleThread(singleThread),
+        targetId(targetId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepInRequest);
@@ -2359,6 +4586,33 @@ struct StepInTarget {
   string label;
   // The line of the step-in target.
   optional<integer> line;
+
+  StepInTarget() = default;
+  /**
+   * @param id Unique identifier for a step-in target.
+   * @param label The name of the step-in target (shown in the UI).
+   * @param column (optional) Start position of the range covered by the step in
+   * target. It is measured in UTF-16 code units and the client capability
+   * `columnsStartAt1` determines whether it is 0- or 1-based.
+   * @param endColumn (optional) End position of the range covered by the step
+   * in target. It is measured in UTF-16 code units and the client capability
+   * `columnsStartAt1` determines whether it is 0- or 1-based.
+   * @param endLine (optional) The end line of the range covered by the step-in
+   * target.
+   * @param line (optional) The line of the step-in target.
+   */
+  StepInTarget(const integer& id,
+               const string& label,
+               const optional<integer>& column = optional<integer>(),
+               const optional<integer>& endColumn = optional<integer>(),
+               const optional<integer>& endLine = optional<integer>(),
+               const optional<integer>& line = optional<integer>())
+      : id(id),
+        label(label),
+        column(column),
+        endColumn(endColumn),
+        endLine(endLine),
+        line(line) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepInTarget);
@@ -2367,6 +4621,14 @@ DAP_DECLARE_STRUCT_TYPEINFO(StepInTarget);
 struct StepInTargetsResponse : public Response {
   // The possible step-in targets of the specified source location.
   array<StepInTarget> targets;
+
+  StepInTargetsResponse() = default;
+  /**
+   * @param targets The possible step-in targets of the specified source
+   * location.
+   */
+  StepInTargetsResponse(const array<StepInTarget>& targets)
+      : targets(targets) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepInTargetsResponse);
@@ -2379,6 +4641,14 @@ struct StepInTargetsRequest : public Request {
   using Response = StepInTargetsResponse;
   // The stack frame for which to retrieve the possible step-in targets.
   integer frameId;
+
+  StepInTargetsRequest() = default;
+  /**
+   * @param frameId The stack frame for which to retrieve the possible step-in
+   * targets.
+   */
+  StepInTargetsRequest(const integer& frameId)
+      : frameId(frameId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepInTargetsRequest);
@@ -2406,6 +4676,23 @@ struct StepOutRequest : public Request {
   // Specifies the thread for which to resume execution for one step-out (of the
   // given granularity).
   integer threadId;
+
+  StepOutRequest() = default;
+  /**
+   * @param threadId Specifies the thread for which to resume execution for one
+   * step-out (of the given granularity).
+   * @param granularity (optional) Stepping granularity. If no granularity is
+   * specified, a granularity of `statement` is assumed.
+   * @param singleThread (optional) If this flag is true, all other suspended
+   * threads are not resumed.
+   */
+  StepOutRequest(const integer& threadId,
+                 const optional<SteppingGranularity>& granularity =
+                     optional<SteppingGranularity>(),
+                 const optional<boolean>& singleThread = optional<boolean>())
+      : threadId(threadId),
+        granularity(granularity),
+        singleThread(singleThread) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StepOutRequest);
@@ -2449,6 +4736,52 @@ struct StoppedEvent : public Event {
   optional<string> text;
   // The thread which was stopped.
   optional<integer> threadId;
+
+  StoppedEvent() = default;
+  /**
+   * @param reason The reason for the event.
+For backward compatibility this string is shown in the UI if the `description`
+attribute is missing (but it must not be translated). May be one of the
+following enumeration values: 'step', 'breakpoint', 'exception', 'pause',
+'entry', 'goto', 'function breakpoint', 'data breakpoint', 'instruction
+breakpoint'
+   * @param allThreadsStopped (optional) If `allThreadsStopped` is true, a debug
+adapter can announce that all threads have stopped.
+- The client should use this information to enable that all threads can be
+expanded to access their stacktraces.
+- If the attribute is missing or false, only the thread with the given
+`threadId` can be expanded.
+   * @param description (optional) The full reason for the event, e.g. 'Paused
+on exception'. This string is shown in the UI as is and can be translated.
+   * @param hitBreakpointIds (optional) Ids of the breakpoints that triggered
+the event. In most cases there is only a single breakpoint but here are some
+examples for multiple breakpoints:
+- Different types of breakpoints map to the same location.
+- Multiple source breakpoints get collapsed to the same instruction by the
+compiler/runtime.
+- Multiple function breakpoints with different function names map to the same
+location.
+   * @param preserveFocusHint (optional) A value of true hints to the client
+that this event should not change the focus.
+   * @param text (optional) Additional information. E.g. if reason is
+`exception`, text contains the exception name. This string is shown in the UI.
+   * @param threadId (optional) The thread which was stopped.
+   */
+  StoppedEvent(const string& reason,
+               const optional<boolean>& allThreadsStopped = optional<boolean>(),
+               const optional<string>& description = optional<string>(),
+               const optional<array<integer>>& hitBreakpointIds =
+                   optional<array<integer>>(),
+               const optional<boolean>& preserveFocusHint = optional<boolean>(),
+               const optional<string>& text = optional<string>(),
+               const optional<integer>& threadId = optional<integer>())
+      : reason(reason),
+        allThreadsStopped(allThreadsStopped),
+        description(description),
+        hitBreakpointIds(hitBreakpointIds),
+        preserveFocusHint(preserveFocusHint),
+        text(text),
+        threadId(threadId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(StoppedEvent);
@@ -2476,6 +4809,14 @@ struct TerminateRequest : public Request {
   // A value of true indicates that this `terminate` request is part of a
   // restart sequence.
   optional<boolean> restart;
+
+  TerminateRequest() = default;
+  /**
+   * @param restart (optional) A value of true indicates that this `terminate`
+   * request is part of a restart sequence.
+   */
+  TerminateRequest(const optional<boolean>& restart)
+      : restart(restart) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(TerminateRequest);
@@ -2493,6 +4834,13 @@ struct TerminateThreadsRequest : public Request {
   using Response = TerminateThreadsResponse;
   // Ids of threads to be terminated.
   optional<array<integer>> threadIds;
+
+  TerminateThreadsRequest() = default;
+  /**
+   * @param threadIds (optional) Ids of threads to be terminated.
+   */
+  TerminateThreadsRequest(const optional<array<integer>>& threadIds)
+      : threadIds(threadIds) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(TerminateThreadsRequest);
@@ -2506,6 +4854,19 @@ struct TerminatedEvent : public Event {
   // `launch` and `attach` requests.
   optional<variant<array<any>, boolean, integer, null, number, object, string>>
       restart;
+
+  TerminatedEvent() = default;
+  /**
+   * @param restart (optional) A debug adapter may set `restart` to true (or to
+an arbitrary object) to request that the client restarts the session. The value
+is not interpreted by the client and passed unmodified as an attribute
+`__restart` to the `launch` and `attach` requests.
+   */
+  TerminatedEvent(
+      const optional<
+          variant<array<any>, boolean, integer, null, number, object, string>>&
+          restart)
+      : restart(restart) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(TerminatedEvent);
@@ -2519,6 +4880,16 @@ struct ThreadEvent : public Event {
   string reason;
   // The identifier of the thread.
   integer threadId;
+
+  ThreadEvent() = default;
+  /**
+   * @param reason The reason for the event.
+May be one of the following enumeration values:
+'started', 'exited'
+   * @param threadId The identifier of the thread.
+   */
+  ThreadEvent(const string& reason, const integer& threadId)
+      : reason(reason), threadId(threadId) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ThreadEvent);
@@ -2529,6 +4900,13 @@ struct Thread {
   integer id;
   // The name of the thread.
   string name;
+
+  Thread() = default;
+  /**
+   * @param id Unique identifier for the thread.
+   * @param name The name of the thread.
+   */
+  Thread(const integer& id, const string& name) : id(id), name(name) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Thread);
@@ -2537,6 +4915,12 @@ DAP_DECLARE_STRUCT_TYPEINFO(Thread);
 struct ThreadsResponse : public Response {
   // All threads.
   array<Thread> threads;
+
+  ThreadsResponse() = default;
+  /**
+   * @param threads All threads.
+   */
+  ThreadsResponse(const array<Thread>& threads) : threads(threads) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(ThreadsResponse);
@@ -2594,6 +4978,56 @@ struct Variable {
   // can be retrieved by passing `variablesReference` to the `variables`
   // request.
   integer variablesReference;
+
+  Variable() = default;
+  /**
+   * @param name The variable's name.
+   * @param value The variable's value.
+This can be a multi-line text, e.g. for a function the body of a function.
+For structured variables (which do not have a simple value), it is recommended
+to provide a one-line representation of the structured object. This helps to
+identify the structured object in the collapsed state when its children are not
+yet visible. An empty string can be used if no value should be shown in the UI.
+   * @param variablesReference If `variablesReference` is > 0, the variable is
+structured and its children can be retrieved by passing `variablesReference` to
+the `variables` request.
+   * @param evaluateName (optional) The evaluatable name of this variable which
+can be passed to the `evaluate` request to fetch the variable's value.
+   * @param indexedVariables (optional) The number of indexed child variables.
+The client can use this information to present the children in a paged UI and
+fetch them in chunks.
+   * @param memoryReference (optional) The memory reference for the variable if
+the variable represents executable code, such as a function pointer. This
+attribute is only required if the corresponding capability
+`supportsMemoryReferences` is true.
+   * @param namedVariables (optional) The number of named child variables.
+The client can use this information to present the children in a paged UI and
+fetch them in chunks.
+   * @param presentationHint (optional) Properties of a variable that can be
+used to determine how to render the variable in the UI.
+   * @param type (optional) The type of the variable's value. Typically shown in
+the UI when hovering over the value. This attribute should only be returned by a
+debug adapter if the corresponding capability `supportsVariableType` is true.
+   */
+  Variable(const string& name,
+           const string& value,
+           const integer& variablesReference,
+           const optional<string>& evaluateName = optional<string>(),
+           const optional<integer>& indexedVariables = optional<integer>(),
+           const optional<string>& memoryReference = optional<string>(),
+           const optional<integer>& namedVariables = optional<integer>(),
+           const optional<VariablePresentationHint>& presentationHint =
+               optional<VariablePresentationHint>(),
+           const optional<string>& type = optional<string>())
+      : name(name),
+        value(value),
+        variablesReference(variablesReference),
+        evaluateName(evaluateName),
+        indexedVariables(indexedVariables),
+        memoryReference(memoryReference),
+        namedVariables(namedVariables),
+        presentationHint(presentationHint),
+        type(type) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(Variable);
@@ -2602,6 +5036,14 @@ DAP_DECLARE_STRUCT_TYPEINFO(Variable);
 struct VariablesResponse : public Response {
   // All (or a range) of variables for the given variable reference.
   array<Variable> variables;
+
+  VariablesResponse() = default;
+  /**
+   * @param variables All (or a range) of variables for the given variable
+   * reference.
+   */
+  VariablesResponse(const array<Variable>& variables)
+      : variables(variables) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(VariablesResponse);
@@ -2628,6 +5070,32 @@ struct VariablesRequest : public Request {
   optional<integer> start;
   // The Variable reference.
   integer variablesReference;
+
+  VariablesRequest() = default;
+  /**
+   * @param variablesReference The Variable reference.
+   * @param count (optional) The number of variables to return. If count is
+missing or 0, all variables are returned.
+   * @param filter (optional) Filter to limit the child variables to either
+named or indexed. If omitted, both types are fetched. Must be one of the
+following enumeration values: 'indexed', 'named'
+   * @param format (optional) Specifies details on how to format the Variable
+values. The attribute is only honored by a debug adapter if the corresponding
+capability `supportsValueFormattingOptions` is true.
+   * @param start (optional) The index of the first variable to return; if
+omitted children start at 0.
+   */
+  VariablesRequest(
+      const integer& variablesReference,
+      const optional<integer>& count = optional<integer>(),
+      const optional<string>& filter = optional<string>(),
+      const optional<ValueFormat>& format = optional<ValueFormat>(),
+      const optional<integer>& start = optional<integer>())
+      : variablesReference(variablesReference),
+        count(count),
+        filter(filter),
+        format(format),
+        start(start) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(VariablesRequest);
@@ -2640,6 +5108,19 @@ struct WriteMemoryResponse : public Response {
   // Property that should be returned when `allowPartial` is true to indicate
   // the offset of the first byte of data successfully written. Can be negative.
   optional<integer> offset;
+
+  WriteMemoryResponse() = default;
+  /**
+   * @param bytesWritten (optional) Property that should be returned when
+   * `allowPartial` is true to indicate the number of bytes starting from
+   * address that were successfully written.
+   * @param offset (optional) Property that should be returned when
+   * `allowPartial` is true to indicate the offset of the first byte of data
+   * successfully written. Can be negative.
+   */
+  WriteMemoryResponse(const optional<integer>& bytesWritten,
+                      const optional<integer>& offset = optional<integer>())
+      : bytesWritten(bytesWritten), offset(offset) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(WriteMemoryResponse);
@@ -2664,6 +5145,31 @@ struct WriteMemoryRequest : public Request {
   // Offset (in bytes) to be applied to the reference location before writing
   // data. Can be negative.
   optional<integer> offset;
+
+  WriteMemoryRequest() = default;
+  /**
+   * @param data Bytes to write, encoded using base64.
+   * @param memoryReference Memory reference to the base location to which data
+should be written.
+   * @param allowPartial (optional) Property to control partial writes. If true,
+the debug adapter should attempt to write memory even if the entire memory
+region is not writable. In such a case the debug adapter should stop after
+hitting the first byte of memory that cannot be written and return the number of
+bytes written in the response via the `offset` and `bytesWritten` properties. If
+false or missing, a debug adapter should attempt to verify the region is
+writable before writing, and fail the response if it is not.
+   * @param offset (optional) Offset (in bytes) to be applied to the reference
+location before writing data. Can be negative.
+   */
+  WriteMemoryRequest(
+      const string& data,
+      const string& memoryReference,
+      const optional<boolean>& allowPartial = optional<boolean>(),
+      const optional<integer>& offset = optional<integer>())
+      : data(data),
+        memoryReference(memoryReference),
+        allowPartial(allowPartial),
+        offset(offset) {}
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(WriteMemoryRequest);

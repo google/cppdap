@@ -226,6 +226,97 @@ func (s *cppStruct) Dependencies() []cppType { return s.deps }
 func (s *cppStruct) File() cppTargetFile     { return s.file }
 func (s *cppStruct) Description() string     { return s.desc }
 func (s *cppStruct) DefaultValue() string    { return "" }
+
+func SortFields(fields []cppField) []cppField {
+	// Sort parameter order based on whether field is optional or has default value
+	sorted_fields := make([]cppField, len(fields))
+	copy(sorted_fields, fields)
+
+	sort.Slice(sorted_fields, func(i, j int) bool {
+		if !sorted_fields[i].optional {
+			if sorted_fields[j].optional {
+				return true
+			} else if !sorted_fields[j].optional &&
+				sorted_fields[i].ty.DefaultValue() == "" && sorted_fields[j].ty.DefaultValue() != "" {
+				return true
+			}
+		}
+		return false
+	})
+
+	return sorted_fields
+}
+func (s *cppStruct) WriteParamsConstructorDocString(w io.Writer) {
+	sorted_fields := SortFields(s.fields)
+	io.WriteString(w, "  /**\n")
+	for _, f := range sorted_fields {
+		io.WriteString(w, "   * @param ")
+		io.WriteString(w, sanitize(f.name))
+		io.WriteString(w, " ")
+		if f.optional {
+			io.WriteString(w, "(optional) ")
+		}
+		io.WriteString(w, strings.Replace(f.desc, "\n\n", "\n", -1))
+		if !f.optional && f.ty.DefaultValue() != "" {
+			io.WriteString(w, " (default: ")
+			io.WriteString(w, f.ty.DefaultValue())
+			io.WriteString(w, ")")
+		}
+		io.WriteString(w, "\n")
+	}
+	io.WriteString(w, "   */")
+}
+
+func (s *cppStruct) WriteParamsConstructor(w io.Writer) {
+	s.WriteParamsConstructorDocString(w)
+	sorted_fields := SortFields(s.fields)
+	io.WriteString(w, s.name)
+	io.WriteString(w, "(")
+	for i, f := range sorted_fields {
+		io.WriteString(w, "const ")
+		if f.optional {
+			io.WriteString(w, "optional<")
+			io.WriteString(w, f.ty.Name())
+			io.WriteString(w, ">")
+		} else {
+			io.WriteString(w, f.ty.Name())
+		}
+		io.WriteString(w, "& ")
+		io.WriteString(w, sanitize(f.name))
+
+		// add default values if applicable
+		// avoid ambiguity with default constructor
+		if i != 0 {
+			if f.optional {
+				io.WriteString(w, " = optional<")
+				io.WriteString(w, f.ty.Name())
+				io.WriteString(w, ">()")
+			} else if f.ty.DefaultValue() != "" {
+				io.WriteString(w, " = ")
+				io.WriteString(w, f.ty.DefaultValue())
+			}
+		}
+
+		if i < len(sorted_fields)-1 {
+			io.WriteString(w, ", ")
+		}
+	}
+	io.WriteString(w, " )")
+	io.WriteString(w, ": ")
+
+	// field constructors
+	for i, f := range sorted_fields {
+		io.WriteString(w, sanitize(f.name))
+		io.WriteString(w, "(")
+		io.WriteString(w, sanitize(f.name))
+		io.WriteString(w, ")")
+		if i < len(sorted_fields)-1 {
+			io.WriteString(w, ", ")
+		}
+	}
+	io.WriteString(w, " {}")
+}
+
 func (s *cppStruct) WriteHeader(w io.Writer) {
 	if s.desc != "" {
 		io.WriteString(w, "// ")
@@ -269,6 +360,15 @@ func (s *cppStruct) WriteHeader(w io.Writer) {
 			io.WriteString(w, f.ty.DefaultValue())
 		}
 		io.WriteString(w, ";")
+	}
+	// Constructor
+	// Only declare constructors if it has fields
+	if len(s.fields) > 0 {
+		// Default constructor first, then params constructor
+		io.WriteString(w, "\n\n")
+		io.WriteString(w, s.name)
+		io.WriteString(w, "() = default;\n")
+		s.WriteParamsConstructor(w)
 	}
 
 	io.WriteString(w, "\n};\n\n")
