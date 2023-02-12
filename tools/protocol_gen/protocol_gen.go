@@ -681,9 +681,13 @@ func run() error {
 		return fmt.Errorf("Failed to load JSON file from '%v': %w", protocolURL, err)
 	}
 
-	hPath, cppPaths := outputPaths()
+	hPath, cppPaths, cMakeListsPath := outputPaths()
 	if err := emitFiles(&protocol, hPath, cppPaths, pkg.Version); err != nil {
 		return fmt.Errorf("Failed to emit files: %w", err)
+	}
+
+	if err := updateCMakePackageVersion(cMakeListsPath, pkg.Version); err != nil {
+		return fmt.Errorf("Failed to update CMakeLists.txt: %w", err)
 	}
 
 	if clangfmt, err := exec.LookPath("clang-format"); err == nil {
@@ -700,6 +704,23 @@ func run() error {
 	}
 
 	return nil
+}
+
+// Updates package version in CMakeLists.txt to current
+func updateCMakePackageVersion(cMakeListsPath string, version string) error {
+	text, err := os.ReadFile(cMakeListsPath)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(text), "\n")
+	for i, line := range lines {
+		if strings.Contains(line, "project(cppdap") {
+			lines[i] = "project(cppdap VERSION " + version + " LANGUAGES CXX C)"
+			break
+		}
+	}
+	output := strings.Join(lines, "\n")
+	return os.WriteFile(cMakeListsPath, []byte(output), 0644)
 }
 
 // emitFiles() opens each of the C++ files, generates the cppType definitions
@@ -790,8 +811,8 @@ func loadJSONFile(url string, obj interface{}) error {
 	return nil
 }
 
-// outputPaths() returns a path to the target C++ .h file and .cpp files
-func outputPaths() (string, cppTargetFilePaths) {
+// outputPaths() returns a path to the target C++ .h file and .cpp files, and the CMakeLists.txt
+func outputPaths() (string, cppTargetFilePaths, string) {
 	_, thisFile, _, _ := runtime.Caller(1)
 	thisDir := path.Dir(thisFile)
 	h := path.Join(thisDir, "../../include/dap/protocol.h")
@@ -801,5 +822,6 @@ func outputPaths() (string, cppTargetFilePaths) {
 		event:    path.Join(thisDir, "../../src/protocol_events.cpp"),
 		types:    path.Join(thisDir, "../../src/protocol_types.cpp"),
 	}
-	return h, cpp
+	CMakeLists := path.Join(thisDir, "../../CMakeLists.txt")
+	return h, cpp, CMakeLists
 }
