@@ -13,7 +13,7 @@
 # limitations under the License.
 
 cmake_policy(SET CMP0048 NEW)
-project(cppdap VERSION 1.58.0 LANGUAGES CXX C)
+project(cppdap VERSION 1.59.0 LANGUAGES CXX C)
 
 cmake_minimum_required(VERSION 3.13)
 
@@ -198,7 +198,7 @@ function(cppdap_set_target_options target)
 		"$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>"
     )
     cppdap_set_json_links(${target})
-    target_link_libraries(cppdap PRIVATE ${CPPDAP_OS_LIBS})
+    target_link_libraries(${target} PRIVATE ${CPPDAP_OS_LIBS})
 endfunction(cppdap_set_target_options)
 
 ###########################################################
@@ -334,7 +334,7 @@ if(CPPDAP_BUILD_EXAMPLES)
             FOLDER "Examples"
         )
         cppdap_set_target_options(${target})
-        target_link_libraries(${target} cppdap "${CPPDAP_OS_LIBS}")
+        target_link_libraries(${target} PRIVATE cppdap)
 
         if(CPPDAP_INSTALL_VSCODE_EXAMPLES)
             if(CMAKE_SYSTEM_NAME MATCHES "Windows")
