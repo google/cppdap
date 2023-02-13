@@ -487,8 +487,8 @@ func (r *root) getType(def *definition) (builtType cppType, err error) {
 		return ref.def.cppType, nil
 	}
 
+	// The DAP spec introduces ambiguities with its particular uses of OneOf, just set to object
 	if len(def.OneOf) != 0 {
-		args := make([]string, len(def.OneOf))
 		deps := make([]cppType, len(def.OneOf))
 		for i, oneOf := range def.OneOf {
 			if oneOf == nil {
@@ -499,10 +499,9 @@ func (r *root) getType(def *definition) (builtType cppType, err error) {
 				return nil, err
 			}
 			deps[i] = elTy
-			args[i] = elTy.Name()
 		}
 		return &cppBasicType{
-			name: "variant<" + strings.Join(args, ", ") + ">",
+			name: "object",
 			desc: def.Description,
 			deps: deps,
 		}, nil

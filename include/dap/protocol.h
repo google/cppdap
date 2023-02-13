@@ -1573,33 +1573,6 @@ struct RestartResponse : public Response {};
 
 DAP_DECLARE_STRUCT_TYPEINFO(RestartResponse);
 
-// Arguments for `launch` request. Additional attributes are implementation
-// specific.
-struct LaunchRequestArguments {
-  // Arbitrary data from the previous, restarted session.
-  // The data is sent as the `restart` attribute of the `terminated` event.
-  // The client should leave the data intact.
-  optional<variant<array<any>, boolean, integer, null, number, object, string>>
-      restart;
-  // If true, the launch request should launch the program without enabling
-  // debugging.
-  optional<boolean> noDebug;
-};
-
-DAP_DECLARE_STRUCT_TYPEINFO(LaunchRequestArguments);
-
-// Arguments for `attach` request. Additional attributes are implementation
-// specific.
-struct AttachRequestArguments {
-  // Arbitrary data from the previous, restarted session.
-  // The data is sent as the `restart` attribute of the `terminated` event.
-  // The client should leave the data intact.
-  optional<variant<array<any>, boolean, integer, null, number, object, string>>
-      restart;
-};
-
-DAP_DECLARE_STRUCT_TYPEINFO(AttachRequestArguments);
-
 // Restarts a debug session. Clients should only call this request if the
 // corresponding capability `supportsRestartRequest` is true. If the capability
 // is missing or has the value false, a typical client emulates `restart` by
@@ -1607,7 +1580,7 @@ DAP_DECLARE_STRUCT_TYPEINFO(AttachRequestArguments);
 struct RestartRequest : public Request {
   using Response = RestartResponse;
   // The latest version of the `launch` or `attach` configuration.
-  optional<variant<LaunchRequestArguments, AttachRequestArguments>> arguments;
+  optional<object> arguments;
 };
 
 DAP_DECLARE_STRUCT_TYPEINFO(RestartRequest);

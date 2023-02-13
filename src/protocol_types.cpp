@@ -202,15 +202,6 @@ DAP_IMPLEMENT_STRUCT_TYPEINFO(Module,
                               DAP_FIELD(symbolStatus, "symbolStatus"),
                               DAP_FIELD(version, "version"));
 
-DAP_IMPLEMENT_STRUCT_TYPEINFO(LaunchRequestArguments,
-                              "",
-                              DAP_FIELD(restart, "__restart"),
-                              DAP_FIELD(noDebug, "noDebug"));
-
-DAP_IMPLEMENT_STRUCT_TYPEINFO(AttachRequestArguments,
-                              "",
-                              DAP_FIELD(restart, "__restart"));
-
 DAP_IMPLEMENT_STRUCT_TYPEINFO(Scope,
                               "",
                               DAP_FIELD(column, "column"),
