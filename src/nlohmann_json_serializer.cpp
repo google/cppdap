@@ -181,6 +181,9 @@ bool NlohmannSerializer::serialize(const dap::string& v) {
 }
 
 bool NlohmannSerializer::serialize(const dap::object& v) {
+  if (!json->is_object()) {
+    *json = nlohmann::json::object();
+  }
   for (auto& it : v) {
     NlohmannSerializer s(&(*json)[it.first]);
     if (!s.serialize(it.second)) {
