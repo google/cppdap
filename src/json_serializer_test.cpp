@@ -60,7 +60,49 @@ DAP_STRUCT_TYPEINFO(JSONObjectNoFields, "json-object-no-fields");
 
 }  // namespace dap
 
-TEST(JSONSerializer, SerializeDeserialize) {
+class JSONSerializer : public testing::Test {
+ protected:
+  static dap::object GetSimpleObject() {
+    return dap::object({{"one", dap::integer(1)},
+                        {"two", dap::number(2)},
+                        {"three", dap::string("three")},
+                        {"four", dap::boolean(true)}});
+  }
+  void TEST_SIMPLE_OBJECT(const dap::object& obj) {
+    NESTED_TEST_FAILED = true;
+    auto ref_obj = GetSimpleObject();
+    ASSERT_EQ(obj.size(), ref_obj.size());
+    ASSERT_TRUE(obj.at("one").is<dap::integer>());
+    ASSERT_TRUE(obj.at("two").is<dap::number>());
+    ASSERT_TRUE(obj.at("three").is<dap::string>());
+    ASSERT_TRUE(obj.at("four").is<dap::boolean>());
+
+    ASSERT_EQ(ref_obj.at("one").get<dap::integer>(),
+              obj.at("one").get<dap::integer>());
+    ASSERT_EQ(ref_obj.at("two").get<dap::number>(),
+              obj.at("two").get<dap::number>());
+    ASSERT_EQ(ref_obj.at("three").get<dap::string>(),
+              obj.at("three").get<dap::string>());
+    ASSERT_EQ(ref_obj.at("four").get<dap::boolean>(),
+              obj.at("four").get<dap::boolean>());
+    NESTED_TEST_FAILED = false;
+  }
+  template <typename T>
+  void TEST_SERIALIZING_DESERIALIZING(const T& encoded, T& decoded) {
+    NESTED_TEST_FAILED = true;
+    dap::json::Serializer s;
+    ASSERT_TRUE(s.serialize(encoded));
+    dap::json::Deserializer d(s.dump());
+    ASSERT_TRUE(d.deserialize(&decoded));
+    NESTED_TEST_FAILED = false;
+  }
+  bool NESTED_TEST_FAILED = false;
+#define _ASSERT_PASS(NESTED_TEST) \
+  NESTED_TEST;                    \
+  ASSERT_FALSE(NESTED_TEST_FAILED);
+};
+
+TEST_F(JSONSerializer, SerializeDeserialize) {
   dap::JSONTestObject encoded;
   encoded.b = true;
   encoded.i = 32;
@@ -92,9 +134,71 @@ TEST(JSONSerializer, SerializeDeserialize) {
   ASSERT_EQ(encoded.inner.i, decoded.inner.i);
 }
 
-TEST(JSONSerializer, SerializeObjectNoFields) {
+TEST_F(JSONSerializer, SerializeObjectNoFields) {
   dap::JSONObjectNoFields obj;
   dap::json::Serializer s;
   ASSERT_TRUE(s.serialize(obj));
   ASSERT_EQ(s.dump(), "{}");
+}
+
+TEST_F(JSONSerializer, SerializeDeserializeObject) {
+  dap::object encoded = GetSimpleObject();
+  dap::object decoded;
+  _ASSERT_PASS(TEST_SERIALIZING_DESERIALIZING(encoded, decoded));
+  _ASSERT_PASS(TEST_SIMPLE_OBJECT(decoded));
+}
+
+TEST_F(JSONSerializer, SerializeDeserializeEmbeddedObject) {
+  dap::object encoded;
+  dap::object decoded;
+  // object nested inside object
+  dap::object encoded_embed_obj = GetSimpleObject();
+  dap::object decoded_embed_obj;
+
+  encoded["embed_obj"] = encoded_embed_obj;
+  _ASSERT_PASS(TEST_SERIALIZING_DESERIALIZING(encoded, decoded));
+  ASSERT_TRUE(decoded["embed_obj"].is<dap::object>());
+  decoded_embed_obj = decoded["embed_obj"].get<dap::object>();
+  _ASSERT_PASS(TEST_SIMPLE_OBJECT(decoded_embed_obj));
+}
+
+TEST_F(JSONSerializer, SerializeDeserializeEmbeddedIntArray) {
+  dap::object encoded;
+  dap::object decoded;
+  // array nested inside object
+  dap::array<dap::integer> encoded_embed_arr = {1, 2, 3, 4};
+  dap::array<dap::any> decoded_embed_arr;
+
+  encoded["embed_arr"] = encoded_embed_arr;
+
+  _ASSERT_PASS(TEST_SERIALIZING_DESERIALIZING(encoded, decoded));
+  // TODO: Deserializing array should infer basic member types
+  ASSERT_TRUE(decoded["embed_arr"].is<dap::array<dap::any>>());
+  decoded_embed_arr = decoded["embed_arr"].get<dap::array<dap::any>>();
+  ASSERT_EQ(encoded_embed_arr.size(), decoded_embed_arr.size());
+  for (int i = 0; i < decoded_embed_arr.size(); i++) {
+    ASSERT_TRUE(decoded_embed_arr[i].is<dap::integer>());
+    ASSERT_EQ(encoded_embed_arr[i], decoded_embed_arr[i].get<dap::integer>());
+  }
+}
+
+TEST_F(JSONSerializer, SerializeDeserializeEmbeddedObjectArray) {
+  dap::object encoded;
+  dap::object decoded;
+
+  dap::array<dap::object> encoded_embed_arr = {GetSimpleObject(),
+                                               GetSimpleObject()};
+  dap::array<dap::any> decoded_embed_arr;
+
+  encoded["embed_arr"] = encoded_embed_arr;
+
+  _ASSERT_PASS(TEST_SERIALIZING_DESERIALIZING(encoded, decoded));
+  // TODO: Deserializing array should infer basic member types
+  ASSERT_TRUE(decoded["embed_arr"].is<dap::array<dap::any>>());
+  decoded_embed_arr = decoded["embed_arr"].get<dap::array<dap::any>>();
+  ASSERT_EQ(encoded_embed_arr.size(), decoded_embed_arr.size());
+  for (int i = 0; i < decoded_embed_arr.size(); i++) {
+    ASSERT_TRUE(decoded_embed_arr[i].is<dap::object>());
+    _ASSERT_PASS(TEST_SIMPLE_OBJECT(decoded_embed_arr[i].get<dap::object>()));
+  }
 }
