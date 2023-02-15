@@ -58,6 +58,15 @@ struct JSONObjectNoFields {};
 
 DAP_STRUCT_TYPEINFO(JSONObjectNoFields, "json-object-no-fields");
 
+struct SimpleJSONTestObject {
+  boolean b;
+  integer i;
+};
+DAP_STRUCT_TYPEINFO(SimpleJSONTestObject,
+                    "simple-json-test-object",
+                    DAP_FIELD(b, "b"),
+                    DAP_FIELD(i, "i"));
+
 }  // namespace dap
 
 class JSONSerializer : public testing::Test {
@@ -154,12 +163,31 @@ TEST_F(JSONSerializer, SerializeDeserializeEmbeddedObject) {
   // object nested inside object
   dap::object encoded_embed_obj = GetSimpleObject();
   dap::object decoded_embed_obj;
-
   encoded["embed_obj"] = encoded_embed_obj;
   _ASSERT_PASS(TEST_SERIALIZING_DESERIALIZING(encoded, decoded));
   ASSERT_TRUE(decoded["embed_obj"].is<dap::object>());
   decoded_embed_obj = decoded["embed_obj"].get<dap::object>();
   _ASSERT_PASS(TEST_SIMPLE_OBJECT(decoded_embed_obj));
+}
+
+TEST_F(JSONSerializer, SerializeDeserializeEmbeddedStruct) {
+  dap::object encoded;
+  dap::object decoded;
+  // object nested inside object
+  dap::SimpleJSONTestObject encoded_embed_struct;
+  encoded_embed_struct.b = true;
+  encoded_embed_struct.i = 50;
+  encoded["embed_struct"] = encoded_embed_struct;
+
+  dap::object decoded_embed_obj;
+  _ASSERT_PASS(TEST_SERIALIZING_DESERIALIZING(encoded, decoded));
+  ASSERT_TRUE(decoded["embed_struct"].is<dap::object>());
+  decoded_embed_obj = decoded["embed_struct"].get<dap::object>();
+  ASSERT_TRUE(decoded_embed_obj.at("b").is<dap::boolean>());
+  ASSERT_TRUE(decoded_embed_obj.at("i").is<dap::integer>());
+
+  ASSERT_EQ(encoded_embed_struct.b, decoded_embed_obj["b"].get<dap::boolean>());
+  ASSERT_EQ(encoded_embed_struct.i, decoded_embed_obj["i"].get<dap::integer>());
 }
 
 TEST_F(JSONSerializer, SerializeDeserializeEmbeddedIntArray) {
