@@ -202,3 +202,24 @@ TEST_F(JSONSerializer, SerializeDeserializeEmbeddedObjectArray) {
     _ASSERT_PASS(TEST_SIMPLE_OBJECT(decoded_embed_arr[i].get<dap::object>()));
   }
 }
+
+TEST_F(JSONSerializer, DeserializeSerializeEmptyObject) {
+  auto empty_obj = "{}";
+  dap::object decoded;
+  dap::json::Deserializer d(empty_obj);
+  ASSERT_TRUE(d.deserialize(&decoded));
+  dap::json::Serializer s;
+  ASSERT_TRUE(s.serialize(decoded));
+  ASSERT_EQ(s.dump(), empty_obj);
+}
+
+TEST_F(JSONSerializer, SerializeDeserializeEmbeddedEmptyObject) {
+  dap::object encoded_empty_obj;
+  dap::object encoded = {{"empty_obj", encoded_empty_obj}};
+  dap::object decoded;
+
+  _ASSERT_PASS(TEST_SERIALIZING_DESERIALIZING(encoded, decoded));
+  ASSERT_TRUE(decoded["empty_obj"].is<dap::object>());
+  dap::object decoded_empty_obj = decoded["empty_obj"].get<dap::object>();
+  ASSERT_EQ(encoded_empty_obj.size(), decoded_empty_obj.size());
+}
