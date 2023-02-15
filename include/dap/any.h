@@ -49,11 +49,16 @@ class any {
   inline any& operator=(any&& rhs) noexcept;
   template <typename T>
   inline any& operator=(const T& val);
+  template <>
+  inline any& operator=(const std::nullptr_t& val);
 
   // get() returns the contained value of the type T.
   // If the any does not contain a value of type T, then get() will assert.
   template <typename T>
   inline T& get() const;
+
+  template <>
+  inline std::nullptr_t& get() const;
 
   // is() returns true iff the contained value is of type T.
   template <typename T>
@@ -147,8 +152,16 @@ any& any::operator=(const T& val) {
   return *this;
 }
 
+template <>
+any& any::operator=(const nullptr_t&) {
+  reset();
+  return *this;
+}
+
 template <typename T>
 T& any::get() const {
+  static_assert(!std::is_same<T, std::nullptr_t>(),
+                "Cannot get nullptr from 'any'.");
   assert(is<T>());
   return *reinterpret_cast<T*>(value);
 }
