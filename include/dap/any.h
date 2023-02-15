@@ -57,9 +57,6 @@ class any {
   template <typename T>
   inline T& get() const;
 
-  template <>
-  inline std::nullptr_t& get() const;
-
   // is() returns true iff the contained value is of type T.
   template <typename T>
   inline bool is() const;
