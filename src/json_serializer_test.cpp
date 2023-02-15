@@ -204,7 +204,7 @@ TEST_F(JSONSerializer, SerializeDeserializeEmbeddedIntArray) {
   ASSERT_TRUE(decoded["embed_arr"].is<dap::array<dap::any>>());
   decoded_embed_arr = decoded["embed_arr"].get<dap::array<dap::any>>();
   ASSERT_EQ(encoded_embed_arr.size(), decoded_embed_arr.size());
-  for (int i = 0; i < decoded_embed_arr.size(); i++) {
+  for (std::size_t i = 0; i < decoded_embed_arr.size(); i++) {
     ASSERT_TRUE(decoded_embed_arr[i].is<dap::integer>());
     ASSERT_EQ(encoded_embed_arr[i], decoded_embed_arr[i].get<dap::integer>());
   }
@@ -225,7 +225,7 @@ TEST_F(JSONSerializer, SerializeDeserializeEmbeddedObjectArray) {
   ASSERT_TRUE(decoded["embed_arr"].is<dap::array<dap::any>>());
   decoded_embed_arr = decoded["embed_arr"].get<dap::array<dap::any>>();
   ASSERT_EQ(encoded_embed_arr.size(), decoded_embed_arr.size());
-  for (int i = 0; i < decoded_embed_arr.size(); i++) {
+  for (std::size_t i = 0; i < decoded_embed_arr.size(); i++) {
     ASSERT_TRUE(decoded_embed_arr[i].is<dap::object>());
     _ASSERT_PASS(TEST_SIMPLE_OBJECT(decoded_embed_arr[i].get<dap::object>()));
   }

@@ -49,7 +49,7 @@ class any {
   inline any& operator=(any&& rhs) noexcept;
   template <typename T>
   inline any& operator=(const T& val);
-  template <>
+  template <typename = std::nullptr_t>
   inline any& operator=(const std::nullptr_t& val);
 
   // get() returns the contained value of the type T.
@@ -149,8 +149,8 @@ any& any::operator=(const T& val) {
   return *this;
 }
 
-template <>
-any& any::operator=(const nullptr_t&) {
+template <typename>
+any& any::operator=(const std::nullptr_t&) {
   reset();
   return *this;
 }
