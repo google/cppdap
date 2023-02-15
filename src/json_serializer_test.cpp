@@ -223,3 +223,16 @@ TEST_F(JSONSerializer, SerializeDeserializeEmbeddedEmptyObject) {
   dap::object decoded_empty_obj = decoded["empty_obj"].get<dap::object>();
   ASSERT_EQ(encoded_empty_obj.size(), decoded_empty_obj.size());
 }
+
+TEST_F(JSONSerializer, SerializeDeserializeObjectWithNulledField) {
+  auto thing = dap::any(dap::null());
+  dap::object encoded;
+  encoded["nulled_field"] = dap::null();
+  dap::json::Serializer s;
+  ASSERT_TRUE(s.serialize(encoded));
+  dap::object decoded;
+  auto dump = s.dump();
+  dap::json::Deserializer d(dump);
+  ASSERT_TRUE(d.deserialize(&decoded));
+  ASSERT_TRUE(encoded["nulled_field"].is<dap::null>());
+}
