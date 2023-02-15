@@ -23,6 +23,8 @@ namespace dap {
 
 template <typename T>
 struct TypeOf;
+class Deserializer;
+class Serializer;
 
 // any provides a type-safe container for values of any of dap type (boolean,
 // integer, number, array, variant, any, null, dap-structs).
@@ -58,6 +60,9 @@ class any {
   inline bool is() const;
 
  private:
+  friend class Deserializer;
+  friend class Serializer;
+
   static inline void* alignUp(void* val, size_t alignment);
   inline void alloc(size_t size, size_t align);
   inline void free();

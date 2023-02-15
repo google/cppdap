@@ -177,7 +177,17 @@ class Serializer {
 
   // deserialize() encodes the given string.
   inline bool serialize(const char* v);
+ protected:
+  static inline const TypeInfo* get_any_type(const any&);
+  static inline const void* get_any_val(const any&);
 };
+
+inline const TypeInfo* Serializer::get_any_type(const any& a){
+  return a.type;
+}
+const void* Serializer::get_any_val(const any& a) {
+  return a.value;
+}
 
 template <typename T, typename>
 bool Serializer::serialize(const T& object) {
