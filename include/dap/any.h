@@ -23,6 +23,8 @@ namespace dap {
 
 template <typename T>
 struct TypeOf;
+class Deserializer;
+class Serializer;
 
 // any provides a type-safe container for values of any of dap type (boolean,
 // integer, number, array, variant, any, null, dap-structs).
@@ -47,6 +49,7 @@ class any {
   inline any& operator=(any&& rhs) noexcept;
   template <typename T>
   inline any& operator=(const T& val);
+  inline any& operator=(const std::nullptr_t& val);
 
   // get() returns the contained value of the type T.
   // If the any does not contain a value of type T, then get() will assert.
@@ -58,6 +61,9 @@ class any {
   inline bool is() const;
 
  private:
+  friend class Deserializer;
+  friend class Serializer;
+
   static inline void* alignUp(void* val, size_t alignment);
   inline void alloc(size_t size, size_t align);
   inline void free();
@@ -142,8 +148,15 @@ any& any::operator=(const T& val) {
   return *this;
 }
 
+any& any::operator=(const std::nullptr_t&) {
+  reset();
+  return *this;
+}
+
 template <typename T>
 T& any::get() const {
+  static_assert(!std::is_same<T, std::nullptr_t>(),
+                "Cannot get nullptr from 'any'.");
   assert(is<T>());
   return *reinterpret_cast<T*>(value);
 }

@@ -43,6 +43,10 @@ template <typename T>
 struct TestValue {};
 
 template <>
+struct TestValue<dap::null> {
+  static const dap::null value;
+};
+template <>
 struct TestValue<dap::integer> {
   static const dap::integer value;
 };
@@ -67,6 +71,7 @@ struct TestValue<dap::AnyTestObject> {
   static const dap::AnyTestObject value;
 };
 
+const dap::null TestValue<dap::null>::value = nullptr;
 const dap::integer TestValue<dap::integer>::value = 20;
 const dap::boolean TestValue<dap::boolean>::value = true;
 const dap::number TestValue<dap::number>::value = 123.45;
@@ -152,7 +157,24 @@ TEST(Any, TestObject) {
 template <typename T>
 class AnyT : public ::testing::Test {
  protected:
-  void check(const dap::any& any, const T& expect) {
+  template <typename T0,
+            typename = std::enable_if<std::is_same<T, T0>::value &&
+                                      !std::is_same<T0, dap::null>::value>>
+  void check_val(const dap::any& any, const T0& expect) {
+    ASSERT_EQ(any.is<T>(), any.is<T0>());
+    ASSERT_EQ(any.get<T>(), expect);
+  }
+
+  // Special case for Null assignment, as we can assign nullptr_t to any but
+  // can't `get()` it
+  template <typename = dap::null>
+  void check_val(const dap::any& any, const dap::null& expect) {
+    ASSERT_EQ(nullptr, expect);
+    ASSERT_TRUE(any.is<dap::null>());
+  }
+
+  void check_type(const dap::any& any) {
+    ASSERT_EQ(any.is<dap::null>(), (std::is_same<T, dap::null>::value));
     ASSERT_EQ(any.is<dap::integer>(), (std::is_same<T, dap::integer>::value));
     ASSERT_EQ(any.is<dap::boolean>(), (std::is_same<T, dap::boolean>::value));
     ASSERT_EQ(any.is<dap::number>(), (std::is_same<T, dap::number>::value));
@@ -161,8 +183,6 @@ class AnyT : public ::testing::Test {
               (std::is_same<T, dap::array<dap::string>>::value));
     ASSERT_EQ(any.is<dap::AnyTestObject>(),
               (std::is_same<T, dap::AnyTestObject>::value));
-
-    ASSERT_EQ(any.get<T>(), expect);
   }
 };
 TYPED_TEST_SUITE_P(AnyT);
@@ -170,27 +190,31 @@ TYPED_TEST_SUITE_P(AnyT);
 TYPED_TEST_P(AnyT, CopyConstruct) {
   auto val = TestValue<TypeParam>::value;
   dap::any any(val);
-  this->check(any, val);
+  this->check_type(any);
+  this->check_val(any, val);
 }
 
 TYPED_TEST_P(AnyT, MoveConstruct) {
   auto val = TestValue<TypeParam>::value;
   dap::any any(std::move(val));
-  this->check(any, val);
+  this->check_type(any);
+  this->check_val(any, val);
 }
 
 TYPED_TEST_P(AnyT, Assign) {
   auto val = TestValue<TypeParam>::value;
   dap::any any;
   any = val;
-  this->check(any, val);
+  this->check_type(any);
+  this->check_val(any, val);
 }
 
 TYPED_TEST_P(AnyT, MoveAssign) {
   auto val = TestValue<TypeParam>::value;
   dap::any any;
   any = std::move(val);
-  this->check(any, val);
+  this->check_type(any);
+  this->check_val(any, val);
 }
 
 TYPED_TEST_P(AnyT, RepeatedAssign) {
@@ -199,7 +223,8 @@ TYPED_TEST_P(AnyT, RepeatedAssign) {
   dap::any any;
   any = str;
   any = val;
-  this->check(any, val);
+  this->check_type(any);
+  this->check_val(any, val);
 }
 
 TYPED_TEST_P(AnyT, RepeatedMoveAssign) {
@@ -208,7 +233,8 @@ TYPED_TEST_P(AnyT, RepeatedMoveAssign) {
   dap::any any;
   any = std::move(str);
   any = std::move(val);
-  this->check(any, val);
+  this->check_type(any);
+  this->check_val(any, val);
 }
 
 REGISTER_TYPED_TEST_SUITE_P(AnyT,
@@ -219,7 +245,8 @@ REGISTER_TYPED_TEST_SUITE_P(AnyT,
                             RepeatedAssign,
                             RepeatedMoveAssign);
 
-using AnyTypes = ::testing::Types<dap::integer,
+using AnyTypes = ::testing::Types<dap::null,
+                                  dap::integer,
                                   dap::boolean,
                                   dap::number,
                                   dap::string,

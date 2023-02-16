@@ -91,6 +91,18 @@ bool NlohmannDeserializer::deserialize(dap::any* v) const {
     *v = dap::integer(json->get<int64_t>());
   } else if (json->is_string()) {
     *v = json->get<std::string>();
+  } else if (json->is_object()) {
+    dap::object obj;
+    if (!deserialize(&obj)) {
+      return false;
+    }
+    *v = obj;
+  } else if (json->is_array()) {
+    dap::array<any> arr;
+    if (!deserialize(&arr)) {
+      return false;
+    }
+    *v = arr;
   } else if (json->is_null()) {
     *v = null();
   } else {
@@ -169,6 +181,9 @@ bool NlohmannSerializer::serialize(const dap::string& v) {
 }
 
 bool NlohmannSerializer::serialize(const dap::object& v) {
+  if (!json->is_object()) {
+    *json = nlohmann::json::object();
+  }
   for (auto& it : v) {
     NlohmannSerializer s(&(*json)[it.first]);
     if (!s.serialize(it.second)) {
@@ -187,11 +202,19 @@ bool NlohmannSerializer::serialize(const dap::any& v) {
     *json = (double)v.get<dap::number>();
   } else if (v.is<dap::string>()) {
     *json = v.get<dap::string>();
+  } else if (v.is<dap::object>()) {
+    // reachable if dap::object nested is inside other dap::object
+    return serialize(v.get<dap::object>());
   } else if (v.is<dap::null>()) {
   } else {
+    // reachable if array or custom serialized type is nested inside other
+    auto type = get_any_type(v);
+    auto value = get_any_val(v);
+    if (type && value) {
+      return type->serialize(this, value);
+    }
     return false;
   }
-
   return true;
 }
 
