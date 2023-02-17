@@ -22,6 +22,8 @@
 #include "dap/protocol.h"
 #include "dap/session.h"
 
+#include "fuzz.h"
+
 #include <condition_variable>
 #include <mutex>
 
@@ -51,53 +53,6 @@ class Event {
 };
 
 }  // namespace
-
-// List of requests that we handle for fuzzing.
-#define DAP_REQUEST_LIST()                                                     \
-  DAP_REQUEST(dap::AttachRequest, dap::AttachResponse)                         \
-  DAP_REQUEST(dap::BreakpointLocationsRequest,                                 \
-              dap::BreakpointLocationsResponse)                                \
-  DAP_REQUEST(dap::CancelRequest, dap::CancelResponse)                         \
-  DAP_REQUEST(dap::CompletionsRequest, dap::CompletionsResponse)               \
-  DAP_REQUEST(dap::ConfigurationDoneRequest, dap::ConfigurationDoneResponse)   \
-  DAP_REQUEST(dap::ContinueRequest, dap::ContinueResponse)                     \
-  DAP_REQUEST(dap::DataBreakpointInfoRequest, dap::DataBreakpointInfoResponse) \
-  DAP_REQUEST(dap::DisassembleRequest, dap::DisassembleResponse)               \
-  DAP_REQUEST(dap::DisconnectRequest, dap::DisconnectResponse)                 \
-  DAP_REQUEST(dap::EvaluateRequest, dap::EvaluateResponse)                     \
-  DAP_REQUEST(dap::ExceptionInfoRequest, dap::ExceptionInfoResponse)           \
-  DAP_REQUEST(dap::GotoRequest, dap::GotoResponse)                             \
-  DAP_REQUEST(dap::GotoTargetsRequest, dap::GotoTargetsResponse)               \
-  DAP_REQUEST(dap::InitializeRequest, dap::InitializeResponse)                 \
-  DAP_REQUEST(dap::LaunchRequest, dap::LaunchResponse)                         \
-  DAP_REQUEST(dap::LoadedSourcesRequest, dap::LoadedSourcesResponse)           \
-  DAP_REQUEST(dap::ModulesRequest, dap::ModulesResponse)                       \
-  DAP_REQUEST(dap::NextRequest, dap::NextResponse)                             \
-  DAP_REQUEST(dap::PauseRequest, dap::PauseResponse)                           \
-  DAP_REQUEST(dap::ReadMemoryRequest, dap::ReadMemoryResponse)                 \
-  DAP_REQUEST(dap::RestartFrameRequest, dap::RestartFrameResponse)             \
-  DAP_REQUEST(dap::RestartRequest, dap::RestartResponse)                       \
-  DAP_REQUEST(dap::ReverseContinueRequest, dap::ReverseContinueResponse)       \
-  DAP_REQUEST(dap::RunInTerminalRequest, dap::RunInTerminalResponse)           \
-  DAP_REQUEST(dap::ScopesRequest, dap::ScopesResponse)                         \
-  DAP_REQUEST(dap::SetBreakpointsRequest, dap::SetBreakpointsResponse)         \
-  DAP_REQUEST(dap::SetDataBreakpointsRequest, dap::SetDataBreakpointsResponse) \
-  DAP_REQUEST(dap::SetExceptionBreakpointsRequest,                             \
-              dap::SetExceptionBreakpointsResponse)                            \
-  DAP_REQUEST(dap::SetExpressionRequest, dap::SetExpressionResponse)           \
-  DAP_REQUEST(dap::SetFunctionBreakpointsRequest,                              \
-              dap::SetFunctionBreakpointsResponse)                             \
-  DAP_REQUEST(dap::SetVariableRequest, dap::SetVariableResponse)               \
-  DAP_REQUEST(dap::SourceRequest, dap::SourceResponse)                         \
-  DAP_REQUEST(dap::StackTraceRequest, dap::StackTraceResponse)                 \
-  DAP_REQUEST(dap::StepBackRequest, dap::StepBackResponse)                     \
-  DAP_REQUEST(dap::StepInRequest, dap::StepInResponse)                         \
-  DAP_REQUEST(dap::StepInTargetsRequest, dap::StepInTargetsResponse)           \
-  DAP_REQUEST(dap::StepOutRequest, dap::StepOutResponse)                       \
-  DAP_REQUEST(dap::TerminateRequest, dap::TerminateResponse)                   \
-  DAP_REQUEST(dap::TerminateThreadsRequest, dap::TerminateThreadsResponse)     \
-  DAP_REQUEST(dap::ThreadsRequest, dap::ThreadsResponse)                       \
-  DAP_REQUEST(dap::VariablesRequest, dap::VariablesResponse)
 
 // Fuzzing main function.
 // See http://llvm.org/docs/LibFuzzer.html for details.
