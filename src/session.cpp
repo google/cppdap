@@ -65,7 +65,7 @@ class Impl : public dap::Session {
   void connect(const std::shared_ptr<dap::Reader>& r,
                const std::shared_ptr<dap::Writer>& w) override {
     if (isBound.exchange(true)) {
-      handlers.error("Session is already bound!");
+      handlers.error("Session::connect called twice");
       return;
     }
 
@@ -73,12 +73,20 @@ class Impl : public dap::Session {
     writer = dap::ContentWriter(w);
   }
 
-  void startProcessingMessages() override {
-    recvThread = std::thread([this] {
+  void startProcessingMessages(
+      const ClosedHandler& onClose /* = {} */) override {
+    if (isProcessingMessages.exchange(true)) {
+      handlers.error("Session::startProcessingMessages() called twice");
+      return;
+    }
+    recvThread = std::thread([this, onClose] {
       while (reader.isOpen()) {
         if (auto payload = getPayload()) {
           inbox.put(std::move(payload));
         }
+      }
+      if (onClose) {
+        onClose();
       }
     });
 
@@ -398,17 +406,17 @@ class Impl : public dap::Session {
     // "body" is an optional field for some events, such as "Terminated Event".
     bool body_ok = true;
     d->field("body", [&](dap::Deserializer* d) {
-        if (!typeinfo->deserialize(d, data)) {
-            body_ok = false;
-        }
-        return true;
+      if (!typeinfo->deserialize(d, data)) {
+        body_ok = false;
+      }
+      return true;
     });
 
     if (!body_ok) {
-        handlers.error("Failed to deserialize event '%s' body", event.c_str());
-        typeinfo->destruct(data);
-        delete[] data;
-        return {};
+      handlers.error("Failed to deserialize event '%s' body", event.c_str());
+      typeinfo->destruct(data);
+      delete[] data;
+      return {};
     }
 
     return [=] {
@@ -471,6 +479,7 @@ class Impl : public dap::Session {
   }
 
   std::atomic<bool> isBound = {false};
+  std::atomic<bool> isProcessingMessages = {false};
   dap::ContentReader reader;
   dap::ContentWriter writer;
 

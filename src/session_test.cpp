@@ -579,3 +579,47 @@ TEST_F(SessionTest, Concurrency) {
   client.reset();
   server.reset();
 }
+
+TEST_F(SessionTest, OnClientClosed) {
+  std::mutex mutex;
+  std::condition_variable cv;
+  bool clientClosed = false;
+
+  auto client2server = dap::pipe();
+  auto server2client = dap::pipe();
+
+  client->bind(server2client, client2server);
+  server->bind(client2server, server2client, [&] {
+    std::unique_lock<std::mutex> lock(mutex);
+    clientClosed = true;
+    cv.notify_all();
+  });
+
+  client.reset();
+
+  // Wait for the client closed handler to be called.
+  std::unique_lock<std::mutex> lock(mutex);
+  cv.wait(lock, [&] { return static_cast<bool>(clientClosed); });
+}
+
+TEST_F(SessionTest, OnServerClosed) {
+  std::mutex mutex;
+  std::condition_variable cv;
+  bool serverClosed = false;
+
+  auto client2server = dap::pipe();
+  auto server2client = dap::pipe();
+
+  client->bind(server2client, client2server, [&] {
+    std::unique_lock<std::mutex> lock(mutex);
+    serverClosed = true;
+    cv.notify_all();
+  });
+  server->bind(client2server, server2client);
+
+  server.reset();
+
+  // Wait for the client closed handler to be called.
+  std::unique_lock<std::mutex> lock(mutex);
+  cv.wait(lock, [&] { return static_cast<bool>(serverClosed); });
+}
