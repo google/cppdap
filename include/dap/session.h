@@ -137,6 +137,10 @@ class Session {
   // errors.
   using ErrorHandler = std::function<void(const char*)>;
 
+  // ClosedHandler is the type of callback function used to signal that a
+  // connected endpoint has closed.
+  using ClosedHandler = std::function<void()>;
+
   // create() constructs and returns a new Session.
   static std::unique_ptr<Session> create();
 
@@ -205,9 +209,13 @@ class Session {
 
   // bind() connects this Session to an endpoint using connect(), and then
   // starts processing incoming messages with startProcessingMessages().
-  inline void bind(const std::shared_ptr<Reader>&,
-                   const std::shared_ptr<Writer>&);
-  inline void bind(const std::shared_ptr<ReaderWriter>&);
+  // onClose is the optional callback which will be called when the session
+  // endpoint has been closed.
+  inline void bind(const std::shared_ptr<Reader>& reader,
+                   const std::shared_ptr<Writer>& writer,
+                   const ClosedHandler& onClose);
+  inline void bind(const std::shared_ptr<ReaderWriter>& readerWriter,
+                   const ClosedHandler& onClose);
 
   //////////////////////////////////////////////////////////////////////////////
   // Note:
@@ -227,9 +235,11 @@ class Session {
 
   // startProcessingMessages() starts a new thread to receive and dispatch
   // incoming messages.
+  // onClose is the optional callback which will be called when the session
+  // endpoint has been closed.
   // Note: This method is used for explicit control over message handling.
   //       Most users will use bind() instead of calling this method directly.
-  virtual void startProcessingMessages() = 0;
+  virtual void startProcessingMessages(const ClosedHandler& onClose = {}) = 0;
 
   // getPayload() blocks until the next incoming message is received, returning
   // the payload or an empty function if the connection was lost. The returned
@@ -423,13 +433,15 @@ void Session::connect(const std::shared_ptr<ReaderWriter>& rw) {
 }
 
 void Session::bind(const std::shared_ptr<dap::Reader>& r,
-                   const std::shared_ptr<dap::Writer>& w) {
+                   const std::shared_ptr<dap::Writer>& w,
+                   const ClosedHandler& onClose = {}) {
   connect(r, w);
-  startProcessingMessages();
+  startProcessingMessages(onClose);
 }
 
-void Session::bind(const std::shared_ptr<ReaderWriter>& rw) {
-  bind(rw, rw);
+void Session::bind(const std::shared_ptr<ReaderWriter>& rw,
+                   const ClosedHandler& onClose = {}) {
+  bind(rw, rw, onClose);
 }
 
 }  // namespace dap
