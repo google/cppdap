@@ -94,6 +94,19 @@ namespace dap {
 
 	cppEpilogue = `}  // namespace dap
 `
+	fuzzerHeaderPrologue = commonPrologue + `
+#ifndef dap_fuzzer_h
+#define dap_fuzzer_h
+
+#include "dap/protocol.h"
+
+#define DAP_REQUEST_LIST()                                                     \
+`
+
+	fuzzerHeaderEpilogue = `
+
+#endif  // dap_fuzzer_h
+`
 )
 
 func main() {
@@ -187,6 +200,7 @@ type cppField struct {
 	ty       cppType
 	name     string
 	optional bool
+	enumVals []string
 }
 
 // cppType is an interface for all C++ generated types
@@ -207,6 +221,10 @@ type cppType interface {
 	WriteHeader(w io.Writer)
 	// WriteHeader() writes the type definition to the given .cpp file writer
 	WriteCPP(w io.Writer)
+	// WriteFuzzerH() writes the fuzzer DAP_REQUEST() macro to the given .h writer
+	WriteFuzzerH(w io.Writer)
+	// GetFuzzerNames() returns a list of the protocol name, the fields, and field enum values for this type
+	GetFuzzerNames() []string
 }
 
 // cppStruct implements the cppType interface, describing a C++ structure
@@ -295,11 +313,54 @@ func (s *cppStruct) WriteCPP(w io.Writer) {
 	io.WriteString(w, ");\n\n")
 }
 
+func (s *cppStruct) WriteFuzzerH(header io.Writer) {
+	// only write fuzzer macros for Request types
+	if s.base != "Request" {
+		return
+	}
+
+	io.WriteString(header, "DAP_REQUEST(dap::")
+	io.WriteString(header, s.name)
+	io.WriteString(header, ", dap::")
+
+	responseType := ""
+
+	// check typedefs for response
+	for _, t := range s.typedefs {
+		if t.from == "Response" {
+			responseType = t.to.Name()
+		}
+	}
+
+	// if no response, throw an error
+	if responseType == "" {
+		panic("No corresponding response type found for " + s.name)
+	}
+
+	io.WriteString(header, responseType)
+	io.WriteString(header, ") \\\n")
+}
+
+func (s *cppStruct) GetFuzzerNames() []string {
+	ret := []string{}
+	if s.protoname != "" {
+		ret = append(ret, s.protoname)
+	}
+	for _, f := range s.fields {
+		ret = append(ret, f.name)
+		if (f.enumVals != nil) && (len(f.enumVals) > 0) {
+			ret = append(ret, f.enumVals...)
+		}
+	}
+	return ret
+}
+
 // cppStruct implements the cppType interface, describing a C++ typedef
 type cppTypedef struct {
-	from string  // Name of the typedef
-	to   cppType // Target of the typedef
-	desc string  // Description
+	from     string   // Name of the typedef
+	to       cppType  // Target of the typedef
+	desc     string   // Description
+	enumVals []string // Enum values
 }
 
 func (ty *cppTypedef) Name() string            { return ty.from }
@@ -320,7 +381,11 @@ func (ty *cppTypedef) WriteHeader(w io.Writer) {
 	io.WriteString(w, ty.to.Name())
 	io.WriteString(w, ";\n\n")
 }
-func (ty *cppTypedef) WriteCPP(w io.Writer) {}
+func (ty *cppTypedef) WriteCPP(w io.Writer)     {}
+func (ty *cppTypedef) WriteFuzzerH(w io.Writer) {}
+func (s *cppTypedef) GetFuzzerNames() []string {
+	return s.enumVals
+}
 
 // cppStruct implements the cppType interface, describing a basic C++ type
 type cppBasicType struct {
@@ -330,13 +395,44 @@ type cppBasicType struct {
 	defaultValue string    // Default value for fields of this type
 }
 
-func (ty *cppBasicType) Name() string            { return ty.name }
-func (ty *cppBasicType) Dependencies() []cppType { return ty.deps }
-func (ty *cppBasicType) File() cppTargetFile     { return types }
-func (ty *cppBasicType) Description() string     { return ty.desc }
-func (ty *cppBasicType) DefaultValue() string    { return ty.defaultValue }
-func (ty *cppBasicType) WriteHeader(w io.Writer) {}
-func (ty *cppBasicType) WriteCPP(w io.Writer)    {}
+func (ty *cppBasicType) Name() string             { return ty.name }
+func (ty *cppBasicType) Dependencies() []cppType  { return ty.deps }
+func (ty *cppBasicType) File() cppTargetFile      { return types }
+func (ty *cppBasicType) Description() string      { return ty.desc }
+func (ty *cppBasicType) DefaultValue() string     { return ty.defaultValue }
+func (ty *cppBasicType) WriteHeader(w io.Writer)  {}
+func (ty *cppBasicType) WriteCPP(w io.Writer)     {}
+func (ty *cppBasicType) WriteFuzzerH(w io.Writer) {}
+func (ty *cppBasicType) GetFuzzerNames() []string {
+	return []string{}
+}
+
+func stringify(s string) string {
+	return "\"" + s + "\""
+}
+
+func stringifyArray(s []string) []string {
+	ret := []string{}
+	if s == nil {
+		return ret
+	}
+	for _, v := range s {
+		ret = append(ret, stringify(v))
+	}
+	return ret
+}
+
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
+}
 
 // sanitize() returns the given identifier transformed into a legal C++ identifier
 func sanitize(s string) string {
@@ -455,11 +551,19 @@ func (r *root) buildRootStruct(ty *cppStruct, def *definition) error {
 
 		optional := !required[propName]
 		desc := appendEnumDetails(property.Description, property.OpenEnum, property.ClosedEnum)
+		enumVals := []string{}
+		if len(property.ClosedEnum) > 0 {
+			enumVals = append(enumVals, property.ClosedEnum...)
+		}
+		if len(property.OpenEnum) > 0 {
+			enumVals = append(enumVals, property.OpenEnum...)
+		}
 		ty.fields = append(ty.fields, cppField{
 			desc:     desc,
 			ty:       propTy,
 			name:     propName,
 			optional: optional,
+			enumVals: enumVals,
 		})
 
 		ty.deps = append(ty.deps, propTy)
@@ -632,6 +736,16 @@ func (r *root) buildTypes() ([]cppType, error) {
 			from: entry.name,
 			to:   enumTy,
 			desc: enumTy.Description(),
+			enumVals: func() []string {
+				ret := []string{}
+				if len(entry.def.ClosedEnum) > 0 {
+					ret = entry.def.ClosedEnum
+				}
+				if len(entry.def.OpenEnum) > 0 {
+					ret = append(ret, entry.def.OpenEnum...)
+				}
+				return ret
+			}(),
 		}
 		entry.def.cppType = ty
 		out = append(out, entry.def.cppType)
@@ -680,8 +794,8 @@ func run() error {
 		return fmt.Errorf("Failed to load JSON file from '%v': %w", protocolURL, err)
 	}
 
-	hPath, cppPaths, cMakeListsPath := outputPaths()
-	if err := emitFiles(&protocol, hPath, cppPaths, pkg.Version); err != nil {
+	hPath, cppPaths, cMakeListsPath, fuzzerhPath, fuzzerDictPath := outputPaths()
+	if err := emitFiles(&protocol, hPath, cppPaths, fuzzerhPath, fuzzerDictPath, pkg.Version); err != nil {
 		return fmt.Errorf("Failed to emit files: %w", err)
 	}
 
@@ -697,6 +811,9 @@ func run() error {
 			if out, err := exec.Command(clangfmt, "-i", p).CombinedOutput(); err != nil {
 				return fmt.Errorf("Failed to run clang-format on '%v':\n%v\n%w", p, string(out), err)
 			}
+		}
+		if out, err := exec.Command(clangfmt, "-i", fuzzerhPath).CombinedOutput(); err != nil {
+			return fmt.Errorf("Failed to run clang-format on '%v':\n%v\n%w", fuzzerhPath, string(out), err)
 		}
 	} else {
 		fmt.Printf("clang-format not found on PATH. Please format before committing.")
@@ -725,7 +842,7 @@ func updateCMakePackageVersion(cMakeListsPath string, version string) error {
 // emitFiles() opens each of the C++ files, generates the cppType definitions
 // from the schema root, then writes the types to the C++ files in dependency
 // order.
-func emitFiles(r *root, hPath string, cppPaths map[cppTargetFile]string, version string) error {
+func emitFiles(r *root, hPath string, cppPaths map[cppTargetFile]string, fuzzerhPath string, fuzzerDictPath string, version string) error {
 	h, err := os.Create(hPath)
 	if err != nil {
 		return err
@@ -741,10 +858,19 @@ func emitFiles(r *root, hPath string, cppPaths map[cppTargetFile]string, version
 		defer f.Close()
 	}
 
+	fuzzer_h, err := os.Create(fuzzerhPath)
+	if err != nil {
+		return err
+	}
+	fuzzerDict, err := os.Create(fuzzerDictPath)
+	if err != nil {
+		return err
+	}
 	h.WriteString(strings.ReplaceAll(headerPrologue, versionTag, version))
 	for _, f := range cppFiles {
 		f.WriteString(strings.ReplaceAll(cppPrologue, versionTag, version))
 	}
+	fuzzer_h.WriteString(strings.ReplaceAll(fuzzerHeaderPrologue, versionTag, version))
 
 	types, err := r.buildTypes()
 	if err != nil {
@@ -757,6 +883,17 @@ func emitFiles(r *root, hPath string, cppPaths map[cppTargetFile]string, version
 	}
 
 	seen := map[string]bool{}
+	// Prepopulate the names list with the types that are not generated from the schema.
+	ProtocolMessageFuzzerNames := []string{"seq", "type", "request", "response", "event"}
+	RequestMessageFuzzerNames := []string{"request", "type", "command", "arguments"}
+	EventMessageFuzzerNames := []string{"event", "type", "event", "body"}
+	ResponseMessageFuzzerNames := []string{"response", "type", "request_seq", "success", "command", "message", "body",
+		"cancelled", "notStopped"}
+	fuzzerNames := []string{}
+	fuzzerNames = append(fuzzerNames, ProtocolMessageFuzzerNames...)
+	fuzzerNames = append(fuzzerNames, RequestMessageFuzzerNames...)
+	fuzzerNames = append(fuzzerNames, EventMessageFuzzerNames...)
+	fuzzerNames = append(fuzzerNames, ResponseMessageFuzzerNames...)
 	var emit func(cppType) error
 	emit = func(ty cppType) error {
 		name := ty.Name()
@@ -771,6 +908,11 @@ func emitFiles(r *root, hPath string, cppPaths map[cppTargetFile]string, version
 		}
 		ty.WriteHeader(h)
 		ty.WriteCPP(cppFiles[ty.File()])
+		ty.WriteFuzzerH(fuzzer_h)
+
+		// collect protoname, field names, and field enum values for dictionary
+		fuzzerNames = append(fuzzerNames, ty.GetFuzzerNames()...)
+
 		return nil
 	}
 
@@ -785,10 +927,22 @@ func emitFiles(r *root, hPath string, cppPaths map[cppTargetFile]string, version
 		}
 	}
 
+	// sort names alphabetically
+	sort.Strings(fuzzerNames)
+	// remove duplicates
+	fuzzerNames = removeDuplicateStr(fuzzerNames)
+	// append "" to each name
+	fuzzerNames = stringifyArray(fuzzerNames)
+	dict := strings.Join(fuzzerNames, "\n")
+	if _, err := io.WriteString(fuzzerDict, dict); err != nil {
+		return err
+	}
+
 	h.WriteString(headerEpilogue)
 	for _, f := range cppFiles {
 		f.WriteString(cppEpilogue)
 	}
+	fuzzer_h.WriteString(fuzzerHeaderEpilogue)
 
 	return nil
 }
@@ -811,7 +965,7 @@ func loadJSONFile(url string, obj interface{}) error {
 }
 
 // outputPaths() returns a path to the target C++ .h file and .cpp files, and the CMakeLists.txt
-func outputPaths() (string, cppTargetFilePaths, string) {
+func outputPaths() (string, cppTargetFilePaths, string, string, string) {
 	_, thisFile, _, _ := runtime.Caller(1)
 	thisDir := path.Dir(thisFile)
 	h := path.Join(thisDir, "../../include/dap/protocol.h")
@@ -822,5 +976,7 @@ func outputPaths() (string, cppTargetFilePaths, string) {
 		types:    path.Join(thisDir, "../../src/protocol_types.cpp"),
 	}
 	CMakeLists := path.Join(thisDir, "../../CMakeLists.txt")
-	return h, cpp, CMakeLists
+	fuzzer_h := path.Join(thisDir, "../../fuzz/fuzz.h")
+	fuzzer_dict := path.Join(thisDir, "../../fuzz/dictionary.txt")
+	return h, cpp, CMakeLists, fuzzer_h, fuzzer_dict
 }
