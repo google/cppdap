@@ -136,7 +136,7 @@ endif()
 
 function(cppdap_set_json_links target)
     if (CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
-        target_link_libraries(${target} PRIVATE nlohmann_json nlohmann_json::nlohmann_json)
+        target_link_libraries(${target} PRIVATE "$<BUILD_INTERFACE:nlohmann_json::nlohmann_json>")
     elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
         target_link_libraries(${target} PRIVATE rapidjson)
     else()
@@ -164,7 +164,7 @@ function(cppdap_set_target_options target)
 
     # Add define for JSON library in use
     target_compile_definitions(${target}
-        PUBLIC "CPPDAP_JSON_${CPPDAP_JSON_LIBRARY_UPPER}=1"
+        PRIVATE "CPPDAP_JSON_${CPPDAP_JSON_LIBRARY_UPPER}=1"
     )
 
     # Treat all warnings as errors
