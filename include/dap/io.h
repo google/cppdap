@@ -16,6 +16,7 @@
 #define dap_io_h
 
 #include <stddef.h>  // size_t
+#include <stdio.h>   // FILE
 #include <memory>    // std::unique_ptr
 #include <utility>   // std::pair
 
