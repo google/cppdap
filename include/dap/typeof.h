@@ -161,11 +161,11 @@ M member_type(M T::*);
 // DAP_IMPLEMENT_STRUCT_TYPEINFO_EXT().
 // You probably do not want to use this directly.
 #define DAP_IMPLEMENT_STRUCT_FIELD_SERIALIZATION(STRUCT, NAME, ...)           \
-  bool TypeOf<STRUCT>::deserializeFields(const Deserializer* d, void* obj) {  \
+  bool TypeOf<STRUCT>::deserializeFields(const Deserializer* fd, void* obj) { \
     using StructTy = STRUCT;                                                  \
     (void)sizeof(StructTy); /* avoid unused 'using' warning */                \
     for (auto field : std::initializer_list<Field>{__VA_ARGS__}) {            \
-      if (!d->field(field.name, [&](Deserializer* d) {                        \
+      if (!fd->field(field.name, [&](Deserializer* d) {                       \
             auto ptr = reinterpret_cast<uint8_t*>(obj) + field.offset;        \
             return field.type->deserialize(d, ptr);                           \
           })) {                                                               \
@@ -174,11 +174,11 @@ M member_type(M T::*);
     }                                                                         \
     return true;                                                              \
   }                                                                           \
-  bool TypeOf<STRUCT>::serializeFields(FieldSerializer* s, const void* obj) { \
+  bool TypeOf<STRUCT>::serializeFields(FieldSerializer* fs, const void* obj) {\
     using StructTy = STRUCT;                                                  \
     (void)sizeof(StructTy); /* avoid unused 'using' warning */                \
     for (auto field : std::initializer_list<Field>{__VA_ARGS__}) {            \
-      if (!s->field(field.name, [&](Serializer* s) {                          \
+      if (!fs->field(field.name, [&](Serializer* s) {                         \
             auto ptr = reinterpret_cast<const uint8_t*>(obj) + field.offset;  \
             return field.type->serialize(s, ptr);                             \
           })) {                                                               \
