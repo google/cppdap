@@ -143,6 +143,9 @@ any& any::operator=(const T& val) {
     alloc(type->size(), type->alignment());
     type->copyConstruct(value, &val);
   } else {
+#ifdef __clang_analyzer__
+    assert(value != nullptr);
+#endif
     *reinterpret_cast<T*>(value) = val;
   }
   return *this;
