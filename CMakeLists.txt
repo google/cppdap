@@ -40,6 +40,7 @@ option_if_not_defined(CPPDAP_TSAN "Build dap with thread sanitizer" OFF)
 option_if_not_defined(CPPDAP_INSTALL_VSCODE_EXAMPLES "Build and install dap examples into vscode extensions directory" OFF)
 option_if_not_defined(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE "Use nlohmann_json with find_package() instead of building internal submodule" OFF)
 option_if_not_defined(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE "Use RapidJSON with find_package()" OFF)
+option_if_not_defined(CPPDAP_USE_EXTERNAL_JSONCPP_PACKAGE "Use JsonCpp with find_package()" OFF)
 
 ###########################################################
 # Directories
@@ -71,14 +72,20 @@ endif(CPPDAP_BUILD_TESTS)
 # JSON library
 ###########################################################
 
-if(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE AND CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
-    message(FATAL_ERROR "Don't set both CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE and CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE")
+if((CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE AND CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE) OR
+    (CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE AND CPPDAP_USE_EXTERNAL_JSONCPP_PACKAGE) OR
+    (CPPDAP_USE_EXTERNAL_JSONCPP_PACKAGE AND CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE))
+    message(FATAL_ERROR "At most one of CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE, \
+CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE, and CPPDAP_USE_EXTERNAL_JSONCPP_PACKAGE can be set.")
 elseif(CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE)
     find_package(nlohmann_json CONFIG REQUIRED)
     set(CPPDAP_JSON_LIBRARY "nlohmann")
 elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
     find_package(RapidJSON CONFIG REQUIRED)
     set(CPPDAP_JSON_LIBRARY "rapid")
+elseif(CPPDAP_USE_EXTERNAL_JSONCPP_PACKAGE)
+    find_package(jsoncpp CONFIG REQUIRED)
+    set(CPPDAP_JSON_LIBRARY "jsoncpp")
 endif()
 
 if(NOT DEFINED CPPDAP_JSON_LIBRARY)
@@ -91,6 +98,8 @@ if(NOT DEFINED CPPDAP_JSON_LIBRARY)
         set(CPPDAP_JSON_LIBRARY "nlohmann")
     elseif(EXISTS "${CPPDAP_JSON_DIR}/include/rapidjson")
         set(CPPDAP_JSON_LIBRARY "rapid")
+    elseif(EXISTS "${CPPDAP_JSON_DIR}/include/json")
+        set(CPPDAP_JSON_LIBRARY "jsoncpp")
     else()
         message(FATAL_ERROR "Could not determine JSON library from ${CPPDAP_JSON_DIR}")
     endif()
@@ -139,6 +148,8 @@ function(cppdap_set_json_links target)
         target_link_libraries(${target} PRIVATE "$<BUILD_INTERFACE:nlohmann_json::nlohmann_json>")
     elseif(CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE)
         target_link_libraries(${target} PRIVATE rapidjson)
+    elseif(CPPDAP_USE_EXTERNAL_JSONCPP_PACKAGE)
+        target_link_libraries(${target} PRIVATE JsonCpp::JsonCpp)
     else()
         target_include_directories(${target} PRIVATE "${CPPDAP_JSON_DIR}/include/")
     endif()    

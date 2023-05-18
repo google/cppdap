@@ -19,6 +19,8 @@
 #include "nlohmann_json_serializer.h"
 #elif defined(CPPDAP_JSON_RAPID)
 #include "rapid_json_serializer.h"
+#elif defined(CPPDAP_JSON_JSONCPP)
+#include "jsoncpp_json_serializer.h"
 #else
 #error "Unrecognised cppdap JSON library"
 #endif
@@ -32,6 +34,9 @@ using Serializer = NlohmannSerializer;
 #elif defined(CPPDAP_JSON_RAPID)
 using Deserializer = RapidDeserializer;
 using Serializer = RapidSerializer;
+#elif defined(CPPDAP_JSON_JSONCPP)
+using Deserializer = JsonCppDeserializer;
+using Serializer = JsonCppSerializer;
 #else
 #error "Unrecognised cppdap JSON library"
 #endif
