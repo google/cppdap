@@ -19,6 +19,8 @@ cd <path-to-cppdap>
 git submodule update --init
 ```
 
+Alternatively, `cppdap` can use the [`RapidJSON` library](https://rapidjson.org/) or the [`JsonCpp` library](https://github.com/open-source-parsers/jsoncpp) for JSON serialization. Use the `CPPDAP_USE_EXTERNAL_NLOHMANN_JSON_PACKAGE`, `CPPDAP_USE_EXTERNAL_RAPIDJSON_PACKAGE`, and `CPPDAP_USE_EXTERNAL_JSONCPP_PACKAGE` CMake cache variables to select which library to use.
+
 ## Building
 
 ### Linux and macOS
