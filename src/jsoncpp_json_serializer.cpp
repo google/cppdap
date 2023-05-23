@@ -18,6 +18,7 @@
 
 #include <json/json.h>
 #include <cstdlib>
+#include <memory>
 
 namespace dap {
 namespace json {
