@@ -179,7 +179,7 @@ bool JsonCppSerializer::serialize(dap::boolean v) {
 }
 
 bool JsonCppSerializer::serialize(dap::integer v) {
-  *json = (int64_t)v;
+  *json = (Json::LargestInt)v;
   return true;
 }
 
@@ -210,7 +210,7 @@ bool JsonCppSerializer::serialize(const dap::any& v) {
   if (v.is<dap::boolean>()) {
     *json = (bool)v.get<dap::boolean>();
   } else if (v.is<dap::integer>()) {
-    *json = (int64_t)v.get<dap::integer>();
+    *json = (Json::LargestInt)v.get<dap::integer>();
   } else if (v.is<dap::number>()) {
     *json = (double)v.get<dap::number>();
   } else if (v.is<dap::string>()) {
