@@ -75,7 +75,7 @@ class optional {
   inline T& operator*();
 
  private:
-  T val = {};
+  T val{};
   bool set = false;
 };
 
