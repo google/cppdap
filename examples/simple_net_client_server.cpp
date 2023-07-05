@@ -30,6 +30,11 @@ int main(int, char*[]) {
   auto onClientConnected =
       [&](const std::shared_ptr<dap::ReaderWriter>& socket) {
         auto session = dap::Session::create();
+
+        // Set the session to close on invalid data. This ensures that data received over the network
+        // receives a baseline level of validation before being processed.
+        session->setOnInvalidData(dap::kClose);
+
         session->bind(socket);
 
         // The Initialize request is the first message sent from the client and
