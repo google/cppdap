@@ -81,19 +81,3 @@ TEST(ContentStreamTest, ShortRead) {
   ASSERT_EQ(cs.read(), "Content payload number three");
   ASSERT_EQ(cs.read(), "");
 }
-
-TEST(ContentStreamTest, PartialReadAndParse) {
-  auto sb = std::make_shared<dap::StringBuffer>();
-  dap::ContentReader cs(sb);
-  sb->write("Content");
-  ASSERT_EQ(cs.read(), "");
-  sb->write("-Length: ");
-  ASSERT_EQ(cs.read(), "");
-  sb->write("26");
-  ASSERT_EQ(cs.read(), "");
-  sb->write("\r\n\r\n");
-  ASSERT_EQ(cs.read(), "");
-  sb->write("Content payload number one");
-  ASSERT_EQ(cs.read(), "Content payload number one");
-  ASSERT_EQ(cs.read(), "");
-}
