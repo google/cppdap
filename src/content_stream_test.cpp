@@ -94,3 +94,33 @@ TEST(ContentStreamTest, PartialReadAndParse) {
   ASSERT_EQ(cs.read(), "Content payload number one");
   ASSERT_EQ(cs.read(), "");
 }
+
+TEST(ContentStreamTest, HttpRequest) {
+  const char* const part1 =
+      "POST / HTTP/1.1\r\n"
+      "Host: localhost:8001\r\n"
+      "Connection: keep-alive\r\n"
+      "Content-Length: 99\r\n";
+  const char* const part2 =
+      "Pragma: no-cache\r\n"
+      "Cache-Control: no-cache\r\n"
+      "Content-Type: text/plain;charset=UTF-8\r\n"
+      "Accept: */*\r\n"
+      "Origin: null\r\n"
+      "Sec-Fetch-Site: cross-site\r\n"
+      "Sec-Fetch-Mode: cors\r\n"
+      "Sec-Fetch-Dest: empty\r\n"
+      "Accept-Encoding: gzip, deflate, br\r\n"
+      "Accept-Language: en-US,en;q=0.9\r\n"
+      "\r\n"
+      "{\"type\":\"request\",\"command\":\"launch\",\"arguments\":{\"cmd\":\"/"
+      "bin/sh -c 'echo remote code execution'\"}}";
+
+  auto sb = dap::StringBuffer::create();
+  sb->write(part1);
+  sb->write(part2);
+
+  dap::ContentReader cr(std::move(sb), dap::kClose);
+  ASSERT_EQ(cr.read(), "");
+  ASSERT_FALSE(cr.isOpen());
+}

@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+#include "dap/session.h"
+
 namespace dap {
 
 // Forward declarations
@@ -30,7 +32,8 @@ class Writer;
 class ContentReader {
  public:
   ContentReader() = default;
-  ContentReader(const std::shared_ptr<Reader>&);
+  ContentReader(const std::shared_ptr<Reader>&,
+                const OnInvalidData on_invalid_data = kIgnore);
   ContentReader& operator=(ContentReader&&) noexcept;
 
   bool isOpen();
@@ -44,9 +47,11 @@ class ContentReader {
   bool match(const char* str);
   char matchAny(const char* chars);
   bool buffer(size_t bytes);
+  std::string badHeader();
 
   std::shared_ptr<Reader> reader;
   std::deque<uint8_t> buf;
+  OnInvalidData on_invalid_data;
 };
 
 class ContentWriter {

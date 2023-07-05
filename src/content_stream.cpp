@@ -24,12 +24,15 @@ namespace dap {
 ////////////////////////////////////////////////////////////////////////////////
 // ContentReader
 ////////////////////////////////////////////////////////////////////////////////
-ContentReader::ContentReader(const std::shared_ptr<Reader>& reader)
-    : reader(reader) {}
+ContentReader::ContentReader(
+    const std::shared_ptr<Reader>& reader,
+    OnInvalidData on_invalid_data /* = OnInvalidData::kIgnore */)
+    : reader(reader), on_invalid_data(on_invalid_data) {}
 
 ContentReader& ContentReader::operator=(ContentReader&& rhs) noexcept {
   buf = std::move(rhs.buf);
   reader = std::move(rhs.reader);
+  on_invalid_data = std::move(rhs.on_invalid_data);
   return *this;
 }
 
@@ -45,8 +48,14 @@ void ContentReader::close() {
 
 std::string ContentReader::read() {
   // Find Content-Length header prefix
-  if (!scan("Content-Length:")) {
-    return "";
+  if (on_invalid_data == kClose) {
+    if (!match("Content-Length:")) {
+      return badHeader();
+    }
+  } else {
+    if (!scan("Content-Length:")) {
+      return "";
+    }
   }
   // Skip whitespace and tabs
   while (matchAny(" \t")) {
@@ -64,10 +73,12 @@ std::string ContentReader::read() {
   if (len == 0) {
     return "";
   }
+
   // Expect \r\n\r\n
   if (!match("\r\n\r\n")) {
-    return "";
+    return badHeader();
   }
+
   // Read message
   if (!buffer(len)) {
     return "";
@@ -147,6 +158,13 @@ bool ContentReader::buffer(size_t bytes) {
     bytes -= numGot;
   }
   return true;
+}
+
+std::string ContentReader::badHeader() {
+  if (on_invalid_data == kClose) {
+    close();
+  }
+  return "";
 }
 
 ////////////////////////////////////////////////////////////////////////////////
