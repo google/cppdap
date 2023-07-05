@@ -44,17 +44,13 @@ void ContentReader::close() {
 }
 
 std::string ContentReader::read() {
-  matched_idx = 0;
-
   // Find Content-Length header prefix
   if (!scan("Content-Length:")) {
     return "";
   }
-
   // Skip whitespace and tabs
   while (matchAny(" \t")) {
   }
-
   // Parse length
   size_t len = 0;
   while (true) {
@@ -72,16 +68,10 @@ std::string ContentReader::read() {
   if (!match("\r\n\r\n")) {
     return "";
   }
-
   // Read message
-  if (!buffer(len + matched_idx)) {
+  if (!buffer(len)) {
     return "";
   }
-
-  for (size_t i = 0; i < matched_idx; i++) {
-    buf.pop_front();
-  }
-
   std::string out;
   out.reserve(len);
   for (size_t i = 0; i < len; i++) {
@@ -107,17 +97,18 @@ bool ContentReader::scan(const char* str) {
 }
 
 bool ContentReader::match(const uint8_t* seq, size_t len) {
-  if (!buffer(len + matched_idx)) {
+  if (!buffer(len)) {
     return false;
   }
-  auto it = matched_idx;
+  auto it = buf.begin();
   for (size_t i = 0; i < len; i++, it++) {
-    if (buf[it] != seq[i]) {
+    if (*it != seq[i]) {
       return false;
     }
   }
-
-  matched_idx += len;
+  for (size_t i = 0; i < len; i++) {
+    buf.pop_front();
+  }
   return true;
 }
 
@@ -127,12 +118,12 @@ bool ContentReader::match(const char* str) {
 }
 
 char ContentReader::matchAny(const char* chars) {
-  if (!buffer(1 + matched_idx)) {
+  if (!buffer(1)) {
     return false;
   }
-  int c = buf[matched_idx];
+  int c = buf.front();
   if (auto p = strchr(chars, c)) {
-    matched_idx++;
+    buf.pop_front();
     return *p;
   }
   return 0;
