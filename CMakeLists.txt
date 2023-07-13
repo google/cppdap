@@ -226,7 +226,7 @@ endfunction(cppdap_set_target_options)
 ###########################################################
 
 # dap
-add_library(cppdap STATIC ${CPPDAP_LIST})
+add_library(cppdap ${CPPDAP_LIST})
 set_target_properties(cppdap PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
 cppdap_set_target_options(cppdap)
