@@ -10,6 +10,14 @@ jobs:
     container:
       image: ubuntu:22.04
 
+    strategy:
+      matrix:
+        include:
+          - CC: gcc
+            CXX: g++
+          - CC: clang
+            CXX: clang++
+
     # don't run pull requests from local branches twice
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
 
@@ -20,7 +28,7 @@ jobs:
       - name: Install packages
         run: |
           apt-get -q -y update
-          apt-get -q -y install build-essential cmake git
+          apt-get -q -y install build-essential cmake git clang
 
       - uses: actions/checkout@v3
         with:
@@ -30,7 +38,7 @@ jobs:
         run: |
           mkdir -p build
           cd build
-          cmake ..
+          CC=${{ matrix.CC }} CXX=${{ matrix.CXX }} cmake ..
           cmake --build .
           DESTDIR=../out cmake --install .
 
