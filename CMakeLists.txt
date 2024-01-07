@@ -66,7 +66,7 @@ if(CPPDAP_BUILD_TESTS AND NOT CPPDAP_USE_EXTERNAL_GTEST_PACKAGE)
         message(WARNING "Run: `git submodule update --init` to build tests.")
         set(CPPDAP_BUILD_TESTS OFF)
     endif()
-endif(CPPDAP_BUILD_TESTS)
+endif()
 
 ###########################################################
 # JSON library
