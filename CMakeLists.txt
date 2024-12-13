@@ -298,18 +298,9 @@ if(CPPDAP_BUILD_TESTS)
     if(CPPDAP_USE_EXTERNAL_GTEST_PACKAGE)
         find_package(GTest REQUIRED)
     else()
-        list(APPEND DAP_TEST_LIST
-            ${CPPDAP_GOOGLETEST_DIR}/googletest/src/gtest-all.cc
-        )
-	set_property(SOURCE
-            ${CPPDAP_GOOGLETEST_DIR}/googletest/src/gtest-all.cc
-            APPEND PROPERTY COMPILE_OPTIONS -w)
-
-        set(DAP_TEST_INCLUDE_DIR
-            ${CPPDAP_GOOGLETEST_DIR}/googlemock/include/
-            ${CPPDAP_GOOGLETEST_DIR}/googletest/
-            ${CPPDAP_GOOGLETEST_DIR}/googletest/include/
-        )
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+        set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+        add_subdirectory(${CPPDAP_GOOGLETEST_DIR})
     endif()
 
     add_executable(cppdap-unittests ${DAP_TEST_LIST})
@@ -329,7 +320,7 @@ if(CPPDAP_BUILD_TESTS)
     if(CPPDAP_USE_EXTERNAL_GTEST_PACKAGE)
         target_link_libraries(cppdap-unittests PRIVATE cppdap GTest::gtest)
     else()
-        target_link_libraries(cppdap-unittests PRIVATE cppdap)
+        target_link_libraries(cppdap-unittests PRIVATE cppdap gtest gmock)
     endif()
 endif(CPPDAP_BUILD_TESTS)
 
