@@ -301,6 +301,9 @@ if(CPPDAP_BUILD_TESTS)
         list(APPEND DAP_TEST_LIST
             ${CPPDAP_GOOGLETEST_DIR}/googletest/src/gtest-all.cc
         )
+	set_property(SOURCE
+            ${CPPDAP_GOOGLETEST_DIR}/googletest/src/gtest-all.cc
+            APPEND PROPERTY COMPILE_OPTIONS -w)
 
         set(DAP_TEST_INCLUDE_DIR
             ${CPPDAP_GOOGLETEST_DIR}/googlemock/include/
