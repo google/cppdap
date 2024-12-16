@@ -301,15 +301,16 @@ if(CPPDAP_BUILD_TESTS)
         set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
         set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
         add_subdirectory(${CPPDAP_GOOGLETEST_DIR})
-        # googletest has -Werror=maybe-uninitialized problem.
+        # googletest has -Werror=maybe-uninitialized problems.
         # Disable all warnings in googletest code.
         target_compile_options(gtest PRIVATE -w)
+        # gmock has -Werror=deprecated-copy problems.
+        target_compile_options(gmock PRIVATE -w)
     endif()
 
     add_executable(cppdap-unittests ${DAP_TEST_LIST})
     add_test(NAME cppdap-unittests COMMAND cppdap-unittests)
 
-    target_include_directories(cppdap-unittests PUBLIC ${DAP_TEST_INCLUDE_DIR} )
     set_target_properties(cppdap-unittests PROPERTIES
         FOLDER "Tests"
     )
