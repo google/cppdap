@@ -301,6 +301,9 @@ if(CPPDAP_BUILD_TESTS)
         set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
         set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
         add_subdirectory(${CPPDAP_GOOGLETEST_DIR})
+        # googletest has -Werror=maybe-uninitialized problem.
+        # Disable all warnings in googletest code.
+        target_compile_options(gtest PRIVATE -w)
     endif()
 
     add_executable(cppdap-unittests ${DAP_TEST_LIST})
