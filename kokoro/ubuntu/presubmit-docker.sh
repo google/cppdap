@@ -28,8 +28,8 @@ git config --global --add safe.directory '*'
 git submodule update --init
 
 if [ "$BUILD_SYSTEM" == "cmake" ]; then
-    using cmake-3.17.2
-    using gcc-9
+    using cmake-3.31.2
+    using gcc-13
 
     mkdir build
     cd build
