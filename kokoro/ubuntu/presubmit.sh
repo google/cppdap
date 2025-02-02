@@ -29,4 +29,4 @@ docker run --rm -i \
   --env BUILD_TARGET_ARCH=$BUILD_TARGET_ARCH \
   --env BUILD_SANITIZER=$BUILD_SANITIZER \
   --entrypoint "${SCRIPT_DIR}/presubmit-docker.sh" \
-  "gcr.io/shaderc-build/radial-build:latest"
+  us-east4-docker.pkg.dev/shaderc-build/radial-docker/ubuntu-24.04-amd64/lean
