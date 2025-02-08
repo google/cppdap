@@ -233,17 +233,21 @@ namespace dap {
 Socket::Socket(const char* address, const char* port)
     : shared(Shared::create(address, port)) {
   if (shared) {
+    bool failed = false;
     shared->lock([&](SOCKET socket, const addrinfo* info) {
       if (bind(socket, info->ai_addr, (int)info->ai_addrlen) != 0) {
-        shared.reset();
+        failed = true;
         return;
       }
 
       if (listen(socket, 0) != 0) {
-        shared.reset();
+        failed = true;
         return;
       }
     });
+    if (failed) {
+      shared.reset();
+    }
   }
 }
 
