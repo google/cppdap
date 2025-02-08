@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.13)
+cmake_minimum_required(VERSION 3.22)
 
 project(cppdap VERSION 1.65.0 LANGUAGES CXX C)
 
@@ -298,21 +298,19 @@ if(CPPDAP_BUILD_TESTS)
     if(CPPDAP_USE_EXTERNAL_GTEST_PACKAGE)
         find_package(GTest REQUIRED)
     else()
-        list(APPEND DAP_TEST_LIST
-            ${CPPDAP_GOOGLETEST_DIR}/googletest/src/gtest-all.cc
-        )
-
-        set(DAP_TEST_INCLUDE_DIR
-            ${CPPDAP_GOOGLETEST_DIR}/googlemock/include/
-            ${CPPDAP_GOOGLETEST_DIR}/googletest/
-            ${CPPDAP_GOOGLETEST_DIR}/googletest/include/
-        )
+        set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+        set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
+        add_subdirectory(${CPPDAP_GOOGLETEST_DIR})
+        # googletest has -Werror=maybe-uninitialized problems.
+        # Disable all warnings in googletest code.
+        target_compile_options(gtest PRIVATE -w)
+        # gmock has -Werror=deprecated-copy problems.
+        target_compile_options(gmock PRIVATE -w)
     endif()
 
     add_executable(cppdap-unittests ${DAP_TEST_LIST})
     add_test(NAME cppdap-unittests COMMAND cppdap-unittests)
 
-    target_include_directories(cppdap-unittests PUBLIC ${DAP_TEST_INCLUDE_DIR} )
     set_target_properties(cppdap-unittests PROPERTIES
         FOLDER "Tests"
     )
@@ -326,7 +324,7 @@ if(CPPDAP_BUILD_TESTS)
     if(CPPDAP_USE_EXTERNAL_GTEST_PACKAGE)
         target_link_libraries(cppdap-unittests PRIVATE cppdap GTest::gtest)
     else()
-        target_link_libraries(cppdap-unittests PRIVATE cppdap)
+        target_link_libraries(cppdap-unittests PRIVATE cppdap gtest gmock)
     endif()
 endif(CPPDAP_BUILD_TESTS)
 
