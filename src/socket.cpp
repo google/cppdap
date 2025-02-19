@@ -117,7 +117,7 @@ class dap::Socket::Shared : public dap::ReaderWriter {
 
   ~Shared() {
     if (info) {
-        freeaddrinfo(info);
+      freeaddrinfo(info);
     }
     close();
     term();
