@@ -104,9 +104,9 @@ bool RapidDeserializer::deserialize(dap::any* v) const {
       return false;
     }
     *v = obj;
-  } else if (json()->IsArray()){
+  } else if (json()->IsArray()) {
     dap::array<any> arr;
-    if (!deserialize(&arr)){
+    if (!deserialize(&arr)) {
       return false;
     }
     *v = arr;
@@ -220,7 +220,8 @@ bool RapidSerializer::serialize(const dap::any& v) {
     return serialize(v.get<dap::object>());
   } else if (v.is<dap::null>()) {
   } else {
-    // reachable if array or custom serialized type is nested inside other dap::object
+    // reachable if array or custom serialized type is nested inside other
+    // dap::object
     auto type = get_any_type(v);
     auto value = get_any_val(v);
     if (type && value) {
