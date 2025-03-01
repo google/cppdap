@@ -1,48 +1,88 @@
+name: Test
 on:
   push:
   pull_request:
 
 jobs:
-  linux:
-    name: ci
-    runs-on: ubuntu-latest
-
-    container:
-      image: ubuntu:22.04
-
+  non-linux-tests:
+    name: ${{ matrix.os.name }} tests ( ${{ matrix.config }} )
+    runs-on: ${{ matrix.os.runner }}
     strategy:
       matrix:
-        include:
-          - CC: gcc
-            CXX: g++
-          - CC: clang
-            CXX: clang++
+        os: [{ name: "MacOS", runner: "macos-latest"}, { name: "Windows", runner: "windows-latest"}]
+        config: ["Debug", "Release"]
+    steps:
 
-    # don't run pull requests from local branches twice
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+      - uses: actions/checkout@v3
+        with:
+          submodules: 'true'
+      - name: Build source
+        uses: ./.github/actions/build-cppdap
+        with:
+          config: ${{ matrix.config }}
+          tests: true
+          install: true
 
+      - name: Run tests
+        run: |
+          cd build
+          ctest --output-on-failure -C ${{ matrix.config }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          # if flags are not empty, append them to the name
+          name: cppdap-${{ matrix.os.name }}-${{ matrix.config }}
+          path: out/usr/local/
+
+  linux-tests:
+    name: Linux tests ( ${{ matrix.config }} ${{ matrix.compiler.CC }} ${{ matrix.sanitizer }} )
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-22.04"] #[ubuntu-22.04, ubuntu-24.04]
+        config: ["Debug", "Release"]
+        compiler: [ {CXX: g++, CC: gcc}, {CXX: clang++, CC: clang} ]
+        sanitizer: ["", "asan", "tsan"]
+        exclude:
+          - config: "Release"
+            sanitizer: "asan"
+          - config: "Release"
+            sanitizer: "tsan"
     env:
       DEBIAN_FRONTEND: noninteractive
 
     steps:
       - name: Install packages
         run: |
-          apt-get -q -y update
-          apt-get -q -y install build-essential cmake git clang
+          sudo apt-get -q -y update
+          sudo apt-get -q -y install build-essential cmake git clang
 
       - uses: actions/checkout@v3
         with:
           submodules: 'true'
 
       - name: Build source
+        uses: ./.github/actions/build-cppdap
+        with:
+          msan: ${{ contains(matrix.sanitizer, 'msan') }}
+          tsan: ${{ contains(matrix.sanitizer, 'tsan') }}
+          asan: ${{ contains(matrix.sanitizer, 'asan') }}
+          config: ${{ matrix.config }}
+          tests: true
+          fuzzer: false
+          CC: ${{ matrix.compiler.CC }}
+          CXX: ${{ matrix.compiler.CXX }}
+          install: true
+        
+      - name: Run tests
+        shell: bash
         run: |
-          mkdir -p build
           cd build
-          CC=${{ matrix.CC }} CXX=${{ matrix.CXX }} cmake ..
-          cmake --build .
-          DESTDIR=../out cmake --install .
+          ./cppdap-unittests
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cppdap-${{ matrix.CC }}
+          # if flags are not empty, append them to the name
+          name: cppdap-Linux-${{ matrix.compiler.CC }}-${{ matrix.config }}${{ matrix.sanitizer != '' && '-' || '' }}${{ matrix.sanitizer }}
           path: out/usr/local/
