@@ -1,0 +1,136 @@
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+
+cc_library(
+    name = "api",
+    hdrs = glob(["include/dap/*.h"]),
+    strip_include_prefix = "include",
+)
+
+cc_library(
+    name = "null_json_serializer",
+    srcs = ["src/null_json_serializer.cpp"],
+    hdrs = ["src/null_json_serializer.h"],
+    deps = [":api"],
+)
+
+cc_library(
+    name = "jsoncpp_json_serializer",
+    srcs = ["src/jsoncpp_json_serializer.cpp"],
+    hdrs = ["src/jsoncpp_json_serializer.h"],
+    deps = [
+        ":api",
+        ":null_json_serializer",
+        "@jsoncpp",
+    ],
+)
+
+cc_library(
+    name = "nlohmann_json_serializer",
+    srcs = ["src/nlohmann_json_serializer.cpp"],
+    hdrs = ["src/nlohmann_json_serializer.h"],
+    deps = [
+        ":api",
+        ":null_json_serializer",
+        "@nlohmann_json//:json",
+    ],
+)
+
+cc_library(
+    name = "rapid_json_serializer",
+    srcs = ["src/rapid_json_serializer.cpp"],
+    hdrs = ["src/rapid_json_serializer.h"],
+    deps = [
+        ":api",
+        ":null_json_serializer",
+        "@rapidjson",
+    ],
+)
+
+cc_library(
+    name = "json_serializer",
+    hdrs = ["src/json_serializer.h"],
+    defines = select(
+        {
+            ":nlohmann_json": ["CPPDAP_JSON_NLOHMANN"],
+            ":jsoncpp_json": ["CPPDAP_JSON_JSONCPP"],
+            ":rapid_json": ["CPPDAP_JSON_RAPID"],
+        },
+        no_match_error = "Invalid json serializer selection",
+    ),
+    deps = select(
+        {
+            ":nlohmann_json": [":nlohmann_json_serializer"],
+            ":jsoncpp_json": [":jsoncpp_json_serializer"],
+            ":rapid_json": [":rapid_json_serializer"],
+        },
+        no_match_error = "Invalid json serializer selection",
+    ),
+)
+
+string_flag(
+    name = "json",
+    build_setting_default = "nlohmann",
+    values = [
+        "nlohmann",
+        "jsoncpp",
+        "rapid",
+    ],
+)
+
+config_setting(
+    name = "nlohmann_json",
+    flag_values = {":json": "nlohmann"},
+)
+
+config_setting(
+    name = "jsoncpp_json",
+    flag_values = {":json": "jsoncpp"},
+)
+
+config_setting(
+    name = "rapid_json",
+    flag_values = {":json": "rapid"},
+)
+
+cc_library(
+    name = "cppdap",
+    srcs = glob(
+        [
+            "src/*.cpp",
+            "src/*.h",
+        ],
+        exclude = [
+            "src/*test.*",
+            "src/*json_serializer.*",
+        ],
+    ),
+    deps = [
+        ":api",
+        ":json_serializer",
+    ],
+)
+
+TESTS = [
+    "any",
+    "chan",
+    "content_stream",
+    "dap",
+    "json_serializer",
+    "network",
+    "optional",
+    "rwmutex",
+    "session",
+    "socket",
+    "traits",
+    "typeinfo",
+    "variant",
+]
+
+[
+    cc_test(
+        name = test_name + "_test",
+        srcs = ["src/" + test_name + "_test.cpp"],
+        deps = [":cppdap", "@googletest//:gtest_main"],
+    )
+    for test_name in TESTS
+]

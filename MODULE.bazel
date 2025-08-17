@@ -1,0 +1,13 @@
+module(name="cppdap", version="1.65.0")
+
+bazel_dep(name = "bazel_skylib", version = "1.8.1")
+
+# Test with diffrent json libraries (inside cppdap, you can omit '@cppdap')
+#   bazel test --//@cppdap:json=nlohmann ...
+#   bazel test --//@cppdap:json=jsoncpp ...
+#   bazel test --//@cppdap:json=rapid ...
+bazel_dep(name = "nlohmann_json", version = "3.12.0")
+bazel_dep(name = "jsoncpp", version = "1.9.6")
+bazel_dep(name = "rapidjson", version = "1.1.0.bcr.20241007")
+
+bazel_dep(name = "googletest", version = "1.17.0", dev_dependency = True)
