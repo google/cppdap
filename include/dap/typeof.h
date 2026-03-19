@@ -164,10 +164,11 @@ M member_type(M T::*);
   bool TypeOf<STRUCT>::deserializeFields(const Deserializer* fd, void* obj) { \
     using StructTy = STRUCT;                                                  \
     (void)sizeof(StructTy); /* avoid unused 'using' warning */                \
-    for (auto& field : std::initializer_list<Field>{__VA_ARGS__}) {            \
-      if (!fd->field(field.name, [&](Deserializer* d) {                       \
-            auto ptr = reinterpret_cast<uint8_t*>(obj) + field.offset;        \
-            return field.type->deserialize(d, ptr);                           \
+    for (auto& field : std::initializer_list<Field>{__VA_ARGS__}) {           \
+      const auto ptr = reinterpret_cast<uint8_t*>(obj) + field.offset;        \
+      const auto type = field.type;                                           \
+      if (!fd->field(field.name, [ptr, type](Deserializer* d) {               \
+            return type->deserialize(d, ptr);                                 \
           })) {                                                               \
         return false;                                                         \
       }                                                                       \
@@ -177,10 +178,11 @@ M member_type(M T::*);
   bool TypeOf<STRUCT>::serializeFields(FieldSerializer* fs, const void* obj) {\
     using StructTy = STRUCT;                                                  \
     (void)sizeof(StructTy); /* avoid unused 'using' warning */                \
-    for (auto& field : std::initializer_list<Field>{__VA_ARGS__}) {            \
-      if (!fs->field(field.name, [&](Serializer* s) {                         \
-            auto ptr = reinterpret_cast<const uint8_t*>(obj) + field.offset;  \
-            return field.type->serialize(s, ptr);                             \
+    for (auto& field : std::initializer_list<Field>{__VA_ARGS__}) {           \
+      const auto ptr = reinterpret_cast<const uint8_t*>(obj) + field.offset;  \
+      const auto type = field.type;                                           \
+      if (!fs->field(field.name, [ptr, type](Serializer* s) {                 \
+            return type->serialize(s, ptr);                                   \
           })) {                                                               \
         return false;                                                         \
       }                                                                       \
